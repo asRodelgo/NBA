@@ -48,7 +48,10 @@ scaled <- cbind(teamCodes,scaled)
 set.seed(450)
 cv.error <- NULL
 k <- 10
-train_split <- 22
+train_split <- 24
+hidden_neurons <- c(6,4,2)
+#c(4,2)
+#c(6,4,2)
 # neuralnet requires explicit formula for the model (f)
 n <- names(training)
 f <- as.formula(paste("TEAM_PTS ~", paste(n[!n %in% "TEAM_PTS"], collapse = " + ")))
@@ -70,7 +73,7 @@ for(i in 1:k){
   # Number of input neurons is the number of columns
   # Output neurons is 1 as we are doing regression (linear.output=T)
   # For classification problem, linear.output=F
-  nn <- neuralnet(f,data=training,hidden=c(5,2),linear.output=T)
+  nn <- neuralnet(f,data=training,hidden=hidden_neurons,linear.output=T)
   
   # Prediction
   pr.nn <- compute(nn,testing[,-ncol(testing)])
