@@ -38,11 +38,50 @@ computeScores <- function(){
   }
   return(scores)
 }
-  
+
+# compute all scores for regular season  
 regSeasonScores <- computeScores()
 
 season <- bind_cols(season,regSeasonScores)
 names(season) <- c("day","home_team","away_team","home_points","away_points","numOT")
+
+# compute standings by day for regular season
+standings <- list() # standings is a list of number of days data.frames
+standings_aux <- data.frame(team = conferences$Team, teamCode = conferences$TeamCode,
+                             conference = conferences$Conference, win = 0, lose = 0,
+                             win_home = 0, win_conf = 0, streak = 0)
+for (i in 1:tail(season,1)$day){
+  
+  thisDay <- filter(season,day == i)
+  for (j in 1:nrow(thisDay)){
+    
+    HT <- standings_aux[standings_aux$teamCode==thisDay$home_team[j],]
+    AT <- standings_aux[standings_aux$teamCode==thisDay$away_team[j],]
+    
+    if (thisDay$home_points[j] > thisDay$away_points[j]){ # home team wins
+      HT$win <- HT$win + 1
+      AT$lose <- AT$lose + 1
+      HT$win_home <- HT$win_home + 1
+      HT$win_conf <- ifelse(HT$conference==AT$conference,HT$win_conf + 1,HT$win_conf)
+      HT$streak <- ifelse(HT$streak <= 0,1,HT$streak + 1)
+      AT$streak <- ifelse(AT$streak >= 0,-1,AT$streak - 1)
+      
+    } else { # away team wins
+      AT$win <- AT$win + 1
+      HT$lose <- HT$lose + 1
+      AT$win_conf <- ifelse(AT$conference==HT$conference,AT$win_conf + 1,AT$win_conf)
+      AT$streak <- ifelse(AT$streak <= 0,1,AT$streak + 1)
+      HT$streak <- ifelse(HT$streak >= 0,-1,HT$streak - 1)
+    }
+    standings_aux[standings_aux$teamCode==thisDay$home_team[j],] <- HT
+    standings_aux[standings_aux$teamCode==thisDay$away_team[j],] <- AT
+  }
+  
+  standings[[i]] <- standings_aux
+  
+}
+
+
 
 homeWins <- season %>%
   group_by(home_team) %>%
