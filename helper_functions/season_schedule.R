@@ -41,7 +41,7 @@ for (i in 1:29){
   }
 }
 
-# set up the schedule for the regular season. On average there are 6 games per day
+# set up the schedule for the regular season.
 gamesUrn <- data.frame()
 
 urn_count <- 1
@@ -69,19 +69,19 @@ set.seed(23)
 gamesUrnSamp <- sample_frac(gamesUrn)
 
 day <- 1
-day_count <- 0
+day_teams <- c()
 for (i in 1:nrow(gamesUrnSamp)){
-  if (day_count>6){
-    day_count <- 0
+  # avoid one team to play twice in the same day
+  if (gamesUrnSamp[i,1] %in% day_teams | gamesUrnSamp[i,2] %in% day_teams){
     day <- day + 1
-  }  
-
+    day_teams <- c(gamesUrnSamp[i,1],gamesUrnSamp[i,2])
+  } else { 
+    day_teams <- c(day_teams,gamesUrnSamp[i,1],gamesUrnSamp[i,2])
+  }
   season[i,1] <- day
   season[i,2] <- dimnames(schedule)[[1]][gamesUrnSamp[i,1]]
   season[i,3] <- dimnames(schedule)[[1]][gamesUrnSamp[i,2]]
   
-  day_count <- day_count + 1
-  
 }
-# Next: avoid same team to play in a given day
+
 

@@ -16,7 +16,7 @@ calculateScore <- function(team_home,team_away){
   pointsA <- round(rnorm(1,muA,sigma),0)
   
   numOT <- 0
-  while (pointsH-pointsA==0){ # overtime tie-breaker
+  while (abs(pointsH-pointsA)<1){ # overtime tie-breaker
     extraH <- round(rnorm(1,muH*5/48,sigma/3),0)
     extraA <- round(rnorm(1,muA*5/48,sigma/3),0)
     pointsH <- pointsH + extraH
@@ -31,9 +31,10 @@ computeScores <- function(){
   
   scores <- data.frame()
   for (i in 1:nrow(season)){
-    scores[i,1] <- calculateScore(season[i,2],season[i,3])[1]
-    scores[i,2] <- calculateScore(season[i,2],season[i,3])[2]
-    scores[i,3] <- calculateScore(season[i,2],season[i,3])[3]
+    thisGame <- calculateScore(season[i,2],season[i,3])
+    scores[i,1] <- thisGame[1]
+    scores[i,2] <- thisGame[2]
+    scores[i,3] <- thisGame[3]
   }
   return(scores)
 }
