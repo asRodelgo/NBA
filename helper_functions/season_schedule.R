@@ -83,5 +83,5 @@ for (i in 1:nrow(gamesUrnSamp)){
   day_count <- day_count + 1
   
 }
-
+# Next: avoid same team to play in a given day
 
