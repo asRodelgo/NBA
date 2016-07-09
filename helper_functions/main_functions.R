@@ -82,26 +82,26 @@ for (i in 1:tail(season,1)$day){
 }
 
 
-
-homeWins <- season %>%
-  group_by(home_team) %>%
-  mutate(home_wins = sum(home_points-away_points>0))
-
-awayWins <- homeWins %>%
-  group_by(away_team) %>%
-  mutate(away_wins = sum(away_points-home_points>0))
-
-homeWins <- distinct(homeWins,home_team,.keep_all = TRUE)
-homeWins <- select(homeWins, home_team,home_wins)
-homeWins <- as.data.frame(homeWins)
-
-awayWins <- distinct(awayWins,away_team,.keep_all = TRUE)
-awayWins <- select(awayWins, away_team,away_wins)
-awayWins <- as.data.frame(awayWins)
-
-totalWins <- merge(homeWins,awayWins, by.x="home_team",by.y="away_team")
-totalWins <- mutate(totalWins, win = home_wins + away_wins, lose = 82-win)
-totalWins <- arrange(totalWins,desc(win))
-
-
+# 
+# homeWins <- season %>%
+#   group_by(home_team) %>%
+#   mutate(home_wins = sum(home_points-away_points>0))
+# 
+# awayWins <- homeWins %>%
+#   group_by(away_team) %>%
+#   mutate(away_wins = sum(away_points-home_points>0))
+# 
+# homeWins <- distinct(homeWins,home_team,.keep_all = TRUE)
+# homeWins <- select(homeWins, home_team,home_wins)
+# homeWins <- as.data.frame(homeWins)
+# 
+# awayWins <- distinct(awayWins,away_team,.keep_all = TRUE)
+# awayWins <- select(awayWins, away_team,away_wins)
+# awayWins <- as.data.frame(awayWins)
+# 
+# totalWins <- merge(homeWins,awayWins, by.x="home_team",by.y="away_team")
+# totalWins <- mutate(totalWins, win = home_wins + away_wins, lose = 82-win)
+# totalWins <- arrange(totalWins,desc(win))
+# 
+# 
 

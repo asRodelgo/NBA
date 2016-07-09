@@ -1,5 +1,6 @@
 # Read data -------------------
 players <- read.csv("data/nba_players.csv")
+playersHist <- read.csv("data/nba_players_allSeasons.csv")
 teams <- read.csv("data/nba_teams.csv")
 conferences <- read.csv("data/nba_conferences.csv", stringsAsFactors = FALSE)
 
