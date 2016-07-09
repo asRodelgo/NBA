@@ -13,20 +13,30 @@
 # approximation but the ultimate goal is to predict the number of wins of a team in a 
 # given season and the effect of 1 or 2 rookie players should not be that important.
 #
-.tSNE_compute <- function(playerName, num_iter, max_num_neighbors, playerAge){
-  
+.tSNE_prepare <- function(num_iter, max_num_neighbors, playerAge){
   # Players that changed teams in the season have a column Tm == "TOT" with their total stats
   # and because I don't care about the team, this should be enough filter
-  # playerAge <- 30
+  # playerAge <- 34
   # num_iter <- 300
-  # max_num_neighbors <- 10
+  # max_num_neighbors <- 20
   # playerName <- "Pau Gasol"
   data_tsne <- playersHist %>%
     group_by(Player,Season) %>%
-    mutate(keep = ifelse(n() > 1, 1, 0), effectiveMin = MP/(48*82)) %>%
+    mutate(keep = ifelse(n() > 1, 1, 0), effMin = MP/3936, effFG = FG/(3936*effMin),
+           effFGA = FGA/(3936*effMin),eff3PM = X3P/(3936*effMin),eff3PA = X3PA/(3936*effMin),
+           eff2PM = X2P/(3936*effMin),eff2PA = X2PA/(3936*effMin),
+           effFTM = FT/(3936*effMin),effFTA = FTA/(3936*effMin),
+           effORB = ORB/(3936*effMin),effDRB = DRB/(3936*effMin),
+           effTRB = TRB/(3936*effMin),effAST = AST/(3936*effMin),
+           effSTL = STL/(3936*effMin),effBLK = BLK/(3936*effMin),
+           effTOV = TOV/(3936*effMin),effPF = PF/(3936*effMin),
+           effPTS = PTS/(3936*effMin)) %>%
     filter(keep == 0 | Tm == "TOT") %>%
-    filter(effectiveMin >= .15) %>% # Played at least 15% of total available minutes
-    select(-Tm,-keep,-G,-GS,-MP)
+    filter(effMin >= .15) %>% # Played at least 15% of total available minutes
+    select(Player,Pos,Season,Age,FGPer = FG.,FG3Per = X3P., FG2Per = X2P., effFGPer = eFG.,
+           FTPer = FT., starts_with("eff"),
+           -Tm,-keep,-G,-GS,-MP,FG,-FGA,-X3P,-X3PA,-X2P,-X2PA,-FG,-FTA,-ORB,-DRB,-TRB,-AST,
+           -BLK,-TOV,-PF,-FT,-STL,-PTS)
   
   # Filter by selected age 
   data_tsne <- data_tsne %>%
@@ -36,16 +46,22 @@
   # some players can be the same age during 2 seasons. Pick the one with the most minutes played
   data_tsne <- data_tsne %>%
     group_by(Player) %>%
-    filter(effectiveMin >= max(effectiveMin)-.0001)
+    filter(effMin >= max(effMin)-.0001)
   
   # t-sne doesn't like NAs. Impute by assigning 0. If NA means no shot attempted, ie, 
   # either the player didn't play enough time or is really bad at this particular type of shot.
-  data_tsne <- data_tsne[,c(1,2,ncol(data_tsne)-1,ncol(data_tsne),3:(ncol(data_tsne)-2))]# reorder columns first
   for (i in 4:(ncol(data_tsne)-1)){
     data_tsne[is.na(data_tsne[,i]),i] <- 0
   }
   
   data_tsne <- as.data.frame(data_tsne)
+  return(data_tsne)
+  
+}
+
+.tSNE_compute <- function(playerName, num_iter, max_num_neighbors, playerAge){
+  
+  data_tsne <- .tSNE_prepare(num_iter, max_num_neighbors, playerAge)
   # calculate tsne-points Dimensionality reduction to 2-D
   if (nrow(data_tsne)>0){
     set.seed(456) # reproducitility
@@ -61,8 +77,9 @@
 }
 
 # compute colors for regions
-.getColors <- function(playerAge,colVar){
+.getColors <- function(num_iter, max_num_neighbors,playerAge,colVar){
   
+  data_tsne <- .tSNE_prepare(num_iter, max_num_neighbors, playerAge)
   if (colVar == "Season"){
     colors <- rainbow(length(unique(data_tsne$Season)))
     names(colors) <- unique(data_tsne$Season)
@@ -80,7 +97,7 @@
   if (length(tsne_points)>0){
     par(mar=c(0,0,0,0))
     plot(tsne_points,t='n', axes=FALSE, frame.plot = FALSE, xlab = "",ylab = ""); 
-    graphics::text(tsne_points,labels=as.character(data_tsne$Player), col=.getColors(playerAge,colVar))
+    graphics::text(tsne_points,labels=as.character(data_tsne$Player), col=.getColors(num_iter, max_num_neighbors,playerAge,colVar))
   } else {
     plot(c(1,1),type="n", frame.plot = FALSE, axes=FALSE, ann=FALSE)
     graphics::text(1.5, 1,"Not enough data", col="red", cex=2)
@@ -91,6 +108,7 @@
 # tsne dist ---------------------------------------------------------
 .tSNE_dist <- function(playerName, num_iter, max_num_neighbors, playerAge){
   
+  data_tsne <- .tSNE_prepare(num_iter, max_num_neighbors, playerAge)
   tsne_points <- .tSNE_compute(playerName, num_iter, max_num_neighbors, playerAge)
   if (length(tsne_points)>0){
     # calculate the euclidean distance between the selected player and the rest
@@ -111,9 +129,10 @@
   return(dist_mat)
 } 
 
-similarPlayers <- .tSNE_dist("Michael Jordan*",300,20,31)
-head(similarPlayers,10)
+similarPlayers <- .tSNE_dist("Russell Westbrook",300,20,27)
+head(similarPlayers,20)
 
+playerName <- "LeBron James"
 simPlayers <- data.frame()
 thisAge <- filter(playersHist, Season == "2015-2016", Player == playerName)$Age
 for (t in (thisAge-5):thisAge){
