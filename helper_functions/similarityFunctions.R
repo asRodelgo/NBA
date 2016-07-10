@@ -59,7 +59,7 @@
   
 }
 
-.tSNE_compute <- function(playerName, num_iter, max_num_neighbors, playerAge){
+.tSNE_compute <- function(num_iter, max_num_neighbors, playerAge){
   
   data_tsne <- .tSNE_prepare(playerAge)
   # calculate tsne-points Dimensionality reduction to 2-D
@@ -93,7 +93,8 @@
 # tsne chart ---------------------------------------------------------
 .tSNE_plot <- function(playerName, num_iter, max_num_neighbors, playerAge, colVar){
   
-  tsne_points <- .tSNE_compute(playerName, num_iter, max_num_neighbors, playerAge)
+  #tsne_points <- .tSNE_compute(num_iter, max_num_neighbors, playerAge)
+  tsne_points <- tsneBlock[[playerAge]]
   if (length(tsne_points)>0){
     par(mar=c(0,0,0,0))
     plot(tsne_points,t='n', axes=FALSE, frame.plot = FALSE, xlab = "",ylab = ""); 
@@ -109,7 +110,8 @@
 .tSNE_dist <- function(playerName, num_iter, max_num_neighbors, playerAge){
   
   data_tsne <- .tSNE_prepare(playerAge)
-  tsne_points <- .tSNE_compute(playerName, num_iter, max_num_neighbors, playerAge)
+  #tsne_points <- .tSNE_compute(num_iter, max_num_neighbors, playerAge)
+  tsne_points <- tsneBlock[[playerAge]]
   if (length(tsne_points)>0){
     # calculate the euclidean distance between the selected player and the rest
     dist_mat <- cbind(tsne_points,as.character(data_tsne$Player))
@@ -129,62 +131,81 @@
   return(dist_mat)
 } 
 
-similarPlayers <- .tSNE_dist("Russell Westbrook",300,20,27)
-head(similarPlayers,20)
+#similarPlayers <- .tSNE_dist("Russell Westbrook",300,20,27)
+#head(similarPlayers,20)
 
-playerName <- "LeBron James"
-simPlayers <- data.frame()
-thisAge <- filter(playersHist, Season == "2015-2016", Player == playerName)$Age
-for (t in (thisAge-5):thisAge){
-  thisSimilar <- head(.tSNE_dist(playerName,300,20,t),50)
-  thisSimilar$Age <- t
-  if (nrow(simPlayers)>0){
-    simPlayers <- bind_rows(simPlayers,thisSimilar)
-  } else {
-    simPlayers <- thisSimilar
+.predictPlayer <- function(playerName, numberPlayersToCompare){
+
+  # playerName <- "Andrew Wiggins"
+  # numberPlayersToCompare <- 20
+  simPlayers <- data.frame()
+  thisAge <- filter(playersHist, Season == "2015-2016", Player == playerName)$Age
+  minAge <- min(filter(playersHist, Player == playerName)$Age)
+  for (t in (thisAge-5):thisAge){
+    if (t >= minAge){
+      thisSimilar <- head(.tSNE_dist(playerName,300,20,t),numberPlayersToCompare)
+      thisSimilar$Age <- t
+      if (nrow(simPlayers)>0){
+        simPlayers <- bind_rows(simPlayers,thisSimilar)
+      } else {
+        simPlayers <- thisSimilar
+      }
+      print(thisSimilar)
+    }
   }
-  print(thisSimilar)
+  
+  simPlayers_5years <- simPlayers %>%
+    filter(!(Player == playerName)) %>%
+    group_by(Player) %>%
+    mutate(numYears = n(),rank5years = mean(`Euclid. distance`)) %>%
+    distinct(.keep_all=TRUE) %>%
+    arrange(desc(numYears),rank5years)
+  
+  # Top 10 more similar to selected player for past 5 years
+  top10_similar <- head(simPlayers_5years,10)$Player
+  
+  # Now calculate average variation in their stats when they went from current age to age + 1
+  thisAgeData <- .tSNE_prepare(thisAge)
+  namesKeep <- names(thisAgeData)
+  names(thisAgeData)[2:ncol(thisAgeData)] <- sapply(names(thisAgeData)[2:ncol(thisAgeData)],
+                                                    function(x) paste0(x,"_",thisAge))
+  #thisAgeData$Age <- thisAge
+  nextAgeData <- .tSNE_prepare(thisAge+1)
+  #nextAgeData$Age <- thisAge + 1
+  names(nextAgeData)[2:ncol(nextAgeData)] <- sapply(names(nextAgeData)[2:ncol(nextAgeData)],
+                                                    function(x) paste0(x,"_",thisAge+1))
+  
+  ageData <- merge(thisAgeData,nextAgeData, by="Player")
+  
+  top10 <- ageData %>%
+    filter(Player %in% top10_similar)
+  
+  top10_var <- data.frame()
+  numCols <- ncol(thisAgeData)
+  for (i in 1:nrow(top10)){
+    top10_var[i,1] <- top10$Player[i]  
+    for (j in 4:numCols){
+      top10_var[i,j-2] <- ifelse(top10[i,j]==0,0,(top10[i,j+numCols-1]-top10[i,j])/top10[i,j])
+    }
+  }
+  names(top10_var) <- namesKeep[c(1,4:length(namesKeep))]
+  # Median variations for top 10 most similar players 
+  top10_var <- summarise_each(top10_var, funs(median(.)),-Player)
+  # Apply this variation to predict stats for this player for next season  
+  predAgeData <- filter(thisAgeData, Player == playerName)
+  for (i in 1:ncol(top10_var)){
+    predAgeData[i+3] <- predAgeData[i+3]*(1+top10_var[i])
+  }
+  names(predAgeData) <- names(data_tsne)
+  # Update the Season and Age of the player
+  predAgeData$Season <- paste0(as.numeric(substr(predAgeData$Season,1,4))+1,"-",
+                               as.numeric(substr(predAgeData$Season,1,4))+2)
+  predAgeData$Age <- thisAge + 1
+  return(predAgeData)
+
 }
 
-simPlayers_5years <- simPlayers %>%
-  filter(!(Player == playerName)) %>%
-  group_by(Player) %>%
-  mutate(numYears = n(),rank5years = mean(`Euclid. distance`)) %>%
-  distinct(.keep_all=TRUE) %>%
-  arrange(desc(numYears),rank5years)
-
-# Top 10 more similar to selected player for past 5 years
-top10_similar <- head(simPlayers_5years,10)$Player
-
-# Now calculate average variation in their stats when they went from current age to age + 1
-thisAgeData <- .tSNE_prepare(thisAge)
-namesKeep <- names(thisAgeData)
-names(thisAgeData)[2:ncol(thisAgeData)] <- sapply(names(thisAgeData)[2:ncol(thisAgeData)],
-                                                  function(x) paste0(x,"_",thisAge))
-#thisAgeData$Age <- thisAge
-nextAgeData <- .tSNE_prepare(thisAge+1)
-#nextAgeData$Age <- thisAge + 1
-names(nextAgeData)[2:ncol(nextAgeData)] <- sapply(names(nextAgeData)[2:ncol(nextAgeData)],
-                                                  function(x) paste0(x,"_",thisAge+1))
-
-ageData <- merge(thisAgeData,nextAgeData, by="Player")
-
-top10 <- ageData %>%
-  filter(Player %in% top10_similar)
-
-top10_var <- data.frame()
-numCols <- ncol(thisAgeData)
-for (i in 1:nrow(top10)){
-  top10_var[i,1] <- top10$Player[i]  
-  for (j in 4:numCols){
-    top10_var[i,j-2] <- ifelse(top10[i,j]==0,0,(top10[i,j+numCols-1]-top10[i,j])/top10[i,j])
-  }
-}
-names(top10_var) <- namesKeep[c(1,4:length(namesKeep))]
-
-top10_var <- summarise_each(top10_var, funs(mean(.)),-Player)
-  
-  
-
+thisPrediction <- .predictPlayer("Andrew Wiggins",20)
+topPeers
 
 
