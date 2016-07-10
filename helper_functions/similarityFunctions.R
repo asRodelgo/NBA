@@ -190,10 +190,12 @@
   }
 }
 
-.predictPlayer <- function(playerName, numberPlayersToCompare){
+.predictPlayer <- function(playerName, numberPlayersToCompare,numberTeamsForVariation){
 
   # Top 10 more similar to selected player for past 5 years
-  top10_similar <- head(.similarPlayers(playerName,numberPlayersToCompare),10)$Player
+  top10_similar <- head(.similarPlayers(playerName,numberPlayersToCompare),numberTeamsForVariation)$Player
+  thisAgeFrame <- filter(playersHist, Player == playerName)
+  thisAge <- max(filter(thisAgeFrame, Player == playerName)$Age)
   
   # Now calculate average variation in their stats when they went from current age to age + 1
   thisAgeData <- .tSNE_prepare(thisAge)
@@ -237,7 +239,7 @@
 
 }
 
-thisPrediction <- .predictPlayer("Andrew Wiggins",20)
+thisPrediction <- .predictPlayer("Klay Thompson",20,10)
 head(.similarPlayers("Klay Thompson",20),10)
 
 filter(playersHist, grepl("Ola",Player,fixed=TRUE))
