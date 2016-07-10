@@ -118,8 +118,8 @@
     dist_mat <- as.data.frame(dist_mat, stringsAsFactors=FALSE)
     dist_mat$V1 <- as.numeric(dist_mat$V1)
     dist_mat$V2 <- as.numeric(dist_mat$V2)
-    distCou1 <- dist_mat[dist_mat$V3==playerName,1]
-    distCou2 <- dist_mat[dist_mat$V3==playerName,2]
+    distCou1 <- dist_mat[dist_mat[,3]==playerName,1]
+    distCou2 <- dist_mat[dist_mat[,3]==playerName,2]
     dist_mat <- mutate(dist_mat, dist = sqrt((V1-distCou1)^2+(V2-distCou2)^2))
     # order by closest distance to selected player
     dist_mat <- arrange(dist_mat, dist)[,c(3,4)]
@@ -172,15 +172,18 @@
         t <- t + 1
       }
     }
-    
-    simPlayers_5years <- simPlayers %>%
-      filter(!(Player == playerName)) %>%
-      group_by(Player) %>%
-      mutate(numYears = n(),rank5years = mean(`Euclid. distance`)) %>%
-      distinct(.keep_all=TRUE) %>%
-      arrange(desc(numYears),rank5years)
-    
-    return(simPlayers_5years)
+    if (nrow(simPlayers)>0){ 
+      simPlayers_5years <- simPlayers %>%
+        filter(!(Player == playerName)) %>%
+        group_by(Player) %>%
+        mutate(numYears = n(),rank5years = mean(`Euclid. distance`)) %>%
+        distinct(.keep_all=TRUE) %>%
+        arrange(desc(numYears),rank5years)
+      
+      return(simPlayers_5years)
+    } else { # Player didn't play enough minutes during the period considered
+      return()
+    }
     
   } else { # Player doesn't exist
     return()
@@ -235,6 +238,6 @@
 }
 
 thisPrediction <- .predictPlayer("Andrew Wiggins",20)
-topPeers <- head(.similarPlayers("Larry Bird*",20),10)$Player
+head(.similarPlayers("Klay Thompson",20),10)
 
-
+filter(playersHist, grepl("Ola",Player,fixed=TRUE))
