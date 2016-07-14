@@ -1,6 +1,7 @@
 # Global utils -----------------------------
 library(dplyr)
 library(tsne)
+library(rvest)
 
 source("data/read_data.R")
 global_mean <- mean(teams$TEAM_PTS)
