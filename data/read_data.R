@@ -11,4 +11,6 @@ for (a in 18:41){
 }
 # Read team stats for all seasons
 team_stats <- read.csv("data/teamStats.csv")
+franchises <- read.csv("data/franchisesHistory.csv")
+team_stats <- merge(team_stats,franchises,by.x="Team",by.y="Franchise",all.x=TRUE)
 

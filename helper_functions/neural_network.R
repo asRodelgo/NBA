@@ -16,12 +16,12 @@ library(neuralnet) # neural network for regression
 
 # Approach: Summarize variables at team level to obtain input vector for the model
 # 1. By team: calculate weighted average of each characteristic: FGM, FGA, etc...
-data_team <- .team_prepare() # If no arguments, will calculate for all teams for last season
+data_team <- .team_prepareAll() # If no arguments, will calculate for all teams for last season
 # 2. Weights correspond to percentage of total team time played, ie, sum(effMin) = 5
 # Probably more efficient to scale weights to add up to 1: Wt = effMin/5
 playersSumm <- data_team %>%
   filter(!(Tm == "TOT")) %>% # Those who played for more than 1 team have a Total team
-  group_by(Tm) %>%
+  group_by(Tm, Season) %>%
   mutate(Wt = effMin/5) %>%
   mutate_each(funs(weighted.mean(.,Wt)),-Player,-Pos,-Season,-Wt) %>%
   dplyr::select(-Player,-Pos,-Wt) %>%
