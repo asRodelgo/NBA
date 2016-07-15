@@ -16,7 +16,7 @@ library(neuralnet) # neural network for regression
 
 # Approach: Summarize variables at team level to obtain input vector for the model
 # 1. By team: calculate weighted average of each characteristic: FGM, FGA, etc...
-data_team <- .team_prepareAll() # If no arguments, will calculate for all teams for last season
+data_team <- .team_prepareAll() # If no arguments, will calculate for all teams for all seasons
 # 2. Weights correspond to percentage of total team time played, ie, sum(effMin) = 5
 # Probably more efficient to scale weights to add up to 1: Wt = effMin/5
 playersSumm <- data_team %>%
@@ -27,19 +27,28 @@ playersSumm <- data_team %>%
   dplyr::select(-Player,-Pos,-Wt) %>%
   distinct(.keep_all=TRUE)
 
-playersSumm <- as.data.frame(playersSumm)
-playersSumm <- playersSumm[, !(names(playersSumm) %in% c("Player","Wt"))]
+# Paste Team and Season to have 1 field as identifier
+playersSumm <- playersSumm %>%
+  mutate(team_season = paste0(Tm,"_",Season))
+playersSumm <- playersSumm[,!(names(playersSumm) %in% c("Tm","Season"))]
 
-# add team's average points in season (output variable y~ in the regression)
-playersSumm <- merge(playersSumm, teams[,c("TeamCode","TEAM_PTS")], by.x = "TEAM", by.y = "TeamCode")
+playersSumm <- as.data.frame(playersSumm)
+
+## add team's average points in season (output variable y~ in the regression)
+# Paste Team and Season to have 1 field as identifier
+team_stats2 <- team_stats %>%
+  mutate(team_season = paste0(teamCode,"_",Season))
+team_stats2 <- team_stats2[,!(names(team_stats2) %in% c("Team","teamCode","Season"))]
+# merge
+playersSumm <- merge(playersSumm, team_stats2[,c("team_season","PS.G")], by = "team_season", all.x=TRUE)
 
 # scale the data for easier convergence of backpropagation algorithm
 maxs <- apply(playersSumm[,-1], 2, max) 
 mins <- apply(playersSumm[,-1], 2, min)
 
-teamCodes <- playersSumm[,1]
+team_season <- playersSumm[,1]
 scaled <- as.data.frame(scale(playersSumm[,-1], center = mins, scale = maxs - mins))
-scaled <- cbind(teamCodes,scaled)
+scaled <- cbind(team_season,scaled)
 
 # CROSS VALIDATION --------------------------------------------
 
@@ -48,13 +57,14 @@ scaled <- cbind(teamCodes,scaled)
 set.seed(450)
 cv.error <- NULL
 k <- 10
-train_split <- 24
+perc <- 0.80
+train_split <- round(perc*nrow(playersSumm))
 hidden_neurons <- c(6,4,2)
 #c(4,2)
 #c(6,4,2)
 # neuralnet requires explicit formula for the model (f)
-n <- names(training)
-f <- as.formula(paste("TEAM_PTS ~", paste(n[!n %in% "TEAM_PTS"], collapse = " + ")))
+n <- names(scaled[,-1])
+f <- as.formula(paste("PS.G ~", paste(n[!n %in% "PS.G"], collapse = " + ")))
 
 for(i in 1:k){
   teams_train <- sample(teams$TeamCode,train_split)

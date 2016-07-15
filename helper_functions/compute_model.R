@@ -53,8 +53,8 @@ hidden_neurons <- c(6,4,2)
 #c(4,2)
 #c(6,4,2)
 # neuralnet requires explicit formula for the model (f)
-n <- names(training)
-f <- as.formula(paste("TEAM_PTS ~", paste(n[!n %in% "TEAM_PTS"], collapse = " + ")))
+n <- names(scaled[,-1])
+f <- as.formula(paste("PS.G ~", paste(n[!n %in% "PS.G"], collapse = " + ")))
 
 for(i in 1:k){
   teams_train <- sample(teams$TeamCode,train_split)

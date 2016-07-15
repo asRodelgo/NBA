@@ -108,17 +108,17 @@
 .transfer2Players <- function(player1, player2, thisTeam) {
 # player1 <- "Harrison Barnes"
 # player2 <- "Kevin Durant"
-data_team <- .team_prepare(thisTeam)
-originTeam <- as.character(filter(playersHist, Player == player2, Season == max(as.character(Season)))$Tm)
-player2Stats <- filter(.team_prepare(originTeam), Player == player2)
-data_team <- filter(data_team, !(Player == player1))
-data_team <- bind_rows(data_team, player2Stats)
-# Recalculate stats thisTeam
-teamMinutes <- sum(data_team$effMin)
-data_team$effMin <- 5*data_team$effMin/teamMinutes
-
-data_team <- as.data.frame(data_team)
-return(data_team)
+  data_team <- .team_prepare(thisTeam)
+  originTeam <- as.character(filter(playersHist, Player == player2, Season == max(as.character(Season)))$Tm)
+  player2Stats <- filter(.team_prepare(originTeam), Player == player2)
+  data_team <- filter(data_team, !(Player == player1))
+  data_team <- bind_rows(data_team, player2Stats)
+  # Recalculate stats thisTeam
+  teamMinutes <- sum(data_team$effMin)
+  data_team$effMin <- 5*data_team$effMin/teamMinutes
+  
+  data_team <- as.data.frame(data_team)
+  return(data_team)
 
 }
 
