@@ -45,6 +45,7 @@ library(neuralnet) # neural network for regression
   
   # No matter if I calculate Off or Def pts per season, I call this variable PTS for practical purposes
   names(playersSumm)[ncol(playersSumm)] <- "PTS" 
+  
   return(playersSumm)
 }
 
@@ -70,11 +71,11 @@ library(neuralnet) # neural network for regression
   
   playersSumm <- as.data.frame(playersSumm)
   
-  ## add team's average points in season (output variable y~ in the regression)
-  # Paste Team and Season to have 1 field as identifier
-  team_stats2 <- team_statsNew %>%
-    mutate(team_season = paste0(teamCode,"_",Season))
-  team_stats2 <- team_stats2[,!(names(team_stats2) %in% c("Team","teamCode","Season"))]
+#   ## add team's average points in season (output variable y~ in the regression)
+#   # Paste Team and Season to have 1 field as identifier
+#   team_stats2 <- team_statsNew %>%
+#     mutate(team_season = paste0(teamCode,"_",Season))
+#   team_stats2 <- team_stats2[,!(names(team_stats2) %in% c("Team","teamCode","Season"))]
   
   return(playersSumm)
 }
@@ -163,8 +164,9 @@ library(neuralnet) # neural network for regression
   
   playersSumm <- .prepareModel(Off_or_Def)
   # scale the data for easier convergence of backpropagation algorithm
-  maxs <- apply(playersSumm[,-1], 2, max) 
-  mins <- apply(playersSumm[,-1], 2, min)
+  scaleMaxMin <- .getScaleLimits(Off_or_Def)
+  maxs <- scaleMaxMin$maxs 
+  mins <- scaleMaxMin$mins
   
   team_season <- playersSumm[,1]
   scaled <- as.data.frame(scale(playersSumm[,-1], center = mins, scale = maxs - mins))

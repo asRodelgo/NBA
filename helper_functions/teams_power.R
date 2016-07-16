@@ -6,13 +6,22 @@
   
   # updated data for rosters for this season
   playersSumm <- .prepareModelPrediction()
+  # scale the variables the same way the training dataset was scaled so the nnet makes sense
+  scaleMaxMin <- .getScaleLimits(Off_or_Def)
+  maxs <- scaleMaxMin$maxs[-nrow(scaleMaxMin)] 
+  mins <- scaleMaxMin$mins[-nrow(scaleMaxMin)]
+  team_season <- playersSumm[,ncol(playersSumm)]
+  scaled <- as.data.frame(scale(playersSumm[,-ncol(playersSumm)], center = mins, scale = maxs - mins))
+  scaled <- cbind(team_season,scaled)
   # NNet model # TO DO: store this model. No need to recalculate until new data is available
   # 2 models, Offense and Defense
   nn <- .selectedModel(Off_or_Def) 
   # Prediction
-  pr.nn <- compute(nn,playersSumm[,-ncol(playersSumm)])
-  # Model results are scaled so need to scale them back to normal
-  scaleMaxMin <- .getScaleLimits(Off_or_Def)
+  scaled <- dplyr::select(scaled, -team_season)
+  pr.nn <- compute(nn,scaled)
+  # Model results are scaled so need to re-scale them back to normal
   pr.nn_ <- pr.nn$net.result*(scaleMaxMin["PTS","maxs"]-scaleMaxMin["PTS","mins"])+scaleMaxMin["PTS","mins"]
   
 }
+
+
