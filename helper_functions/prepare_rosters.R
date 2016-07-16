@@ -84,7 +84,8 @@
              effORB = ORB/(3936*effMin),effDRB = DRB/(3936*effMin),
              effTRB = TRB/(3936*effMin),effAST = AST/(3936*effMin),
              effSTL = STL/(3936*effMin),effBLK = BLK/(3936*effMin),
-             effTOV = TOV/(3936*effMin),effPF = PF/(3936*effMin)) %>%
+             effTOV = TOV/(3936*effMin),effPF = PF/(3936*effMin),
+             effPTS = PTS/(3936*effMin)) %>%
       dplyr::select(Player,Pos,Season,Tm,Age,FGPer = FG.,FG3Per = X3P., FG2Per = X2P., effFGPer = eFG.,
                     FTPer = FT., starts_with("eff"),
                     -G,-GS,-MP,FG,-FGA,-X3P,-X3PA,-X2P,-X2PA,-FG,-FTA,-ORB,-DRB,-TRB,-AST,
@@ -113,7 +114,8 @@
              effORB = ORB/(3936*effMin),effDRB = DRB/(3936*effMin),
              effTRB = TRB/(3936*effMin),effAST = AST/(3936*effMin),
              effSTL = STL/(3936*effMin),effBLK = BLK/(3936*effMin),
-             effTOV = TOV/(3936*effMin),effPF = PF/(3936*effMin)) %>%
+             effTOV = TOV/(3936*effMin),effPF = PF/(3936*effMin),
+             effPTS = PTS/(3936*effMin)) %>%
       select(Player,Pos,Season,Age,FGPer = FG.,FG3Per = X3P., FG2Per = X2P., effFGPer = eFG.,
              FTPer = FT., starts_with("eff"),
              -Tm,-G,-GS,-MP,FG,-FGA,-X3P,-X3PA,-X2P,-X2PA,-FG,-FTA,-ORB,-DRB,-TRB,-AST,

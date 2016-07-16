@@ -79,13 +79,25 @@ library(neuralnet) # neural network for regression
   return(playersSumm)
 }
 
-# Find the best parameters for the NNet using CV
-.computeModel <- function(Off_or_Def) {
-
+# Max and Min for all variables in the available data. Used to rescale later on
+.getScaleLimits <- function(Off_or_Def) {
+  
   playersSumm <- .prepareModel(Off_or_Def)
   # scale the data for easier convergence of backpropagation algorithm
   maxs <- apply(playersSumm[,-1], 2, max) 
   mins <- apply(playersSumm[,-1], 2, min)
+  scaleMaxMin <- data.frame(maxs,mins)
+  
+  return(scaleMaxMin)
+}  
+
+# Find the best parameters for the NNet using CV
+.computeModel <- function(Off_or_Def) {
+
+  scaleMaxMin <- .getScaleLimits(Off_or_Def)
+  # scale the data for easier convergence of backpropagation algorithm
+  maxs <- scaleMaxMin$maxs 
+  mins <- scaleMaxMin$mins
   
   team_season <- playersSumm[,1]
   scaled <- as.data.frame(scale(playersSumm[,-1], center = mins, scale = maxs - mins))
