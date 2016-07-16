@@ -21,7 +21,19 @@
   pr.nn <- compute(nn,scaled)
   # Model results are scaled so need to re-scale them back to normal
   pr.nn_ <- pr.nn$net.result*(scaleMaxMin["PTS","maxs"]-scaleMaxMin["PTS","mins"])+scaleMaxMin["PTS","mins"]
+  pred_PTS <- as.numeric(pr.nn_)
+  # bring back the team names
+  pr_pts <- cbind(team_season,pred_PTS)
+  pr_pts <- as.data.frame(pr_pts)
   
+  return(pr_pts)
 }
 
-
+Def <- .computePower("PTSA")
+Off <- .computePower("PTS")
+team_power <- merge(Off,Def,by="team_season")
+team_power <- mutate(team_power, teamCode = substr(team_season,1,3))
+Off_act <- filter(team_stats, Season == "2015-2016")[,c("teamCode","PTS")]
+Def_act <- filter(team_stats, Season == "2015-2016")[,c("teamCode","PTSA")]
+team_power_act <- merge(Off_act,Def_act,by="teamCode")
+compare_pred <- merge(team_power,team_power_act,by="teamCode")

@@ -184,15 +184,15 @@ library(neuralnet) # neural network for regression
   f <- as.formula(paste("PTS ~", paste(n[!n %in% "PTS"], collapse = " + ")))
   
   teams_train <- sample(playersSumm$team_season,train_split)
-  teams_test <- filter(playersSumm, !(team_season %in% teams_train))$team_season
+  #teams_test <- filter(playersSumm, !(team_season %in% teams_train))$team_season
   training <- filter(scaled, team_season %in% teams_train)
-  testing <- filter(scaled, team_season %in% teams_test)
+  #testing <- filter(scaled, team_season %in% teams_test)
   
   # remove non-numeric variables
   train_teamSeasonCodes <- training$team_season
-  test_teamSeasonCodes <- testing$team_season
+  #test_teamSeasonCodes <- testing$team_season
   training <- training[,-1]
-  testing <- testing[,-1]
+  #testing <- testing[,-1]
   
   ## Model Neural Network
   # Hidden layers and neurons per layer specified by hidden. 
