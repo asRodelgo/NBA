@@ -67,14 +67,14 @@ n <- names(scaled[,-1])
 f <- as.formula(paste("PS.G ~", paste(n[!n %in% "PS.G"], collapse = " + ")))
 
 for(i in 1:k){
-  teams_train <- sample(teams$TeamCode,train_split)
-  teams_test <- filter(teams, !(TeamCode %in% teams_train))$TeamCode
-  training <- filter(scaled, teamCodes %in% teams_train)
-  testing <- filter(scaled, teamCodes %in% teams_test)
+  teams_train <- sample(playersSumm$team_season,train_split)
+  teams_test <- filter(playersSumm, !(team_season %in% teams_train))$team_season
+  training <- filter(scaled, team_season %in% teams_train)
+  testing <- filter(scaled, team_season %in% teams_test)
   
   # remove non-numeric variables
-  train_teamCodes <- training$teamCodes
-  test_teamCodes <- testing$teamCodes
+  train_teamSeasonCodes <- training$team_season
+  test_teamSeasonCodes <- testing$team_season
   training <- training[,-1]
   testing <- testing[,-1]
   
@@ -85,13 +85,20 @@ for(i in 1:k){
   # For classification problem, linear.output=F
   nn <- neuralnet(f,data=training,hidden=hidden_neurons,linear.output=T)
   
-  # Prediction
+  # Prediction on testing dataset (out of sample)
   pr.nn <- compute(nn,testing[,-ncol(testing)])
   # Model results are scaled so need to scale them back to normal
-  pr.nn_ <- pr.nn$net.result*(max(playersSumm$TEAM_PTS)-min(playersSumm$TEAM_PTS))+min(playersSumm$TEAM_PTS)
-  test.r <- (testing$TEAM_PTS)*(max(playersSumm$TEAM_PTS)-min(playersSumm$TEAM_PTS))+min(playersSumm$TEAM_PTS)
-  
+  pr.nn_ <- pr.nn$net.result*(max(playersSumm$PS.G)-min(playersSumm$PS.G))+min(playersSumm$PS.G)
+  test.r <- (testing$PS.G)*(max(playersSumm$PS.G)-min(playersSumm$PS.G))+min(playersSumm$PS.G)
+  # out of sample error
   cv.error[i] <- sum((test.r - pr.nn_)^2)/nrow(testing)
+  
+  # Prediction on training dataset (in sample)
+  pr_tr.nn <- compute(nn,training[,-ncol(training)])
+  pr_tr.nn_ <- pr_tr.nn$net.result*(max(playersSumm$PS.G)-min(playersSumm$PS.G))+min(playersSumm$PS.G)
+  train.r <- (training$PS.G)*(max(playersSumm$PS.G)-min(playersSumm$PS.G))+min(playersSumm$PS.G)
+  # in sample error
+  cv_tr.error[i] <- sum((train.r - pr_tr.nn_)^2)/nrow(training)
   
 }
 
@@ -100,3 +107,5 @@ boxplot(cv.error,xlab='MSE CV',col='cyan',
         border='blue',names='CV error (MSE)',
         main='CV error (MSE) for NN',horizontal=TRUE)
 
+plot(pr.nn_, test.r)
+plot(pr_tr.nn_, train.r)
