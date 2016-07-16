@@ -23,6 +23,6 @@ team_statsNew <- team_stats %>%
 # same for players
 playersNew <- playersHist %>%
   filter(Season == max(as.character(Season))) %>%
-  mutate(Season = paste0(as.numeric(substr(Season,1,4))+1,"-",as.numeric(substr(Season,1,4))+2))
+  mutate(Season = as.factor(paste0(as.numeric(substr(Season,1,4))+1,"-",as.numeric(substr(Season,1,4))+2)))
 
 

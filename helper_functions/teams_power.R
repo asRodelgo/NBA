@@ -19,6 +19,7 @@
   # Prediction
   scaled <- dplyr::select(scaled, -team_season)
   pr.nn <- compute(nn,scaled)
+  #test_pr <- compute(nn,testing[,-ncol(testing)])
   # Model results are scaled so need to re-scale them back to normal
   pr.nn_ <- pr.nn$net.result*(scaleMaxMin["PTS","maxs"]-scaleMaxMin["PTS","mins"])+scaleMaxMin["PTS","mins"]
   pred_PTS <- as.numeric(pr.nn_)

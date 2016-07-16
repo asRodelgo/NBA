@@ -95,6 +95,7 @@ library(neuralnet) # neural network for regression
 # Find the best parameters for the NNet using CV
 .computeModel <- function(Off_or_Def) {
 
+  playersSumm <- .prepareModel(Off_or_Def)
   scaleMaxMin <- .getScaleLimits(Off_or_Def)
   # scale the data for easier convergence of backpropagation algorithm
   maxs <- scaleMaxMin$maxs 
