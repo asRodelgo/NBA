@@ -1,6 +1,6 @@
 # Season scores --------
-
-calculateScore <- function(team_home,team_away){
+# compute score between any 2 teams during regular season
+.calculateScore <- function(team_home,team_away){
   
   # Single game simulation ----------------
   #team_home <- "PHI"
@@ -27,11 +27,11 @@ calculateScore <- function(team_home,team_away){
   return(c(pointsH,pointsA,numOT))
 }
 
-computeScores <- function(){
+.computeScores <- function(){
   
   scores <- data.frame()
   for (i in 1:nrow(season)){
-    thisGame <- calculateScore(season[i,2],season[i,3])
+    thisGame <- .calculateScore(season[i,2],season[i,3])
     scores[i,1] <- thisGame[1]
     scores[i,2] <- thisGame[2]
     scores[i,3] <- thisGame[3]
@@ -40,7 +40,7 @@ computeScores <- function(){
 }
 
 # compute all scores for regular season  
-regSeasonScores <- computeScores()
+regSeasonScores <- .computeScores()
 
 season <- bind_cols(season,regSeasonScores)
 names(season) <- c("day","home_team","away_team","home_points","away_points","numOT")

@@ -4,8 +4,10 @@
 # compute avg PTS as offensive power and PTSA as defensive power
 .computePower <- function(Off_or_Def){
   
-  # updated data for rosters for this season
-  playersSumm <- .prepareModelPrediction()
+  # specifically, this function will prepare playersNew dataset by default
+  # It is understood, playersNew is the updated rosters at the beginning of a new season
+  playersSumm <- .prepareModelPrediction() 
+  
   # scale the variables the same way the training dataset was scaled so the nnet makes sense
   scaleMaxMin <- .getScaleLimits(Off_or_Def)
   maxs <- scaleMaxMin$maxs[-nrow(scaleMaxMin)] 
@@ -13,9 +15,15 @@
   team_season <- playersSumm[,ncol(playersSumm)]
   scaled <- as.data.frame(scale(playersSumm[,-ncol(playersSumm)], center = mins, scale = maxs - mins))
   scaled <- cbind(team_season,scaled)
-  # NNet model # TO DO: store this model. No need to recalculate until new data is available
-  # 2 models, Offense and Defense
-  nn <- .selectedModel(Off_or_Def) 
+  
+  # NNet model pre-calculated (2 models, Offense and Defense)
+  #nn <- .selectedModel(Off_or_Def) 
+  if (Off_or_Def == "PTS"){
+    nn <- nn_Offense
+  } else {
+    nn <- nn_Defense  
+  }
+  
   # Prediction
   scaled <- dplyr::select(scaled, -team_season)
   pr.nn <- compute(nn,scaled)
@@ -30,11 +38,21 @@
   return(pr_pts)
 }
 
-Def <- .computePower("PTSA")
-Off <- .computePower("PTS")
-team_power <- merge(Off,Def,by="team_season")
-team_power <- mutate(team_power, teamCode = substr(team_season,1,3))
-Off_act <- filter(team_stats, Season == "2015-2016")[,c("teamCode","PTS")]
-Def_act <- filter(team_stats, Season == "2015-2016")[,c("teamCode","PTSA")]
-team_power_act <- merge(Off_act,Def_act,by="teamCode")
-compare_pred <- merge(team_power,team_power_act,by="teamCode")
+# Put together teams and predicted powers as input to a new regular season
+.teamsPredictedPower <- function() {
+  
+  Def <- .computePower("PTSA")
+  Off <- .computePower("PTS")
+  team_power <- merge(Off,Def,by="team_season")
+  
+  team_power <- team_power %>%
+    mutate(teamCode = substr(team_season,1,3),
+                       Season = substr(team_season, 5,13))
+  
+  team_power <- as.data.frame(team_power)
+  names(team_power) <- c("team_season","TEAM_PTS","TEAM_PTSAG","TeamCode","Season")
+  return(team_power)
+  
+}
+
+team_power <- .teamsPredictedPower()

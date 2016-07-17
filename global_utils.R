@@ -2,6 +2,7 @@
 library(dplyr)
 library(tsne)
 library(rvest)
+library(rlist) # save and load list objects
 
 source("data/read_data.R")
 source("helper_functions/teamStats.R")
