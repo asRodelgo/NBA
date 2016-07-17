@@ -6,5 +6,13 @@ library(rlist) # save and load list objects
 
 source("data/read_data.R")
 source("helper_functions/teamStats.R")
-global_mean <- mean(teams$TEAM_PTS)
-sigma <- 10 # constant std dev for all teams
+
+global_mean <- mean(team_stats$PTS)
+sigma <- 10 # constant std dev for all teams. ADJUST LATER ON!!
+
+# Predicted team powers for the upcoming season -------------------------
+teamsPredicted <- .teamsPredictedPower() # load teams powers (means for the Normal distributions)
+# Season schedule for the upcoming season -------------------------------
+seasonSchedule <- .seasonSchedule()
+
+

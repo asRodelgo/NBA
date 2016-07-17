@@ -51,8 +51,12 @@
   
   team_power <- as.data.frame(team_power)
   names(team_power) <- c("team_season","TEAM_PTS","TEAM_PTSAG","TeamCode","Season")
+  
+  team_power$TEAM_PTS <- as.numeric(as.character(team_power$TEAM_PTS))
+  team_power$TEAM_PTSAG <- as.numeric(as.character(team_power$TEAM_PTSAG))
+  
   return(team_power)
   
 }
 
-team_power <- .teamsPredictedPower()
+# team_power <- .teamsPredictedPower()
