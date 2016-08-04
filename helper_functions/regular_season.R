@@ -56,8 +56,11 @@
   # compute standings by day for regular season
   standings <- list() # standings is a list in which each day of competition is a data.frame
   standings_aux <- data.frame(team = conferences$Team, teamCode = conferences$TeamCode,
-                               conference = conferences$Conference, win = 0, lose = 0,
-                               win_home = 0, win_conf = 0, streak = 0)
+                              conference = conferences$Conference, win = 0, lose = 0,
+                              win_home = 0, lose_home = 0, win_home_perc = 0, 
+                              win_conf = 0, lose_conf = 0, win_conf_perc = 0, 
+                              tot_pts = 0, avg_pts = 0, tot_pts_ag = 0, avg_pts_ag = 0, 
+                              streak = 0)
   for (i in 1:tail(season,1)$day){
     
     thisDay <- filter(season,day == i)
@@ -70,17 +73,34 @@
         HT$win <- HT$win + 1
         AT$lose <- AT$lose + 1
         HT$win_home <- HT$win_home + 1
+        HT$win_home_perc <- round(HT$win_home/(HT$win_home + HT$lose_home),2)
         HT$win_conf <- ifelse(HT$conference==AT$conference,HT$win_conf + 1,HT$win_conf)
+        AT$lose_conf <- ifelse(HT$conference==AT$conference,AT$lose_conf + 1,AT$lose_conf)
+        HT$win_conf_perc <- round(HT$win_conf/(HT$win_conf + HT$lose_conf),2)
         HT$streak <- ifelse(HT$streak <= 0,1,HT$streak + 1)
         AT$streak <- ifelse(AT$streak >= 0,-1,AT$streak - 1)
         
       } else { # away team wins
         AT$win <- AT$win + 1
         HT$lose <- HT$lose + 1
+        HT$lose_home <- HT$lose_home + 1
+        AT$win_home_perc <- round(AT$win_home/(AT$win_home + AT$lose_home),2)
         AT$win_conf <- ifelse(AT$conference==HT$conference,AT$win_conf + 1,AT$win_conf)
+        HT$lose_conf <- ifelse(HT$conference==AT$conference,HT$lose_conf + 1,HT$lose_conf)
+        AT$win_conf_perc <- round(AT$win_conf/(AT$win_conf + AT$lose_conf),2)
         AT$streak <- ifelse(AT$streak <= 0,1,AT$streak + 1)
         HT$streak <- ifelse(HT$streak >= 0,-1,HT$streak - 1)
       }
+      # points don't depend on outcome of game
+      HT$tot_pts <- HT$tot_pts + thisDay$home_points[j]
+      HT$tot_pts_ag <- HT$tot_pts_ag + thisDay$away_points[j]
+      HT$avg_pts <- round(HT$tot_pts/(HT$win + HT$lose),1)
+      HT$avg_pts_ag <- round(HT$tot_pts_ag/(HT$win + HT$lose),1)
+      AT$tot_pts <- AT$tot_pts + thisDay$away_points[j]
+      AT$tot_pts_ag <- AT$tot_pts_ag + thisDay$home_points[j]
+      AT$avg_pts <- round(AT$tot_pts/(AT$win + AT$lose),1)
+      AT$avg_pts_ag <- round(AT$tot_pts_ag/(AT$win + AT$lose),1)
+      
       standings_aux[standings_aux$teamCode==thisDay$home_team[j],] <- HT
       standings_aux[standings_aux$teamCode==thisDay$away_team[j],] <- AT
     }
