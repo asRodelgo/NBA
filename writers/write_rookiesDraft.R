@@ -1,6 +1,7 @@
 # Read draft players: http://www.basketball-reference.com/draft/NBA_2016.html
 
 writeDraftedRookies <- function(){
+  
   rookies <- data.frame()
   lastDraft <- as.numeric(substr(max(as.character(playersHist$Season)),1,4)) + 1
   
@@ -20,6 +21,7 @@ writeDraftedRookies <- function(){
   # Correct spelling errors 2016 draft
   rookies[grepl("Chris",rookies$Player),]$Player <- "Marquese Chriss"
   rookies[grepl("Dami",rookies$Player),]$Player <- "Damian Jones"
+  rookies[grepl("Zimmerm",rookies$Player),]$Player <- "Stephen Zimmerman Jr."
   
   write.csv(rookies, "data/rookies.csv",row.names = FALSE)
 
@@ -60,7 +62,35 @@ for (page in 1:19){ # read a total of 2000 college players
 
 # Merge drafted players with college players
 rookies <- read.csv("data/rookies.csv")
-
 rookieStats <- merge(rookies, collegePlayers, by = "Player",all.x=TRUE)
+
+# Find stats from european players drafted
+europePlayers <- data.frame()
+lastDraft <- as.numeric(substr(max(as.character(playersHist$Season)),1,4)) + 1
+
+for (i in 1:nrow(rookieStats)){
+  
+  if (rookieStats$College[i]==""){
+    name_edited <- tolower(rookieStats$Player[i])
+    name_edited <- gsub(" ","-",name_edited)
+    url <- paste0("http://www.basketball-reference.com/euro/players/",name_edited,"-1.html")
+    thisEurope <- url %>%
+      read_html() %>%
+      html_nodes(xpath='//*[@id="totals"]') %>%
+      html_table(fill = TRUE)
+    if (length(thisEurope)>0){
+      rookieStats$College[i] <- "Europe"
+      thisEurope <- thisEurope[[1]]
+    
+      
+    } else{
+      rookieStats$College[i] <- "International"
+    }
+  }
+  
+  
+}
+
+
 
 
