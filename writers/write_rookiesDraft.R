@@ -61,7 +61,7 @@ for (page in 1:19){ # read a total of 2000 college players
 }
 
 # Merge drafted players with college players
-rookies <- read.csv("data/rookies.csv")
+rookies <- read.csv("data/rookies.csv", stringsAsFactors = FALSE)
 rookieStats <- merge(rookies, collegePlayers, by = "Player",all.x=TRUE)
 
 # Find stats from european players drafted
@@ -71,7 +71,8 @@ lastDraft <- as.numeric(substr(max(as.character(playersHist$Season)),1,4)) + 1
 for (i in 1:nrow(rookieStats)){
   
   if (rookieStats$College[i]==""){
-    name_edited <- tolower(rookieStats$Player[i])
+    thisPlayer <- as.character(rookieStats$Player[i])
+    name_edited <- tolower(thisPlayer)
     name_edited <- gsub(" ","-",name_edited)
     url <- paste0("http://www.basketball-reference.com/euro/players/",name_edited,"-1.html")
     thisEurope <- url %>%
@@ -80,16 +81,17 @@ for (i in 1:nrow(rookieStats)){
       html_table(fill = TRUE)
     if (length(thisEurope)>0){
       rookieStats$College[i] <- "Europe"
-      thisEurope <- thisEurope[[1]]
-    
-      
+      thisEurope <- thisEurope[[1]] %>%
+        filter(G == max(G)) %>%
+        mutate(Player = thisPlayer)
+      europePlayers <- bind_rows(europePlayers,thisEurope)
     } else{
       rookieStats$College[i] <- "International"
     }
   }
   
-  
 }
+# remove duplicates in europePlayers and merge with rookieStats
 
 
 
