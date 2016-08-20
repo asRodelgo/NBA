@@ -86,9 +86,19 @@ write_HistCollegeStats <- function(col_G,num_pages){
 }
 
 # Merge drafted players with college players
-rookies <- read.csv("data/rookies.csv", stringsAsFactors = FALSE)
-collegePlayers <- read.csv("data/collegePlayers.csv", stringsAsFactors = FALSE)
-rookieStats <- merge(rookies, collegePlayers, by = "Player",all.x=TRUE)
+write_RookiesStatsHist <- function(){
+  
+  rookiesHist <- read.csv("data/rookiesHist.csv", stringsAsFactors = FALSE)
+  collegePlayersHist <- read.csv("data/collegePlayersHist.csv", stringsAsFactors = FALSE)
+  
+  rookieStatsHist <- merge(rookiesHist, collegePlayersHist, by = c("Player","Season"))
+  
+  write.csv(rookieStatsHist, "data/rookiStatsHist.csv", row.names = FALSE)
+}
+
+
+
+
 
 # Find stats from european players drafted
 europePlayers <- data.frame()
