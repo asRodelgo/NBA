@@ -11,44 +11,36 @@
 # Ex: To be able to assign predicted characteristics to a rookie player, I will do a
 # similar approach. See functions related to rookies and draft
 #
-.tSNE_prepare <- function(playerAge){
-  # Players that changed teams in the season have a column Tm == "TOT" with their total stats
-  # and because I don't care about the team, this should be enough filter
-  # playerAge <- 34
+.tSNE_prepareRookies <- function(){
   # num_iter <- 300
   # max_num_neighbors <- 20
-  # playerName <- "Pau Gasol"
-  data_tsne <- playersHist %>%
+  # playerName <- "Stephen Curry"
+  rookieStats <- read.csv("data/rookieStats.csv", stringsAsFactors = FALSE)
+  rookieStats <- rookieStats[,1:29]
+  rookieStats <- filter(rookieStats, !(College %in% c("International", "Europe")))
+  
+  rookieStatsHist <- read.csv("data/rookieStatsHist.csv", stringsAsFactors = FALSE)
+  # transform rookieStatsHist stats to relative numbers
+  rookieStatsHist <- rookieStatsHist %>%
     group_by(Player,Season) %>%
-    mutate(keep = ifelse(n() > 1, 1, 0), effMin = MP/3936, effFG = FG/(3936*effMin),
-           effFGA = FGA/(3936*effMin),eff3PM = X3P/(3936*effMin),eff3PA = X3PA/(3936*effMin),
-           eff2PM = X2P/(3936*effMin),eff2PA = X2PA/(3936*effMin),
-           effFTM = FT/(3936*effMin),effFTA = FTA/(3936*effMin),
-           effORB = ORB/(3936*effMin),effDRB = DRB/(3936*effMin),
-           effTRB = TRB/(3936*effMin),effAST = AST/(3936*effMin),
-           effSTL = STL/(3936*effMin),effBLK = BLK/(3936*effMin),
-           effTOV = TOV/(3936*effMin),effPF = PF/(3936*effMin),
-           effPTS = PTS/(3936*effMin)) %>%
-    filter(keep == 0 | Tm == "TOT") %>%
-    filter(effMin >= .15) %>% # Played at least 15% of total available minutes
-    select(Player,Pos,Season,Age,FGPer = FG.,FG3Per = X3P., FG2Per = X2P., effFGPer = eFG.,
-           FTPer = FT., starts_with("eff"),
-           -Tm,-keep,-G,-GS,-MP,FG,-FGA,-X3P,-X3PA,-X2P,-X2PA,-FG,-FTA,-ORB,-DRB,-TRB,-AST,
-           -BLK,-TOV,-PF,-FT,-STL,-PTS)
+    mutate(MP = MP/G, FG = FG/G,
+           FGA = FGA/G,X3P = X3P/G,X3PA = X3PA/G,
+           X2P = X2P/G,X2PA = X2PA/G,
+           FT = FT/G,FTA = FTA/G,
+           ORB = ORB/G,DRB = DRB/G,
+           TRB = TRB/G,AST = AST/G,
+           STL = STL/G,BLK = BLK/G,
+           TOV = TOV/G,PF = PF/G,
+           PTS = PTS/G)
+  # all together, ready for tsne
+  collegeHist <- bind_rows(rookieStats,rookieStatsHist)
   
-  # Filter by selected age 
-  data_tsne <- data_tsne %>%
-    filter(Age == playerAge) %>%
-    select(-Age) # redundant column, same value (playerAge) for all observations
-  
-  # some players can be the same age during 2 seasons. Pick the one with the most minutes played
-  data_tsne <- data_tsne %>%
-    group_by(Player) %>%
-    filter(effMin >= max(effMin)-.0001)
+  data_tsne <- collegeHist %>%
+    dplyr::select(Player,Pos,Season,Pick,starts_with("eff"))
   
   # t-sne doesn't like NAs. Impute by assigning 0. If NA means no shot attempted, ie, 
   # either the player didn't play enough time or is really bad at this particular type of shot.
-  for (i in 4:(ncol(data_tsne)-1)){
+  for (i in 4:ncol(data_tsne)){
     data_tsne[is.na(data_tsne[,i]),i] <- 0
   }
   
@@ -57,9 +49,9 @@
   
 }
 
-.tSNE_compute <- function(num_iter, max_num_neighbors, playerAge){
+.tSNE_computeRookies <- function(num_iter, max_num_neighbors){
   
-  data_tsne <- .tSNE_prepare(playerAge)
+  data_tsne <- .tSNE_prepareRookies()
   # calculate tsne-points Dimensionality reduction to 2-D
   if (nrow(data_tsne)>0){
     set.seed(456) # reproducitility
@@ -70,14 +62,15 @@
   } else {
     tsne_points <- c()
   }
+  
   return(tsne_points) 
   
 }
 
 # compute colors for regions
-.getColors <- function(num_iter, max_num_neighbors,playerAge,colVar){
-  
-  data_tsne <- .tSNE_prepare(playerAge)
+.getColorsRookies <- function(num_iter, max_num_neighbors,colVar){
+  #colVar <- "Pos"
+  data_tsne <- .tSNE_prepareRookies()
   if (colVar == "Season"){
     colors <- rainbow(length(unique(data_tsne$Season)))
     names(colors) <- unique(data_tsne$Season)
@@ -89,14 +82,14 @@
 }
 
 # tsne chart ---------------------------------------------------------
-.tSNE_plot <- function(playerName, num_iter, max_num_neighbors, playerAge, colVar){
+.tSNE_plotRookies <- function(playerName, num_iter, max_num_neighbors, colVar){
   
   #tsne_points <- .tSNE_compute(num_iter, max_num_neighbors, playerAge)
-  tsne_points <- tsneBlock[[playerAge]]
+  tsne_points <- read.csv("data/tsne_pointsRookies.csv",stringsAsFactors = FALSE)
   if (length(tsne_points)>0){
     par(mar=c(0,0,0,0))
     plot(tsne_points,t='n', axes=FALSE, frame.plot = FALSE, xlab = "",ylab = ""); 
-    graphics::text(tsne_points,labels=as.character(data_tsne$Player), col=.getColors(num_iter, max_num_neighbors,playerAge,colVar))
+    graphics::text(tsne_points,labels=as.character(data_tsne$Player), col=.getColorsRookies(num_iter, max_num_neighbors,colVar))
   } else {
     plot(c(1,1),type="n", frame.plot = FALSE, axes=FALSE, ann=FALSE)
     graphics::text(1.5, 1,"Not enough data", col="red", cex=2)
@@ -105,11 +98,11 @@
 }
 
 # tsne dist ---------------------------------------------------------
-.tSNE_dist <- function(playerName, num_iter, max_num_neighbors, playerAge){
+.tSNE_distRookies <- function(playerName, num_iter, max_num_neighbors){
   
-  data_tsne <- .tSNE_prepare(playerAge)
+  data_tsne <- .tSNE_prepareRookies()
   #tsne_points <- .tSNE_compute(num_iter, max_num_neighbors, playerAge)
-  tsne_points <- tsneBlock[[playerAge]]
+  tsne_points <- read.csv("data/tsne_pointsRookies.csv",stringsAsFactors = FALSE)
   if (length(tsne_points)>0 & nrow(filter(data_tsne, Player == playerName))>0){
     # calculate the euclidean distance between the selected player and the rest
     dist_mat <- cbind(tsne_points,as.character(data_tsne$Player))
@@ -129,13 +122,13 @@
   return(dist_mat)
 } 
 
-#similarPlayers <- .tSNE_dist("Russell Westbrook",300,20,27)
+#similarPlayers <- .tSNE_distRookies("Russell Westbrook",300,20)
 #head(similarPlayers,20)
 
 # return similar players based on last 5 years performances
 # For retired players this will return similar players according to their last 5 seasons
 # as NBA player. Unless pickAge is explicitly entered
-.similarPlayers <- function(playerName,numberPlayersToCompare, pickAge = 0){
+.similarPlayersRookies <- function(playerName,numberPlayersToCompare, pickAge = 0){
   
   thisAgeFrame <- filter(playersHist, Player == playerName)
   
@@ -189,7 +182,7 @@
 }
 
 .predictPlayer <- function(playerName, numberPlayersToCompare,numberTeamsForVariation){
-
+  
   # Top 10 more similar to selected player for past 5 years
   top10_similar <- head(.similarPlayers(playerName,numberPlayersToCompare),numberTeamsForVariation)$Player
   thisAgeFrame <- filter(playersHist, Player == playerName)
@@ -234,6 +227,6 @@
   predAgeData$Age <- thisAge + 1
   
   return(predAgeData)
-
+  
 }
 

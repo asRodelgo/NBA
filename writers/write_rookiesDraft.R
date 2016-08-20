@@ -106,6 +106,7 @@ write_RookieStats <- function(){
     }
     
   }
+  rookieStats$Season <- lastDraft
   # remove duplicates in europePlayers and merge with rookieStats
   europePlayers <- distinct(europePlayers, G, Player, .keep_all=TRUE)
   europePlayers <- dplyr::select(europePlayers, Player, everything(), -`League(s)`)

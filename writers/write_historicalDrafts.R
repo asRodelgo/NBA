@@ -93,7 +93,7 @@ write_RookiesStatsHist <- function(){
   
   rookieStatsHist <- merge(rookiesHist, collegePlayersHist, by = c("Player","Season"))
   
-  write.csv(rookieStatsHist, "data/rookiStatsHist.csv", row.names = FALSE)
+  write.csv(rookieStatsHist, "data/rookieStatsHist.csv", row.names = FALSE)
 }
 
 
