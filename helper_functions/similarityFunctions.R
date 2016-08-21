@@ -11,6 +11,48 @@
 # Ex: To be able to assign predicted characteristics to a rookie player, I will do a
 # similar approach. See functions related to rookies and draft
 #
+
+.tSNE_prepareSelected <- function(inputPlayers){
+  # Players that changed teams in the season have a column Tm == "TOT" with their total stats
+  # and because I don't care about the team, this should be enough filter
+  # playerAge <- 34
+  # num_iter <- 300
+  # max_num_neighbors <- 20
+  # playerName <- "Pau Gasol"
+  data_prepared <- inputPlayers %>%
+    group_by(Player) %>%
+    mutate(keep = ifelse(n() > 1, 1, 0), effMin = MP/3936, effFG = FG/(3936*effMin),
+           effFGA = FGA/(3936*effMin),eff3PM = X3P/(3936*effMin),eff3PA = X3PA/(3936*effMin),
+           eff2PM = X2P/(3936*effMin),eff2PA = X2PA/(3936*effMin),
+           effFTM = FT/(3936*effMin),effFTA = FTA/(3936*effMin),
+           effORB = ORB/(3936*effMin),effDRB = DRB/(3936*effMin),
+           effTRB = TRB/(3936*effMin),effAST = AST/(3936*effMin),
+           effSTL = STL/(3936*effMin),effBLK = BLK/(3936*effMin),
+           effTOV = TOV/(3936*effMin),effPF = PF/(3936*effMin),
+           effPTS = PTS/(3936*effMin)) %>%
+    filter(keep == 0 | Tm == "TOT") %>%
+    filter(effMin >= .15) %>% # Played at least 15% of total available minutes
+    dplyr::select(Player,Pos,Season,Age,FGPer = FG.,FG3Per = X3P., FG2Per = X2P., effFGPer = eFG.,
+           FTPer = FT., starts_with("eff"),
+           -Tm,-keep,-G,-GS,-MP,FG,-FGA,-X3P,-X3PA,-X2P,-X2PA,-FG,-FTA,-ORB,-DRB,-TRB,-AST,
+           -BLK,-TOV,-PF,-FT,-STL,-PTS)
+  
+  # some players can be the same age during 2 seasons. Pick the one with the most minutes played
+  data_prepared <- data_prepared %>%
+    group_by(Player) %>%
+    filter(effMin >= max(effMin)-.0001)
+  
+  # t-sne doesn't like NAs. Impute by assigning 0. If NA means no shot attempted, ie, 
+  # either the player didn't play enough time or is really bad at this particular type of shot.
+  for (i in 4:(ncol(data_prepared)-1)){
+    data_prepared[is.na(data_prepared[,i]),i] <- 0
+  }
+  
+  data_prepared <- as.data.frame(data_prepared)
+  return(data_prepared)
+  
+}
+
 .tSNE_prepare <- function(playerAge){
   # Players that changed teams in the season have a column Tm == "TOT" with their total stats
   # and because I don't care about the team, this should be enough filter

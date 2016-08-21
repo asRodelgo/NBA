@@ -36,15 +36,26 @@
   collegeHist <- bind_rows(rookieStats,rookieStatsHist)
   
   data_tsne <- collegeHist %>%
+    group_by(Player,Season) %>%
+    mutate(effFG = FG,
+           effFGA = FGA,eff3PM = X3P,eff3PA = X3PA,
+           eff2PM = X2P,eff2PA = X2PA,
+           effFTM = FT,effFTA = FTA,
+           effORB = ORB,effDRB = DRB,
+           effTRB = TRB,effAST = AST,
+           effSTL = STL,effBLK = BLK,
+           effTOV = TOV,effPF = PF,
+           effPTS = PTS) %>%
     dplyr::select(Player,Pos,Season,Pick,starts_with("eff"))
   
-  # t-sne doesn't like NAs. Impute by assigning 0. If NA means no shot attempted, ie, 
+  # t-sne doesn't like NAs. Impute by assigning the average of the variable. 
+  # If NA means no shot attempted, ie, 
   # either the player didn't play enough time or is really bad at this particular type of shot.
+  data_tsne <- as.data.frame(data_tsne)
   for (i in 4:ncol(data_tsne)){
-    data_tsne[is.na(data_tsne[,i]),i] <- 0
+    data_tsne[is.na(data_tsne[,i]),i] <- mean(data_tsne[,i],na.rm=TRUE)
   }
   
-  data_tsne <- as.data.frame(data_tsne)
   return(data_tsne)
   
 }
@@ -101,11 +112,16 @@
 .tSNE_distRookies <- function(playerName, num_iter, max_num_neighbors){
   
   data_tsne <- .tSNE_prepareRookies()
+  lastDraft <- max(data_tsne$Season)
+  
   #tsne_points <- .tSNE_compute(num_iter, max_num_neighbors, playerAge)
   tsne_points <- read.csv("data/tsne_pointsRookies.csv",stringsAsFactors = FALSE)
   if (length(tsne_points)>0 & nrow(filter(data_tsne, Player == playerName))>0){
     # calculate the euclidean distance between the selected player and the rest
-    dist_mat <- cbind(tsne_points,as.character(data_tsne$Player))
+    dist_mat <- cbind(tsne_points,as.character(data_tsne$Player),data_tsne$Season)
+    if (filter(data_tsne, Player == playerName)$Season == lastDraft){
+      dist_mat <- dist_mat[!(data_tsne$Season==lastDraft & !(data_tsne$Player==playerName)),]
+    }
     dist_mat <- as.data.frame(dist_mat, stringsAsFactors=FALSE)
     dist_mat$V1 <- as.numeric(dist_mat$V1)
     dist_mat$V2 <- as.numeric(dist_mat$V2)
@@ -122,8 +138,21 @@
   return(dist_mat)
 } 
 
-#similarPlayers <- .tSNE_distRookies("Russell Westbrook",300,20)
-#head(similarPlayers,20)
+similarPlayers <- .tSNE_distRookies("Brandon Ingram",300,20)
+
+theirStats <- filter(data_tsne, Player %in% head(similarPlayers[-1,1],5))
+
+rookieNBAStats <- playersHist %>%
+  group_by(Player) %>%
+  filter(Season == min(as.character(Season)))
+rookieNBAStats <- as.data.frame(rookieNBAStats)
+thisSelection <- filter(rookieNBAStats, Player %in% theirStats$Player)
+thisSelectionPrep <- .tSNE_prepareSelected(thisSelection)
+this_numRows <- nrow(thisSelectionPrep)
+for (i in 4:ncol(thisSelectionPrep)){
+  thisSelectionPrep[this_numRows+1,i] <- mean(thisSelectionPrep[1:this_numRows,i])
+}
+
 
 # return similar players based on last 5 years performances
 # For retired players this will return similar players according to their last 5 seasons
