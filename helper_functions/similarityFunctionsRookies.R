@@ -109,7 +109,7 @@
 }
 
 # tsne dist ---------------------------------------------------------
-.tSNE_distRookies <- function(playerName, num_iter, max_num_neighbors){
+.tSNE_distRookies <- function(playerName){
   
   data_tsne <- .tSNE_prepareRookies()
   lastDraft <- max(data_tsne$Season)
@@ -138,21 +138,37 @@
   return(dist_mat)
 } 
 
-similarPlayers <- .tSNE_distRookies("Brandon Ingram",300,20)
-
-theirStats <- filter(data_tsne, Player %in% head(similarPlayers[-1,1],5))
-
-rookieNBAStats <- playersHist %>%
-  group_by(Player) %>%
-  filter(Season == min(as.character(Season)))
-rookieNBAStats <- as.data.frame(rookieNBAStats)
-thisSelection <- filter(rookieNBAStats, Player %in% theirStats$Player)
-thisSelectionPrep <- .tSNE_prepareSelected(thisSelection)
-this_numRows <- nrow(thisSelectionPrep)
-for (i in 4:ncol(thisSelectionPrep)){
-  thisSelectionPrep[this_numRows+1,i] <- mean(thisSelectionPrep[1:this_numRows,i])
+.predictPlayerCollegeRookie <- function(playerName){
+  
+  data_tsne <- .tSNE_prepareRookies()
+  similarPlayers <- .tSNE_distRookies(playerName)
+  
+  theirStats <- filter(data_tsne, Player %in% head(similarPlayers[-1,1],5))
+  
+  rookieNBAStats <- playersHist %>%
+    group_by(Player) %>%
+    filter(Season == min(as.character(Season)))
+  rookieNBAStats <- as.data.frame(rookieNBAStats)
+  thisSelection <- filter(rookieNBAStats, Player %in% theirStats$Player)
+  thisSelectionPrep <- .tSNE_prepareSelected(thisSelection)
+  this_numRows <- nrow(thisSelectionPrep)
+  for (i in 4:ncol(thisSelectionPrep)){
+    thisSelectionPrep[this_numRows+1,i] <- mean(thisSelectionPrep[1:this_numRows,i])
+  }
+  thisPlayer <- filter(data_tsne, Player == playerName)
+  thisSelectionPrep$Player <- as.character(thisSelectionPrep$Player)
+  thisSelectionPrep$Pos <- as.character(thisSelectionPrep$Pos)
+  thisSelectionPrep$Season <- as.character(thisSelectionPrep$Season)
+  thisSelectionPrep$Player[nrow(thisSelectionPrep)] <- thisPlayer$Player
+  thisSelectionPrep$Pos[nrow(thisSelectionPrep)] <- thisPlayer$Pos
+  thisSelectionPrep$Season[nrow(thisSelectionPrep)] <- as.character(playersNew$Season[1])
+  
+  playerPredicted <- filter(thisSelectionPrep, Player == playerName)
+  
+  return(playerPredicted)
 }
 
+#.predictPlayerCollegeRookie("Buddy Hield")
 
 # return similar players based on last 5 years performances
 # For retired players this will return similar players according to their last 5 seasons
