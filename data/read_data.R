@@ -2,7 +2,8 @@
 
 # Read players stats -------------------------------------------
 #players <- read.csv("data/nba_players.csv") # from nba.com
-playersHist <- read.csv("data/nba_players_allSeasons.csv")
+playersHist <- read.csv("data/nba_players_allSeasons.csv", stringsAsFactors = FALSE)
+playersHist <- mutate(playersHist, Player = gsub("*","",Player, fixed=TRUE))
 
 # Read pre-calculated tSNE coordinates per Age -----------------
 tsneBlock <- list()

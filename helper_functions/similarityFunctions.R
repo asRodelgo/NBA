@@ -73,7 +73,7 @@
            effPTS = PTS/(3936*effMin)) %>%
     filter(keep == 0 | Tm == "TOT") %>%
     filter(effMin >= .15) %>% # Played at least 15% of total available minutes
-    select(Player,Pos,Season,Age,FGPer = FG.,FG3Per = X3P., FG2Per = X2P., effFGPer = eFG.,
+    dplyr::select(Player,Pos,Season,Age,FGPer = FG.,FG3Per = X3P., FG2Per = X2P., effFGPer = eFG.,
            FTPer = FT., starts_with("eff"),
            -Tm,-keep,-G,-GS,-MP,FG,-FGA,-X3P,-X3PA,-X2P,-X2PA,-FG,-FTA,-ORB,-DRB,-TRB,-AST,
            -BLK,-TOV,-PF,-FT,-STL,-PTS)
@@ -81,7 +81,7 @@
   # Filter by selected age 
   data_tsne <- data_tsne %>%
     filter(Age == playerAge) %>%
-    select(-Age) # redundant column, same value (playerAge) for all observations
+    dplyr::select(-Age) # redundant column, same value (playerAge) for all observations
   
   # some players can be the same age during 2 seasons. Pick the one with the most minutes played
   data_tsne <- data_tsne %>%
