@@ -138,6 +138,7 @@
   return(dist_mat)
 } 
 
+# return predicted stats rookie season for any drafted player from college
 .predictPlayerCollegeRookie <- function(playerName){
   
   data_tsne <- .tSNE_prepareRookies()
@@ -169,3 +170,32 @@
 }
 
 #.predictPlayerCollegeRookie("Damian Jones")
+
+# Non college players predicted stats
+
+# Remove from playersHist those who played college and average out their stats by position.
+collegePlayersHist <- read.csv("data/collegePlayersHist.csv",stringsAsFactors = FALSE)
+collegePlayersHist <- collegePlayersHist %>%
+  group_by(Player) %>%
+  filter(Season == max(Season))
+onlyCollegeRookies <- dplyr::select(collegePlayersHist,Player)
+onlyCollegeRookies <- onlyCollegeRookies$Player
+
+nonCollegeRookies <- playersHist %>%
+  filter(!(Player %in% onlyCollegeRookies)) %>%
+  group_by(Player) %>%
+  filter(Season == min(Season)) %>%
+  distinct(Player, .keep_all=TRUE)
+  
+# Calculate average stats for nonCollegeRookies on their first NBA season by position.
+# This will provide players without much statistical background in NBA or College with 
+# some prior stats. 
+# To consider also whether I should include the players' age as a factor
+
+nonCollegeRookies_Stats <- nonCollegeRookies %>%
+  filter(Season >= "1994-1995") %>%
+  group_by(Pos) %>%
+  summarise_at(c(5:(ncol(nonCollegeRookies)-1)),funs(mean(.,na.rm=TRUE)))
+
+
+
