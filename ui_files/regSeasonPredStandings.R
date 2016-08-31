@@ -12,11 +12,11 @@ fluidPage(
 #                          }")), # adjust tooltips in datatables
          column(6,
            h4("Western Conference", style="color:#3399ff"),   
-           dataTableOutput('westPredStandings'),br()
+           DT::dataTableOutput('westPredStandings'),br()
          ),
          column(6,
            h4("Eastern Conference", style="color:#3399ff"),   
-           dataTableOutput('eastPredStandings'),br()
+           DT::dataTableOutput('eastPredStandings'),br()
          )
   )
 )
