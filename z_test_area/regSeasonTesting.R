@@ -3,7 +3,7 @@ regSeasonOutcome <- .standings()
 standings <- regSeasonOutcome[[1]]
 scores <- regSeasonOutcome[[2]]
 
-x <- 370
+x <- 370 #length(standings)
 teamW <- "GSW"
 teamE <- "CLE"
 arrange(filter(dplyr::select(standings[[x]], team,conference,win,lose,win_home_perc,win_conf_perc,

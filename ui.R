@@ -1,30 +1,29 @@
-
-# This is the user-interface definition of a Shiny web application.
-# You can find out more about building applications with Shiny here:
+# -------------------------------------
+# UI for the NBA simulation app
 #
-# http://shiny.rstudio.com
-#
+# By: alberto.sanchez.rodelgo@gmail.com
+# -------------------------------------
 
-library(shiny)
+library(shinythemes)
+library(shinyBS)
+# use javascript
+library(shinyjs)
+library(V8)
+# load functions and global data
+source("global_utils.R", local = TRUE)
 
-shinyUI(fluidPage(
-
-  # Application title
-  titlePanel("Old Faithful Geyser Data"),
-
-  # Sidebar with a slider input for number of bins
-  sidebarLayout(
-    sidebarPanel(
-      sliderInput("bins",
-                  "Number of bins:",
-                  min = 1,
-                  max = 50,
-                  value = 30)
-    ),
-
-    # Show a plot of the generated distribution
-    mainPanel(
-      plotOutput("distPlot")
+tagList(
+  shinyjs::useShinyjs(),
+  #includeCSS("css/shinytcmn.css"),
+  
+  navbarPage(#tcmn_logo(), id = "tcmn-logo", 
+    title = NULL,
+    windowTitle = "ShinyNBA", collapsible = TRUE, 
+    inverse = FALSE, position = "fixed-top",
+    theme = shinythemes::shinytheme("flatly"),
+    tabPanel(title = "Prediction",
+             h3("Here goes prediction"),
+             source(file.path("ui_files", "regSeasonPredStandings.R"), local = TRUE)$value
     )
   )
-))
+)
