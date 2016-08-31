@@ -4,12 +4,12 @@ fluidPage(
          h5("Predicted regular season standings"),
          h6(
            a("How this works: ", 
-             "http://http://www.basketball-reference.com")),
+             "http://www.basketball-reference.com")),
          #h6("Download: ",downloadLink("dataMacro","data",class = "plot-download")),
-         tags$style(HTML("
-                         .jqstooltip{
-                         box-sizing: content-box;
-                         }")), # adjust tooltips in datatables
+#          tags$style(HTML("
+#                          .jqstooltip{
+#                          box-sizing: content-box;
+#                          }")), # adjust tooltips in datatables
          column(6,
            h4("Western Conference", style="color:#3399ff"),   
            dataTableOutput('westPredStandings'),br()
