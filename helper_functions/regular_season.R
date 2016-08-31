@@ -113,12 +113,11 @@
 }
 
 
-.getConferenceStandings <- function(conf){
+.getConferenceStandings <- function(conf,day){
   
-  regSeasonOutcome <- .standings()
   standings <- regSeasonOutcome[[1]]
-  total_days <- length(standings)
-  confPredStandings <- arrange(filter(dplyr::select(standings[[total_days]], conference, team,W=win,L=lose,`%W Home`=win_home_perc,`%W Conf`=win_conf_perc,
+  #day <- length(standings)
+  confPredStandings <- arrange(filter(dplyr::select(standings[[as.numeric(day)]], conference, team,W=win,L=lose,`%W Home`=win_home_perc,`%W Conf`=win_conf_perc,
                                                     PTS=avg_pts,PTSA=avg_pts_ag,Strk=streak), conference == conf), desc(W/(W+L)))
   confPredStandings <- dplyr::select(confPredStandings,-conference)
   return(confPredStandings)

@@ -16,5 +16,7 @@ sigma <- 8 # constant std dev for all teams. ADJUST LATER ON!!
 teamsPredicted <- .teamsPredictedPower() # load teams powers (means for the Normal distributions)
 # Season schedule for the upcoming season -------------------------------
 seasonSchedule <- .seasonSchedule()
+# Reg Season Outcome for default predicted season
+regSeasonOutcome <- .standings()
 
 
