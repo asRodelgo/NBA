@@ -12,8 +12,7 @@ for (f in files) source(f, local = TRUE)
 global_mean <- mean(team_stats$PTS)
 sigma <- 8 # constant std dev for all teams. ADJUST LATER ON!!
 
-# Predicted team powers for the upcoming season -------------------------
-teamsPredicted <- .teamsPredictedPower() # load teams powers (means for the Normal distributions)
+# load teams powers (means for the Normal distributions)
 # Season schedule for the upcoming season -------------------------------
 seasonSchedule <- .seasonSchedule()
 # Reg Season Outcome for default predicted season

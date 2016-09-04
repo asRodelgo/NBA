@@ -35,5 +35,10 @@ playersNew <- playersHist %>%
 nn_Offense <- list.load("data/nn_Offense.rds")
 nn_Defense <- list.load("data/nn_Defense.rds")
 
+# Predicted team powers for the upcoming season -------------------------
+# Default to pre-calculated for quick start of the app
+teamsPredicted <- read.csv("data/teamsPredicted.csv", 
+                           colClasses = c("factor",rep("numeric",2),rep("character",2)))
+#.teamsPredictedPower() 
 
 

@@ -47,6 +47,7 @@
 
 .standings <- function() {
 
+  set.seed(as.integer(Sys.time())) # always a different seed
   # compute all scores for regular season  
   regSeasonScores <- .computeScores()
   
@@ -54,7 +55,7 @@
   names(season) <- c("day","home_team","away_team","home_points","away_points","numOT")
   
   # compute standings by day for regular season
-  standings <- list() # standings is a list in which each day of competition is a data.frame
+  the_standings <- list() # standings is a list in which each day of competition is a data.frame
   standings_aux <- data.frame(team = conferences$Team, teamCode = conferences$TeamCode,
                               conference = conferences$Conference, win = 0, lose = 0,
                               win_home = 0, lose_home = 0, win_home_perc = 0, 
@@ -105,10 +106,10 @@
       standings_aux[standings_aux$teamCode==thisDay$away_team[j],] <- AT
     }
     
-    standings[[i]] <- standings_aux
+    the_standings[[i]] <- standings_aux
     
   }
-  return(list(standings,season)) # list of standings (list) and reg season scores (data.frame)
+  return(list(the_standings,season)) # list of standings (list) and reg season scores (data.frame)
 
 }
 
