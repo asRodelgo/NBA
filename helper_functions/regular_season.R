@@ -30,10 +30,18 @@
   return(c(pointsH,pointsA,numOT))
 }
 
-.computeScores <- function(){
+.computeScores <- function(real=FALSE){
   
-  season <- seasonSchedule # Load season schedule
-  
+  # Load season schedule
+  if (real){
+    season <- realSeasonSchedule %>%
+      mutate(Date = paste(Date,StartTime)) %>%
+      dplyr::select(-StartTime)
+    
+  } else {
+    season <- seasonSchedule
+  }
+    
   # calculate all scores
   scores <- data.frame()
   for (i in 1:nrow(season)){
@@ -45,14 +53,25 @@
   return(scores)
 }
 
-.standings <- function() {
+.standings <- function(real=FALSE) {
 
   set.seed(as.integer(Sys.time())) # always a different seed
   # compute all scores for regular season  
-  regSeasonScores <- .computeScores()
   
-  season <- bind_cols(seasonSchedule,regSeasonScores)
-  names(season) <- c("day","home_team","away_team","home_points","away_points","numOT")
+  if (real){
+    regSeasonScores <- .computeScores(real=TRUE)
+    season <- bind_cols(realSeasonSchedule,regSeasonScores)
+    names(season) <- c("day","time","home_team","away_team","home_points","away_points","numOT")
+    datesRange <- unique(season$day)
+  } else {
+    regSeasonScores <- .computeScores()
+    seasonSchedule <- .seasonSchedule()
+    season <- bind_cols(seasonSchedule,regSeasonScores)
+    names(season) <- c("day","home_team","away_team","home_points","away_points","numOT")
+    datesRange <- c(1:tail(season,1)$day)
+  }
+  
+  
   
   # compute standings by day for regular season
   the_standings <- list() # standings is a list in which each day of competition is a data.frame
@@ -62,7 +81,8 @@
                               win_conf = 0, lose_conf = 0, win_conf_perc = 0, 
                               tot_pts = 0, avg_pts = 0, tot_pts_ag = 0, avg_pts_ag = 0, 
                               streak = 0)
-  for (i in 1:tail(season,1)$day){
+  
+  for (i in datesRange){
     
     thisDay <- filter(season,day == i)
     for (j in 1:nrow(thisDay)){
@@ -118,7 +138,7 @@
   
   standings <- regSeasonOutcome[[1]]
   #day <- length(standings)
-  confPredStandings <- arrange(filter(dplyr::select(standings[[as.numeric(day)]], conference, team,W=win,L=lose,`%W Home`=win_home_perc,`%W Conf`=win_conf_perc,
+  confPredStandings <- arrange(filter(dplyr::select(standings[[day]], conference, team,W=win,L=lose,`%W Home`=win_home_perc,`%W Conf`=win_conf_perc,
                                                     PTS=avg_pts,PTSA=avg_pts_ag,Strk=streak), conference == conf), desc(W/(W+L)))
   confPredStandings <- dplyr::select(confPredStandings,-conference)
   return(confPredStandings)

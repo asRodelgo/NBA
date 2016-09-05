@@ -11,7 +11,7 @@ fluidPage(
 #                          box-sizing: content-box;
 #                          }")), # adjust tooltips in datatables
       br(),
-      selectInput('regSeasonDay', 'Select a day:', choices=seq(1:370),selectize=FALSE), 
+      selectInput('regSeasonDay', 'Select a day:', choices=datesRange,selectize=FALSE), 
       br(),
       column(6,
         h4("Western Conference", style="color:#3399ff"),   

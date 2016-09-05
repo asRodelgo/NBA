@@ -1,3 +1,4 @@
+# ----------  Simulate an artificial season schedule
 
 .seasonSchedule <- function(){
   

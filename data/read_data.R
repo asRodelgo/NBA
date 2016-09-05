@@ -14,11 +14,14 @@ for (a in 18:41){
 # Read team stats for all seasons ------------------------------
 #teams <- read.csv("data/nba_teams.csv") # from nba.com
 team_stats <- read.csv("data/teamStats.csv")
-franchises <- read.csv("data/franchisesHistory.csv")
+franchises <- read.csv("data/franchisesHistory.csv",stringsAsFactors = FALSE)
 team_stats <- merge(team_stats,franchises,by.x="Team",by.y="Franchise",all.x=TRUE)
 # conferences according to last season
 conferences <- read.csv("data/nba_conferences.csv", stringsAsFactors = FALSE)
 
+# Actual Season schedule
+realSeasonSchedule <- read.csv("data/realSeasonSchedule.csv",stringsAsFactors = FALSE)
+datesRange <- unique(realSeasonSchedule$Date)
 # If not new data yet, -----------------------------------------
 # use last season's as new data, removing PTS & PTSA
 team_statsNew <- team_stats %>%
