@@ -35,10 +35,16 @@ tagList(
                ),
                tabsetPanel(
                  tabPanel("Games",
-                          source(file.path("ui_files", "regSeasonPredGames.R"), local = TRUE)$value
+                          source(file.path("ui_files", "ui_regSeasonPredGames.R"), local = TRUE)$value
                  ),
                  tabPanel("Standings",
-                          source(file.path("ui_files", "regSeasonPredStandings.R"), local = TRUE)$value
+                          source(file.path("ui_files", "ui_regSeasonPredStandings.R"), local = TRUE)$value
+                 ),
+                 tabPanel("Playoffs",
+                          source(file.path("ui_files", "ui_playoffs.R"), local = TRUE)$value
+                 ),
+                 tabPanel("Rosters",
+                          source(file.path("ui_files", "ui_rosters.R"), local = TRUE)$value
                  )
                )
           )
