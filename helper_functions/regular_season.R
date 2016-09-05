@@ -141,8 +141,23 @@
   confPredStandings <- arrange(filter(dplyr::select(standings[[day]], conference, team,W=win,L=lose,`%W Home`=win_home_perc,`%W Conf`=win_conf_perc,
                                                     PTS=avg_pts,PTSA=avg_pts_ag,Strk=streak), conference == conf), desc(W/(W+L)))
   confPredStandings <- dplyr::select(confPredStandings,-conference)
+  
   return(confPredStandings)
 }
+
+.getGames <- function(conf,this_day){
+  
+  games <- regSeasonOutcome[[2]]
+  #day <- length(standings)
+  confPredGames <- dplyr::select(filter(games,day==this_day), away_team,home_team,
+                                         away_points,home_points) %>%
+    mutate(game = paste0(away_team," @ ",home_team))
+  confPredGames <- dplyr::select(confPredGames,game,A=away_points,H=home_points)
+  
+  return(confPredGames)
+}
+
+
 
 #.getConferenceStandings("W")
 # 

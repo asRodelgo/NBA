@@ -23,7 +23,25 @@ tagList(
     theme = shinythemes::shinytheme("flatly"),
     tabPanel(title = "Prediction",
              h3("Here goes prediction"),
-             source(file.path("ui_files", "regSeasonPredStandings.R"), local = TRUE)$value
+             fluidPage(
+               column(12, h4("Regular Season Standings"),
+                      h5("Predicted regular season standings"),
+                      h6(
+                        a("How this works: ", 
+                          "http://www.basketball-reference.com")),
+                      br(),
+                      selectInput('regSeasonDay', 'Select a day:', choices=datesRange,selectize=FALSE), 
+                      br()
+               ),
+               tabsetPanel(
+                 tabPanel("Games",
+                          source(file.path("ui_files", "regSeasonPredGames.R"), local = TRUE)$value
+                 ),
+                 tabPanel("Standings",
+                          source(file.path("ui_files", "regSeasonPredStandings.R"), local = TRUE)$value
+                 )
+               )
+          )
+      )
     )
-  )
 )
