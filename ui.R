@@ -40,9 +40,9 @@ tagList(
                  tabPanel("Standings",
                           source(file.path("ui_files", "ui_regSeasonPredStandings.R"), local = TRUE)$value
                  ),
-#                  tabPanel("Playoffs",
-#                           source(file.path("ui_files", "ui_playoffs.R"), local = TRUE)$value
-#                  ),
+                 tabPanel("Playoffs",
+                          source(file.path("ui_files", "ui_playoffs.R"), local = TRUE)$value
+                 ),
                  tabPanel("Rosters",
                           source(file.path("ui_files", "ui_rosters.R"), local = TRUE)$value
                  )

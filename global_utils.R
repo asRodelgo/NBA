@@ -19,5 +19,6 @@ sigma <- 8 # constant std dev for all teams. ADJUST LATER ON!!
 
 # Reg Season Outcome for default predicted season
 regSeasonOutcome <- .standings(real=TRUE)
+playoffs <- .getPlayoffResults()
 
 
