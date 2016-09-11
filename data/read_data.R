@@ -43,5 +43,5 @@ nn_Defense <- list.load("data/nn_Defense.rds")
 teamsPredicted <- read.csv("data/teamsPredicted.csv", 
                            colClasses = c("factor",rep("numeric",2),rep("character",2)))
 #.teamsPredictedPower() 
-
+tsne_points <- read.csv("data/tsne_points_All.csv",stringsAsFactors = FALSE)
 
