@@ -7,7 +7,7 @@ write_tSNE_compute_All <- function(num_iter, max_num_neighbors){
   library(doMC) # use parallel processing on this machine through "foreach"
   registerDoMC(2) # As far as I know my MAC works on 2 cores
   #data_tsne_sample <- dplyr::sample_n(data_tsne,1000)
-  data_tsne_sample <- filter(data_tsne,Season > "2013-2014")
+  data_tsne_sample <- filter(data_tsne,Season > "2000-2001")
                              #%in% c("2012-2013","2013-2014","2014-2015","2015-2016"))
     #"2012-2013","2013-2014","2014-2015",
   
