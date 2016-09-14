@@ -1,19 +1,47 @@
 # Plot tsne chart ---------------------------------------------------------
 .tSNE_plot_All <- function(colTeam,colSeason,colPlayer,colAge,colSkill){
   # tsne_points contains pairs of coordinate points to plot
-  # put tsne_points and data_tsne together:
-  #tsne_ready <- cbind(data_tsne,tsne_points)
   library(scales)
+  # Parameters -----------
+  # 
+  colSeason <- "All"
+  colPlayer <- "All"
+  colTeam <- "All"
+  colAge <- "All"
+  colSkill <- "All"
+  # ----------------------
+  #
+  # Default selector choices -----------
+  teams_list <- sort(unique(data_tsne_sample$Tm))
+  ages_list <- sort(unique(data_tsne_sample$Age))
+  seasons_list <- sort(unique(data_tsne_sample$Season))
+  players_list <- sort(unique(data_tsne_sample$Player))
+  skills_list <- names(data_tsne_sample)[6:ncol(data_tsne_sample)]
+  # ------------------------------------
   
   tsne_ready <- cbind(data_tsne_sample,tsne_points)
   names(tsne_ready)[ncol(tsne_ready)-1] <- "x"
   names(tsne_ready)[ncol(tsne_ready)] <- "y"
-  if (length(tsne_ready)>0){
-    tsne_ready <- tsne_ready %>%
+  
+  if (length(tsne_ready)>0){ # in case there are data do stuff
+    
+    tsne_ready <- tsne_ready %>% # by default all colored grey
       mutate(color = "lightgrey", colorDots = "lightgrey")
     
     par(mar=c(0,0,0,0))
-    # Manage the color column of tsne_ready
+    
+    # if Season selected, show dots for that season only
+    if (!(colSeason == "All")){
+      tsne_ready <- mutate(tsne_ready, colorDots = ifelse(Season==colSeason,"grey",alpha("lightgrey",0)))
+    }
+    
+    tsne_points_filter <- tsne_ready %>%
+      filter(Player %in% players_list & Season %in% seasons_list & Age %in% ages_list
+             & Tm %in% teams_list) %>%
+      dplyr::select(Player,Season, Age, Tm, x,y,color,colorDots)
+    
+    # Manage the color column of tsne_ready or filters
+    
     if (!(colPlayer=="All") & (colSeason=="All") & (colAge=="All")){
       tsne_ready <- mutate(tsne_ready, color = ifelse(Player==colPlayer,"blue",color))
       tsne_points_filter <- tsne_ready %>%
@@ -98,9 +126,7 @@
 #     if (colTeam == "GSW"){
 #       tsne_ready <- mutate(tsne_ready, colorDots = ifelse(Tm=="GSW","green","lightgrey"))
 #     }
-        if (colSeason == "2015-2016"){
-          tsne_ready <- mutate(tsne_ready, colorDots = ifelse(Season==colSeason,"blue",alpha("lightgrey",0)))
-        }
+        
     
     plot(tsne_points,type = "p", pch = 19, axes=FALSE, frame.plot = FALSE, xlab = "",ylab = "",col = tsne_ready$colorDots); 
     graphics::text(tsne_points_filter[,c("x","y")],
