@@ -6,10 +6,11 @@
   library(scales)
   
   tsne_ready <- cbind(data_tsne_sample,tsne_points)
+  names(tsne_ready)[ncol(tsne_ready)-1] <- "x"
+  names(tsne_ready)[ncol(tsne_ready)] <- "y"
   if (length(tsne_ready)>0){
     tsne_ready <- tsne_ready %>%
-      mutate(color = "lightgrey", colorDots = "lightgrey", x = `1`, y = `2`) %>%
-      dplyr::select(-`1`, -`2`)
+      mutate(color = "lightgrey", colorDots = "lightgrey")
     
     par(mar=c(0,0,0,0))
     # Manage the color column of tsne_ready
