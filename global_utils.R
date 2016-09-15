@@ -22,5 +22,6 @@ regSeasonOutcome <- .standings(real=TRUE)
 playoffs <- .getPlayoffResults()
 # tSNE
 data_tsne <- .tSNE_prepare_All()
+data_tsne_sample <- filter(data_tsne,Season > "1990-1991")
 
 

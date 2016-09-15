@@ -8,7 +8,7 @@
   colPlayer <- "All"
   colTeam <- "All"
   colAge <- "All"
-  colSkill <- "effAST"
+  colSkill <- "effMin"
   # ----------------------
   #
   # Default selector choices -----------
@@ -51,10 +51,10 @@
       tsne_ready <- mutate(tsne_ready, colorDots = ifelse(Season==colSeason,colorDots,alpha("lightgrey",0)))
     }
     # General Filters
-    tsne_points_filter <- tsne_ready %>%
-      filter(Player %in% colPlayer & Age %in% colAge
-             & Tm %in% colTeam) %>%
-      dplyr::select(Player,Season, Age, Tm, x,y,color,colorDots)
+ #   tsne_points_filter <- tsne_ready %>%
+#      filter(Player %in% colPlayer & Age %in% colAge
+#             & Tm %in% colTeam) %>%
+#      dplyr::select(Player,Season, Age, Tm, x,y,color,colorDots)
     
     # Manage the color column of tsne_ready or filters
     
@@ -145,9 +145,9 @@
         
     
     plot(tsne_points,type = "p", pch = 19, axes=FALSE, frame.plot = FALSE, xlab = "",ylab = "",col = tsne_ready$colorDots); 
-    graphics::text(tsne_points_filter[,c("x","y")],
-                   labels=paste0(as.character(tsne_points_filter$Player)," (",tsne_points_filter$Season,")"),
-                   col=tsne_points_filter$color)
+#    graphics::text(tsne_points_filter[,c("x","y")],
+#                   labels=paste0(as.character(tsne_points_filter$Player)," (",tsne_points_filter$Season,")"),
+#                   col=tsne_points_filter$color)
   } else {
     plot(c(1,1),type="n", frame.plot = FALSE, axes=FALSE, ann=FALSE)
     graphics::text(1.5, 1,"Not enough data", col="red", cex=2)
