@@ -8,7 +8,12 @@ fluidPage(
          selectInput('colSkill', 'Skill:', choices=c("All",names(data_tsne_sample)[6:ncol(data_tsne_sample)]),selectize=FALSE),
          selectInput('colAge', 'Age:', choices=c("All",sort(unique(data_tsne_sample$Age))),selectize=FALSE),
          br(),
-         plotOutput('plotTSNE'),br()
+         div(
+           style = "position:relative",
+           plotOutput('plotTSNE', 
+                      hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce")),
+           uiOutput("hover_info")
+         )
   )
 )
 

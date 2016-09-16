@@ -20,8 +20,13 @@ sigma <- 8 # constant std dev for all teams. ADJUST LATER ON!!
 # Reg Season Outcome for default predicted season
 regSeasonOutcome <- .standings(real=TRUE)
 playoffs <- .getPlayoffResults()
+
 # tSNE
 data_tsne <- .tSNE_prepare_All()
 data_tsne_sample <- filter(data_tsne,Season > "1990-1991")
+tsne_ready <- cbind(data_tsne_sample,tsne_points)
+names(tsne_ready)[ncol(tsne_ready)-1] <- "x"
+names(tsne_ready)[ncol(tsne_ready)] <- "y"
+#
 
 

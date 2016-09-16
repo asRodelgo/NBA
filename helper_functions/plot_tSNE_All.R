@@ -4,11 +4,11 @@
   library(scales)
   # Parameters -----------
   # 
-#   colSeason <- "2015-2016"
-#   colPlayer <- "All"
-#   colTeam <- "All"
-#   colAge <- "All"
-#   colSkill <- "effPTS"
+  colSeason <- "2015-2016"
+  colPlayer <- "All"
+  colTeam <- "All"
+  colAge <- "All"
+  colSkill <- "effPTS"
   # ----------------------
   #
   # Default selector choices -----------
@@ -23,9 +23,6 @@
   #if (colTeam=="All") colTeam <- teams_list
   
   #
-  tsne_ready <- cbind(data_tsne_sample,tsne_points)
-  names(tsne_ready)[ncol(tsne_ready)-1] <- "x"
-  names(tsne_ready)[ncol(tsne_ready)] <- "y"
   
   if (length(tsne_ready)>0){ # in case there are data do stuff
     
