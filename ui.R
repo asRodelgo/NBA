@@ -48,6 +48,13 @@ tagList(
                  )
                )
           )
-      )
+                   
+      ),
+    tabPanel(title = "Data topology",
+             h3("Data topology"),
+             fluidPage(
+               source(file.path("ui_files", "ui_plotTSNE.R"), local = TRUE)$value
+             )
+    )
     )
 )
