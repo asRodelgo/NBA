@@ -4,11 +4,11 @@
   library(scales)
   # Parameters -----------
   # 
-  colSeason <- "2015-2016"
-  colPlayer <- "All"
-  colTeam <- "All"
-  colAge <- "All"
-  colSkill <- "effPTS"
+  #colSeason <- "2015-2016"
+  #colPlayer <- "All"
+  #colTeam <- "All"
+  #colAge <- "All"
+  #colSkill <- "effPTS"
   # ----------------------
   #
   # Default selector choices -----------
@@ -18,9 +18,11 @@
   players_list <- sort(unique(data_tsne_sample$Player))
   skills_list <- names(data_tsne_sample)[6:ncol(data_tsne_sample)]
   # ------------------------------------
-  #if (colPlayer=="All") colPlayer <- players_list
-  #if (colAge=="All") colAge <- ages_list
-  #if (colTeam=="All") colTeam <- teams_list
+  if (colPlayer=="All") colPlayer <- players_list
+  if (colAge=="All") colAge <- ages_list
+  if (colTeam=="All") colTeam <- teams_list
+  if (colSeason=="All") colSeason <- seasons_list
+  if (colSkill=="All") colSkill <- skills_list
   
   #
   

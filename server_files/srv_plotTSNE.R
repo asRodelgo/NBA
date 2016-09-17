@@ -30,9 +30,7 @@ output$hover_info <- renderUI({
   # actual tooltip created as wellPanel
   wellPanel(
     style = style,
-    p(HTML(paste0("<b> Player: </b>", point$Player, "<br/>",
-                  "<b> Season: </b>", point$Season, "<br/>",
-                  "<b> Team: </b>", point$Team, "<br/>",
-                  "<b> Age: </b>", point$Age)))
+    p(HTML(paste0(point$Player, "<br/>",point$Tm," - ",point$Season, "<b> (Age: </b>", point$Age, ") <br/>",
+                  input$colSkill,": ",eval(parse(text=paste0("point$",input$colSkill))))))
   )
 })
