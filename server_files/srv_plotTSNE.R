@@ -9,7 +9,7 @@ output$plotTSNE <- renderPlot({
 # tooltip hover over scatterplot points: see https://gitlab.com/snippets/16220
 output$hover_info <- renderUI({
   hover <- input$plot_hover
-  point <- nearPoints(tsne_ready, hover, threshold = 5, maxpoints = 1, addDist = TRUE)
+  point <- nearPoints(tsne_ready, hover, threshold = 1, maxpoints = 1, addDist = TRUE)
   
   if (nrow(point) == 0) return(NULL)
   # calculate point position INSIDE the image as percent of total dimensions
