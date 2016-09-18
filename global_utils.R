@@ -28,5 +28,5 @@ tsne_ready <- cbind(data_tsne_sample,tsne_points)
 names(tsne_ready)[ncol(tsne_ready)-1] <- "x"
 names(tsne_ready)[ncol(tsne_ready)] <- "y"
 #
-
+#write.csv(tsne_ready, "data/tsne_ready.csv",row.names = FALSE)
 
