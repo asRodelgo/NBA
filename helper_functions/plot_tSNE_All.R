@@ -45,8 +45,8 @@
       
       ggplot(NULL, aes(x,y)) +
         geom_point(data=tsne_points_filter,aes(color = eval(parse(text=colSkill)))) +
-        scale_color_gradient2(midpoint=median(eval(parse(text=paste0("tsne_ready_filter$",colSkill)))), low="red", mid="white",high="blue")+
-        geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.01)) + 
+        scale_color_gradient2(midpoint=median(eval(parse(text=paste0("tsne_points_filter$",colSkill)))), low="red", mid="white",high="blue")+
+        #geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.01)) + 
         theme(legend.key=element_blank(),
               legend.title=element_blank(),
               legend.text = element_blank(),
@@ -62,7 +62,7 @@
       
         ggplot(NULL, aes(x,y)) +  
         geom_point(data=tsne_points_filter,color = "blue") +
-        geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.01)) + 
+        #geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.01)) + 
         theme(legend.key=element_blank(),
               legend.title=element_blank(),
               legend.text = element_blank(),

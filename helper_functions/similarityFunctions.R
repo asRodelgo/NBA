@@ -108,29 +108,29 @@
   data_tsne <- playersHist %>%
     group_by(Player,Season) %>%
     mutate(keep = ifelse(n() > 1, 1, 0), effMin = MP/3936,
-           eff3PA = X3PA/(3936*effMin),
-           eff2PA = X2PA/(3936*effMin),
-           effFTA = FTA/(3936*effMin),
+           eff3PA = X3PA/(3936*effMin),eff3PM = X3P/(3936*effMin),
+           eff2PA = X2PA/(3936*effMin),eff2PM = X2P/(3936*effMin),
+           effFTA = FTA/(3936*effMin),effFTM = FT/(3936*effMin),
            effORB = ORB/(3936*effMin),effDRB = DRB/(3936*effMin),
-           effTRB = TRB/(3936*effMin),effAST = AST/(3936*effMin),
+           effAST = AST/(3936*effMin),
            effSTL = STL/(3936*effMin),effBLK = BLK/(3936*effMin),
            effTOV = TOV/(3936*effMin),effPF = PF/(3936*effMin),
            effPTS = PTS/(3936*effMin)) %>%
     filter(keep == 0 | Tm == "TOT") %>%
     filter(effMin >= .15) %>% # Played at least 15% of total available minutes
-    dplyr::select(Player,Pos,Season,Age,Tm, P2Per = X2P., P3Per = X3P., FTPer = FT.,starts_with("eff"))
-  
-  # some players can be the same age during 2 seasons. Pick the one with the most minutes played
-  
-  #data_tsne <- data_tsne %>%
-  #  group_by(Player) %>%
-  #  filter(effMin >= max(effMin)-.0001)
+    dplyr::select(Player,Pos,Season,Age,Tm, starts_with("eff"))
+  #P2Per = X2P., P3Per = X3P., FTPer = FT.
   
   # t-sne doesn't like NAs. Impute by assigning 0. If NA means no shot attempted, ie, 
   # either the player didn't play enough time or is really bad at this particular type of shot.
-  for (i in 5:(ncol(data_tsne)-1)){
+  for (i in 6:(ncol(data_tsne)-1)){
     data_tsne[is.na(data_tsne[,i]),i] <- 0
   }
+  
+  # Try scaling to [0,1] to improve tsne final shape
+#   maxs <- apply(data_tsne[,-c(1:5)], 2, max) 
+#   mins <- apply(data_tsne[,-c(1:5)], 2, min)
+#   data_tsne[,-c(1:5)] <- as.data.frame(scale(data_tsne[,-c(1:5)], center = mins, scale = maxs - mins))
   
   data_tsne <- as.data.frame(data_tsne)
   return(data_tsne)

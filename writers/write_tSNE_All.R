@@ -12,13 +12,14 @@ write_tSNE_compute_All <- function(num_iter, max_num_neighbors){
     #"2012-2013","2013-2014","2014-2015",
   
   if (nrow(data_tsne)>0){
-    num_iter <- 1000
+    num_iter <- 400
     max_num_neighbors <- 10
     set.seed(456) # reproducitility
     tsne_points <- tsne(data_tsne_sample[,-c(1:5)], 
                         max_iter=as.numeric(num_iter), 
                         perplexity=as.numeric(max_num_neighbors), 
                         epoch=100)
+    #plot(tsne_points)
   } else {
     tsne_points <- c()
   }

@@ -97,7 +97,7 @@ library(neuralnet) # neural network for regression
 
   playersSumm <- .prepareModel(Off_or_Def)
   scaleMaxMin <- .getScaleLimits(Off_or_Def)
-  # scale the data for easier convergence of backpropagation algorithm
+  # scale the data [0,1] for easier convergence of backpropagation algorithm
   maxs <- scaleMaxMin$maxs 
   mins <- scaleMaxMin$mins
   
