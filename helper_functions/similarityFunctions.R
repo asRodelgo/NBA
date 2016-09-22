@@ -126,6 +126,10 @@
   for (i in 6:(ncol(data_tsne)-1)){
     data_tsne[is.na(data_tsne[,i]),i] <- 0
   }
+  # exponential transformation to improve tsne layout
+#   for (i in 6:(ncol(data_tsne)-1)){
+#     data_tsne[,i] <- expm1(2*data_tsne[,i])
+#   }
   
   # Try scaling to [0,1] to improve tsne final shape
 #   maxs <- apply(data_tsne[,-c(1:5)], 2, max) 
