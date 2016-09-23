@@ -103,7 +103,7 @@
 .densityPlots <- function(colTeam,colSeason,colPlayer,colAge,colSkill){
   
   tsne_points_filter <- .tSNE_plot_filter(colTeam,colSeason,colPlayer,colAge,colSkill)
-  tsne_points_filter <- gather(tsne_points_filter, skill, value, -Player,-Tm,-Age,-Season,-Pos)
+  tsne_points_filter <- gather(tsne_points_filter, skill, value, -Player,-Tm,-Age,-Season,-Pos,-x,-y)
   
   ggplot(tsne_points_filter,aes(value)) + 
     geom_density(aes(y=..density..),alpha=.4, fill="green") +  
