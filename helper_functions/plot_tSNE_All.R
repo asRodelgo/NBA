@@ -107,7 +107,7 @@
   
   ggplot(tsne_points_filter,aes(value)) + 
     geom_density(aes(y=..density..),alpha=.4, fill="green") +  
-    facet_wrap(~skill) +
+    facet_wrap(~skill, nrow=2,ncol=8) +
     theme(legend.key=element_blank(),
           legend.title=element_blank(),
           panel.border = element_blank(),

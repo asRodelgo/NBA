@@ -35,3 +35,9 @@ output$hover_info <- renderUI({
                   input$colSkill,": ",eval(parse(text=paste0("point$",input$colSkill))))))
   )
 })
+
+output$plotTSNEdensities <- renderPlot({
+  plotTSNEdensities <- .densityPlots(input$colTeam,input$colSeason,input$colPlayer,
+                             input$colAge,input$colSkill)
+  return(plotTSNEdensities)
+})
