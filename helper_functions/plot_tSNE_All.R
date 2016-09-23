@@ -1,8 +1,6 @@
 # Plot tsne chart ---------------------------------------------------------
 .tSNE_plot_All <- function(colTeam,colSeason,colPlayer,colAge,colSkill){
   # tsne_points contains pairs of coordinate points to plot
-  library(scales)
-  library(RColorBrewer)
   # Parameters -----------
   # 
   #colSeason <- "2015-2016"
@@ -12,21 +10,12 @@
   #colSkill <- "All"
   # ----------------------
   #
-  # Default selector choices -----------
-  teams_list <- sort(unique(data_tsne_sample$Tm))
-  ages_list <- sort(unique(data_tsne_sample$Age))
-  seasons_list <- sort(unique(data_tsne_sample$Season))
-  players_list <- sort(unique(data_tsne_sample$Player))
-  skills_list <- names(data_tsne_sample)[6:ncol(data_tsne_sample)]
   # ------------------------------------
   if (colPlayer=="All") colPlayer <- players_list
   if (colAge=="All") colAge <- ages_list
   if (colTeam=="All") colTeam <- teams_list
   if (colSeason=="All") colSeason <- seasons_list
-  #if (colSkill=="All") colSkill <- skills_list
-  
   #
-  
   if (length(tsne_ready)>0){ # if data do stuff
     par(mar=c(0,0,0,0))
     
@@ -88,36 +77,13 @@
 
 # Plot tsne chart ---------------------------------------------------------
 .tSNE_plot_filter <- function(colTeam,colSeason,colPlayer,colAge,colSkill){
-  # tsne_points contains pairs of coordinate points to plot
-  library(scales)
-  library(RColorBrewer)
-  # Parameters -----------
-  # 
-  #colSeason <- "2015-2016"
-  #colPlayer <- "All"
-  #colTeam <- "All"
-  #colAge <- "All"
-  #colSkill <- "All"
-  # ----------------------
   #
-  # Default selector choices -----------
-  teams_list <- sort(unique(data_tsne_sample$Tm))
-  ages_list <- sort(unique(data_tsne_sample$Age))
-  seasons_list <- sort(unique(data_tsne_sample$Season))
-  players_list <- sort(unique(data_tsne_sample$Player))
-  skills_list <- names(data_tsne_sample)[6:ncol(data_tsne_sample)]
-  # ------------------------------------
   if (colPlayer=="All") colPlayer <- players_list
   if (colAge=="All") colAge <- ages_list
   if (colTeam=="All") colTeam <- teams_list
   if (colSeason=="All") colSeason <- seasons_list
-  #if (colSkill=="All") colSkill <- skills_list
-  
-  #
   
   if (length(tsne_ready)>0){ # if data do stuff
-    
-    
     # General Filters
     tsne_points_filter <- tsne_ready %>%
       filter(Player %in% colPlayer & Age %in% colAge
@@ -131,5 +97,23 @@
     graphics::text(1.5, 1,"Not enough data", col="red", cex=2)
   }
   return(tsne_points_filter)
+}
+
+# Density plots
+.densityPlots <- function(colTeam,colSeason,colPlayer,colAge,colSkill){
+  
+  tsne_points_filter <- .tSNE_plot_filter(colTeam,colSeason,colPlayer,colAge,colSkill)
+  tsne_points_filter <- gather(tsne_points_filter, skill, value, -Player,-Tm,-Age,-Season,-Pos)
+  
+  ggplot(tsne_points_filter,aes(value)) + 
+    geom_density(aes(y=..density..),alpha=.4, fill="green") +  
+    facet_wrap(~skill) +
+    theme(legend.key=element_blank(),
+          legend.title=element_blank(),
+          panel.border = element_blank(),
+          panel.background = element_blank(),plot.title = element_text(lineheight=.5)
+    )
+  
+  
 }
 

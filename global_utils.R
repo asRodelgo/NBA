@@ -1,8 +1,11 @@
 # Global utils -----------------------------
 library(dplyr)
+library(tidyr)
 library(tsne)
 library(rvest)
 library(rlist) # save and load list objects
+library(scales)
+library(RColorBrewer)
 
 source("data/read_data.R")
 # Source all files from server_files directory and subdirectories
@@ -27,6 +30,12 @@ data_tsne_sample <- filter(data_tsne,Season > "1990-1991")
 tsne_ready <- cbind(data_tsne_sample,tsne_points)
 names(tsne_ready)[ncol(tsne_ready)-1] <- "x"
 names(tsne_ready)[ncol(tsne_ready)] <- "y"
+# Default selector choices for tsne -----------
+teams_list <- sort(unique(data_tsne_sample$Tm))
+ages_list <- sort(unique(data_tsne_sample$Age))
+seasons_list <- sort(unique(data_tsne_sample$Season))
+players_list <- sort(unique(data_tsne_sample$Player))
+skills_list <- names(data_tsne_sample)[6:ncol(data_tsne_sample)]
 #
 #write.csv(tsne_ready, "data/tsne_ready.csv",row.names = FALSE)
 
