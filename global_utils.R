@@ -6,6 +6,10 @@ library(rvest)
 library(rlist) # save and load list objects
 library(scales)
 library(RColorBrewer)
+# ggplot2 radar charts
+#devtools::install_github("ricardo-bion/ggradar", 
+#                         dependencies=TRUE)
+library(ggradar)
 
 source("data/read_data.R")
 # Source all files from server_files directory and subdirectories

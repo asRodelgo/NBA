@@ -107,13 +107,29 @@
   
   ggplot(tsne_points_filter,aes(value)) + 
     geom_density(aes(y=..density..),alpha=.4, fill="green") +  
-    facet_wrap(~skill, nrow=2,ncol=8) +
+    facet_wrap(~skill, nrow=1, scales="free_x") +
     theme(legend.key=element_blank(),
           legend.title=element_blank(),
           panel.border = element_blank(),
-          panel.background = element_blank(),plot.title = element_text(lineheight=.5)
+          panel.background = element_blank(),
+          plot.title = element_text(lineheight=.5),
+          #axis.text.x = element_blank(),
+          #axis.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank()
+          #axis.ticks = element_blank()
     )
-  
-  
 }
 
+.radarPlot <- function(colTeam,colSeason,colPlayer,colAge,colSkill){
+  
+  tsne_points_filter <- .tSNE_plot_filter(colTeam,colSeason,colPlayer,colAge,colSkill)
+  
+  tsne_points_filter %>%
+    add_rownames(var = "skill") %>%
+    mutate_each(funs(rescale), -skill) %>%
+    tail(4) %>% select(1:10) -> tsne_radar
+  
+  ggradar(tsne_radar) 
+  
+}
