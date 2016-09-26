@@ -10,12 +10,13 @@ fluidPage(
           )
   ),        
   br(),
-  div(plotOutput('plotTSNEdensities')),
+  div(style = "position:relative",plotOutput('plotTSNEdensities',height="150px")),
   br(),
    div(
      style = "position:relative",
      plotOutput('plotTSNE', 
-                hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce")),
+                hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce"),
+                click = clickOpts("plot_click")),
      uiOutput("hover_info")
    )
   )

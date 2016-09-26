@@ -37,7 +37,17 @@ output$hover_info <- renderUI({
 })
 
 output$plotTSNEdensities <- renderPlot({
-  plotTSNEdensities <- .densityPlots(input$colTeam,input$colSeason,input$colPlayer,
-                             input$colAge,input$colSkill)
+  
+  click <- input$plot_click
+  point <- nearPoints(.tSNE_plot_filter(input$colTeam,input$colSeason,input$colPlayer,
+                                        input$colAge,input$colSkill), click, threshold = 3, maxpoints = 1, addDist = TRUE)
+  
+  if (nrow(point) == 0){
+    plotTSNEdensities <- .densityPlots(input$colTeam,input$colSeason,input$colPlayer,
+                                       input$colAge,input$colSkill,NULL,NULL)
+  } else {
+    plotTSNEdensities <- .densityPlots(input$colTeam,input$colSeason,input$colPlayer,
+                                       input$colAge,input$colSkill,point$Player,point$Season)
+  }
   return(plotTSNEdensities)
 })
