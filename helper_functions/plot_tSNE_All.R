@@ -152,7 +152,7 @@
   tsne_radar <- tsne_ready %>%
     dplyr::select(-Age,-Pos,-Tm,-x,-y) %>%
     mutate_at(vars(starts_with("eff")), funs(max,mean)) %>%
-    filter(Season == colSeason) %>%
+    #filter(Season == colSeason) %>%
     dplyr::select(-Season)
   
   brushPoints <- as.data.frame(brushPoints)
@@ -162,9 +162,9 @@
     tsne_mean <- brushPoints %>%
       dplyr::select(-Age,-Pos,-Tm,-x,-y,-Season) %>%
       mutate_at(vars(starts_with("eff")), funs(mean)) %>%
-      dplyr::select(contains("_mean")) %>%
-      distinct(.keep_all=TRUE) %>%
+      #dplyr::select(contains("_mean")) %>%
       mutate(Player = "mean of selected") %>%
+      distinct(.keep_all=TRUE) %>%
       dplyr::select(Player, everything())
       
     names(tsne_mean) <- gsub("_mean","",names(tsne_mean))
@@ -192,6 +192,7 @@
   ez.radarmap(tsne_radar, "Player", stats="none", lwd=1, angle=0, fontsize=1.5, facet=F, facetfontsize=1, color=id, linetype=NULL) +
     theme(legend.key=element_blank(),
           legend.title=element_blank(),
+          legend.position = "bottom",
           panel.border = element_blank(),
           panel.background = element_blank(),
           plot.title = element_text(lineheight=.5),
