@@ -147,7 +147,16 @@
     
 }
 
-.radarPlot <- function(brushPoints){
+.radarPlot <- function(brushPoints){#,Off_Deff="All"){
+  
+#   if (Off_Deff == "Offense"){
+#     list_skills <- c("effPTS","eff2PM","eff2PA","eff3PM","eff3PA","effFTA","effFTM","effAST")
+#   } else if (Off_Deff == "Defense"){
+#     list_skills <- c("effBLK","effDRB","effORB","effSTL","effTOV","effPF")
+#   } else {
+#     list_skills <- c("effPTS","eff2PM","eff2PA","eff3PM","eff3PA","effFTA","effFTM","effAST",
+#                      "effBLK","effDRB","effORB","effSTL","effTOV","effPF","effMin")
+#     }
   
   tsne_radar <- tsne_ready %>%
     dplyr::select(-Age,-Pos,-Tm,-x,-y) %>%
@@ -155,6 +164,7 @@
     #filter(Season == colSeason) %>%
     dplyr::select(-Season)
   
+  #brushPoints <- filter(tsne_ready, Tm == "CHI")
   brushPoints <- as.data.frame(brushPoints)
   
   if (nrow(brushPoints)>0){
@@ -162,7 +172,7 @@
     tsne_mean <- brushPoints %>%
       dplyr::select(-Age,-Pos,-Tm,-x,-y,-Season) %>%
       mutate_at(vars(starts_with("eff")), funs(mean)) %>%
-      #dplyr::select(contains("_mean")) %>%
+      #dplyr::select(ends_with("_mean")) %>%
       mutate(Player = "mean of selected") %>%
       distinct(.keep_all=TRUE) %>%
       dplyr::select(Player, everything())
@@ -171,7 +181,7 @@
     
   } else {
     tsne_mean <- tsne_radar %>%
-      dplyr::select(contains("_mean")) %>%
+      dplyr::select(ends_with("_mean")) %>%
       distinct(.keep_all=TRUE) %>%
       mutate(Player = "mean of selected") %>%
       dplyr::select(Player, everything())
@@ -180,7 +190,7 @@
   }
   
   tsne_max <- tsne_radar %>%
-    dplyr::select(contains("_max")) %>%
+    dplyr::select(ends_with("_max")) %>%
     distinct(.keep_all=TRUE) %>%
     mutate(Player = "max") %>%
     dplyr::select(Player, everything())
@@ -193,8 +203,8 @@
     theme(legend.key=element_blank(),
           legend.title=element_blank(),
           legend.position = "bottom",
-          panel.border = element_blank(),
-          panel.background = element_blank(),
+          #panel.border = element_blank(),
+          #panel.background = element_blank(),
           plot.title = element_text(lineheight=.5),
           #axis.text.x = element_blank(),
           #axis.text.y = element_blank(),

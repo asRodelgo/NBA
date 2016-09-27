@@ -64,6 +64,31 @@ output$plotRadarBrushed <- renderPlot({
   
 })
 
+# output$plotRadarBrushed_Off <- renderPlot({
+#   
+#   brush <- input$plot_brush
+#   pointsBrushed <- brushedPoints(.tSNE_plot_filter(input$colTeam,input$colSeason,input$colPlayer,
+#                                                    input$colAge,input$colSkill), brush)
+#   
+#   plotRadarBrushed <- .radarPlot(pointsBrushed,"Offense")
+#   
+#   return(plotRadarBrushed)
+#   
+# })
+# 
+# output$plotRadarBrushed_Def <- renderPlot({
+#   
+#   brush <- input$plot_brush
+#   pointsBrushed <- brushedPoints(.tSNE_plot_filter(input$colTeam,input$colSeason,input$colPlayer,
+#                                                    input$colAge,input$colSkill), brush)
+#   
+#   plotRadarBrushed <- .radarPlot(pointsBrushed,"Defense")
+#   
+#   return(plotRadarBrushed)
+#   
+# })
+
+
 output$tableBrushed <- DT::renderDataTable({
   brush <- input$plot_brush
   pointsBrushed <- brushedPoints(.tSNE_plot_filter(input$colTeam,input$colSeason,input$colPlayer,

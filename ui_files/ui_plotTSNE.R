@@ -24,7 +24,10 @@ fluidPage(
       ),
       div(style = "position:relative",
             plotOutput('plotRadarBrushed')
-      )
+      )#,
+      #div(style = "position:relative",
+      #    plotOutput('plotRadarBrushed_Def')
+      #)
     )
   ),
   div(style = "position:relative",
