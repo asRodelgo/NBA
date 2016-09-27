@@ -12,14 +12,23 @@ fluidPage(
   br(),
   div(style = "position:relative",plotOutput('plotTSNEdensities',height="150px")),
   br(),
-   div(
-     style = "position:relative",
-     plotOutput('plotTSNE', 
-                hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce"),
-                click = clickOpts("plot_click")),
-     uiOutput("hover_info")
-   )
+  fluidRow(
+    splitLayout(cellWidths = c("80%","20%"),
+      div(
+       style = "position:relative",
+       plotOutput('plotTSNE', 
+                  hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce"),
+                  click = clickOpts("plot_click"),
+                  brush = brushOpts("plot_brush", delay = 100, delayType = "debounce")),
+       uiOutput("hover_info")
+      ),
+      div(style = "position:relative",
+            plotOutput('plotRadarBrushed')
+      )
+    )
+  ),
+  div(style = "position:relative",
+      DT::dataTableOutput('tableBrushed')
   )
 
-
-
+)

@@ -147,38 +147,65 @@
     
 }
 
-.radarPlot <- function(colPlayer, colSeason){
+.radarPlot <- function(brushPoints){
   
   tsne_radar <- tsne_ready %>%
     dplyr::select(-Age,-Pos,-Tm,-x,-y) %>%
-    mutate_at(vars(starts_with("eff")), funs(min,max)) %>% # rescale to [0,1]
+    mutate_at(vars(starts_with("eff")), funs(max,mean)) %>%
     filter(Season == colSeason) %>%
-    #tibble::column_to_rownames("Player") %>%
     dplyr::select(-Season)
   
-  tsne_min <- tsne_radar %>%
-    dplyr::select(contains("_min")) %>%
-    distinct(.keep_all=TRUE) %>%
-    mutate(Player = "") %>%
-    dplyr::select(Player, everything())
+  brushPoints <- as.data.frame(brushPoints)
   
-  names(tsne_min) <- gsub("_min","",names(tsne_min))
+  if (nrow(brushPoints)>0){
+    #brushPoints <- merge(tsne_ready, brushPoints, by = c("Player","Season"))
+    tsne_mean <- brushPoints %>%
+      dplyr::select(-Age,-Pos,-Tm,-x,-y,-Season) %>%
+      mutate_at(vars(starts_with("eff")), funs(mean)) %>%
+      dplyr::select(contains("_mean")) %>%
+      distinct(.keep_all=TRUE) %>%
+      mutate(Player = "mean of selected") %>%
+      dplyr::select(Player, everything())
+      
+    names(tsne_mean) <- gsub("_mean","",names(tsne_mean))
+    
+  } else {
+    tsne_mean <- tsne_radar %>%
+      dplyr::select(contains("_mean")) %>%
+      distinct(.keep_all=TRUE) %>%
+      mutate(Player = "mean of selected") %>%
+      dplyr::select(Player, everything())
+    
+    names(tsne_mean) <- gsub("_mean","",names(tsne_mean))
+  }
   
   tsne_max <- tsne_radar %>%
     dplyr::select(contains("_max")) %>%
     distinct(.keep_all=TRUE) %>%
-    mutate(Player = "") %>%
+    mutate(Player = "max") %>%
     dplyr::select(Player, everything())
   
   names(tsne_max) <- gsub("_max","",names(tsne_max))
   
-  tsne_radar <- tsne_radar %>%
-    dplyr::select(-contains("_m")) %>%
-    filter(Player %in% colPlayer)
-  tsne_radar <- bind_rows(tsne_radar,tsne_max,tsne_min)
-  
+  tsne_radar <- bind_rows(tsne_mean,tsne_max)
   #ez.radarmap(df, "model", stats="mean", lwd=1, angle=0, fontsize=0.6, facet=T, facetfontsize=1, color=id, linetype=NULL)
-  ez.radarmap(tsne_radar, "Player", stats="mean", lwd=1, angle=0, fontsize=1.5, facet=F, facetfontsize=1, color=id, linetype=NULL)
+  ez.radarmap(tsne_radar, "Player", stats="none", lwd=1, angle=0, fontsize=1.5, facet=F, facetfontsize=1, color=id, linetype=NULL) +
+    theme(legend.key=element_blank(),
+          legend.title=element_blank(),
+          panel.border = element_blank(),
+          panel.background = element_blank(),
+          plot.title = element_text(lineheight=.5),
+          #axis.text.x = element_blank(),
+          #axis.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank()
+          #axis.ticks = element_blank()
+          )  
   
+}
+
+.brushTable <- function(brushPoints){
   
+  brushPoints <- as.data.frame(brushPoints)
+  #return(str(brushPoints))
 }

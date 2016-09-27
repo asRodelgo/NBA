@@ -51,3 +51,23 @@ output$plotTSNEdensities <- renderPlot({
   }
   return(plotTSNEdensities)
 })
+
+output$plotRadarBrushed <- renderPlot({
+  
+  brush <- input$plot_brush
+  pointsBrushed <- brushedPoints(.tSNE_plot_filter(input$colTeam,input$colSeason,input$colPlayer,
+                                           input$colAge,input$colSkill), brush)
+  
+  plotRadarBrushed <- .radarPlot(pointsBrushed)
+
+  return(plotRadarBrushed)
+  
+})
+
+output$tableBrushed <- DT::renderDataTable({
+  brush <- input$plot_brush
+  pointsBrushed <- brushedPoints(.tSNE_plot_filter(input$colTeam,input$colSeason,input$colPlayer,
+                                                   input$colAge,input$colSkill), brush)
+  tableBrushed <- .brushTable(pointsBrushed)
+  return(tableBrushed)
+},options = list(dom = 't'))
