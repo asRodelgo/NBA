@@ -35,7 +35,7 @@
       ggplot(NULL, aes(x,y)) +
         geom_point(data=tsne_points_filter,aes(color = eval(parse(text=colSkill)))) +
         scale_color_gradient2(midpoint=median(eval(parse(text=paste0("tsne_points_filter$",colSkill)))), low="red", mid="white",high="blue")+
-        #geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.01)) + 
+        geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.1)) + 
         theme(legend.key=element_blank(),
               legend.title=element_blank(),
               legend.text = element_blank(),
@@ -51,7 +51,7 @@
       
         ggplot(NULL, aes(x,y)) +  
         geom_point(data=tsne_points_filter,color = "blue") +
-        #geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.01)) + 
+        geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.11)) + 
         theme(legend.key=element_blank(),
               legend.title=element_blank(),
               legend.text = element_blank(),
@@ -92,10 +92,10 @@
       filter(!(Player %in% colPlayer & Age %in% colAge
                & Tm %in% colTeam & Season %in% colSeason))
     
-  } else {
-    plot(c(1,1),type="n", frame.plot = FALSE, axes=FALSE, ann=FALSE)
-    graphics::text(1.5, 1,"Not enough data", col="red", cex=2)
-  }
+  } else{ return()}
+    #plot(c(1,1),type="n", frame.plot = FALSE, axes=FALSE, ann=FALSE)
+    #graphics::text(1.5, 1,"Not enough data", col="red", cex=2)
+  
   return(tsne_points_filter)
 }
 

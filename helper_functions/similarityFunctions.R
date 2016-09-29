@@ -321,3 +321,10 @@
 
 }
 
+# Calculate centroid and other measures for selected cluster of points from tSNE
+.clusterMath <- function(colTeam,colSeason,colPlayer,colAge,colSkill){
+  
+  points <- .tSNE_plot_filter(colTeam,colSeason,colPlayer,colAge,colSkill)
+  
+  centroid <- c(mean(points$x),mean(points$y))
+}
