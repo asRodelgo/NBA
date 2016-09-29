@@ -104,11 +104,13 @@
   
   tsne_points_filter <- .tSNE_plot_filter(colTeam,colSeason,colPlayer,colAge,colSkill)
   tsne_points_filter <- gather(tsne_points_filter, skill, value, -Player,-Tm,-Age,-Season,-Pos,-x,-y)
+  tsne_ready_gather <- gather(tsne_ready, skill, value, -Player,-Tm,-Age,-Season,-Pos,-x,-y)
   
   if (is.null(clickPlayer)){
     
-    ggplot(tsne_points_filter,aes(value)) + 
-      geom_density(aes(y=..density..),alpha=.4, fill="green") +  
+    ggplot(data=tsne_ready_gather,aes(value)) + 
+      geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey") +  
+      geom_density(data=tsne_points_filter,aes(y=..density..),alpha=.8, fill="green") +  
       facet_wrap(~skill, nrow=1, scales="free_x") +
       theme(legend.key=element_blank(),
             legend.title=element_blank(),
@@ -121,14 +123,16 @@
             axis.title.y = element_blank()
             #axis.ticks = element_blank()
       )
+    
   } else {
     
     verticalLine <- tsne_points_filter %>%
       filter(Player == clickPlayer, Season == clickSeason) %>%
       dplyr::select(skill, value)
     
-    ggplot(tsne_points_filter,aes(value)) + 
-      geom_density(aes(y=..density..),alpha=.4, fill="green") +  
+    ggplot(data=tsne_ready_gather,aes(value)) + 
+      geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey") +  
+      geom_density(data=tsne_points_filter,aes(y=..density..),alpha=.8, fill="green") +  
       facet_wrap(~skill, nrow=1, scales="free_x") +
       geom_vline(data=verticalLine, aes(xintercept = value), colour="red", size = 1) +
       theme(legend.key=element_blank(),
