@@ -95,4 +95,4 @@ output$tableBrushed <- DT::renderDataTable({
                                                    input$colAge,input$colSkill), brush)
   tableBrushed <- .brushTable(pointsBrushed)
   return(tableBrushed)
-},options = list(dom = 't'))
+},options = list(dom = 't', pageLength = 25))

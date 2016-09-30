@@ -327,4 +327,5 @@
   points <- .tSNE_plot_filter(colTeam,colSeason,colPlayer,colAge,colSkill)
   
   centroid <- c(mean(points$x),mean(points$y))
+  dispersion <- c(sd(points$x),sd(points$y))
 }

@@ -26,6 +26,8 @@
     tsne_points_filter <- tsne_ready_plot %>%
       filter(Player %in% colPlayer & Age %in% colAge
              & Tm %in% colTeam & Season %in% colSeason)
+    centroid <- data.frame(x=(mean(tsne_points_filter$x)),y=mean(tsne_points_filter$y))
+    
     tsne_points_filter_out <- tsne_ready_plot %>%
       filter(!(Player %in% colPlayer & Age %in% colAge
              & Tm %in% colTeam & Season %in% colSeason))
@@ -33,8 +35,8 @@
     if (!(colSkill=="All")){
       
       ggplot(NULL, aes(x,y)) +
-        geom_point(data=tsne_points_filter,aes(color = eval(parse(text=colSkill)))) +
-        scale_color_gradient2(midpoint=median(eval(parse(text=paste0("tsne_points_filter$",colSkill)))), low="red", mid="white",high="blue")+
+        geom_point(data=tsne_points_filter,aes(color = eval(parse(text=colSkill))),size=2) +
+        scale_color_gradient2(midpoint=mean(eval(parse(text=paste0("tsne_points_filter$",colSkill)))), low="blue", mid="white",high="red")+
         geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.1)) + 
         theme(legend.key=element_blank(),
               legend.title=element_blank(),
@@ -50,8 +52,9 @@
     } else {
       
         ggplot(NULL, aes(x,y)) +  
-        geom_point(data=tsne_points_filter,color = "blue") +
-        geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.11)) + 
+        geom_point(data=tsne_points_filter,color = "blue",size=2) +
+        geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.1)) +
+        geom_point(data=centroid,color="red",size=3) + 
         theme(legend.key=element_blank(),
               legend.title=element_blank(),
               legend.text = element_blank(),
@@ -110,7 +113,7 @@
     
     ggplot(data=tsne_ready_gather,aes(value)) + 
       geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey") +  
-      geom_density(data=tsne_points_filter,aes(y=..density..),alpha=.8, fill="green") +  
+      geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.6, fill="green") +  
       facet_wrap(~skill, nrow=1, scales="free_x") +
       theme(legend.key=element_blank(),
             legend.title=element_blank(),
@@ -132,7 +135,7 @@
     
     ggplot(data=tsne_ready_gather,aes(value)) + 
       geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey") +  
-      geom_density(data=tsne_points_filter,aes(y=..density..),alpha=.8, fill="green") +  
+      geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.8, fill="green") +  
       facet_wrap(~skill, nrow=1, scales="free_x") +
       geom_vline(data=verticalLine, aes(xintercept = value), colour="red", size = 1) +
       theme(legend.key=element_blank(),
