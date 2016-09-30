@@ -113,7 +113,7 @@
     
     ggplot(data=tsne_ready_gather,aes(value)) + 
       geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey") +  
-      geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.6, fill="green") +  
+      geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.6, fill="brown") +  
       facet_wrap(~skill, nrow=1, scales="free_x") +
       theme(legend.key=element_blank(),
             legend.title=element_blank(),
@@ -135,7 +135,7 @@
     
     ggplot(data=tsne_ready_gather,aes(value)) + 
       geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey") +  
-      geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.8, fill="green") +  
+      geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.8, fill="brown") +  
       facet_wrap(~skill, nrow=1, scales="free_x") +
       geom_vline(data=verticalLine, aes(xintercept = value), colour="red", size = 1) +
       theme(legend.key=element_blank(),
@@ -161,8 +161,8 @@
 #   } else if (Off_Deff == "Defense"){
 #     list_skills <- c("effBLK","effDRB","effORB","effSTL","effTOV","effPF")
 #   } else {
-#     list_skills <- c("effPTS","eff2PM","eff2PA","eff3PM","eff3PA","effFTA","effFTM","effAST",
-#                      "effBLK","effDRB","effORB","effSTL","effTOV","effPF","effMin")
+     list_skills <- c("effPTS","eff2PM","eff2PA","eff3PM","eff3PA","effFTA","effFTM","effAST",
+                      "effSTL","effBLK","effDRB","effORB","effTOV","effPF","effMin")
 #     }
   
   tsne_radar <- tsne_ready %>%
@@ -205,6 +205,7 @@
   names(tsne_max) <- gsub("_max","",names(tsne_max))
   
   tsne_radar <- bind_rows(tsne_mean,tsne_max)
+  tsne_radar <- dplyr::select(tsne_radar, Player, one_of(list_skills))
   #ez.radarmap(df, "model", stats="mean", lwd=1, angle=0, fontsize=0.6, facet=T, facetfontsize=1, color=id, linetype=NULL)
   ez.radarmap(tsne_radar, "Player", stats="none", lwd=1, angle=0, fontsize=1.5, facet=F, facetfontsize=1, color=id, linetype=NULL) +
     theme(legend.key=element_blank(),
