@@ -219,7 +219,7 @@
 # return similar players based on last 5 years performances
 # For retired players this will return similar players according to their last 5 seasons
 # as NBA player. Unless pickAge is explicitly entered
-.similarPlayers <- function(playerName,numberPlayersToCompare, pickAge = 0){
+.similarPlayers <- function(playerName,numberPlayersToCompare, pickAge){
   
   thisAgeFrame <- filter(playersHist, Player == playerName)
   
@@ -272,15 +272,16 @@
   }
 }
 
-.predictPlayer <- function(playerName, numberPlayersToCompare,numberTeamsForVariation){
+.predictPlayer <- function(playerName, numberPlayersToCompare,pickAge,numberTeamsForVariation){
 
   # Top 10 more similar to selected player for past 5 years
-  top10_similar <- head(.similarPlayers(playerName,numberPlayersToCompare),numberTeamsForVariation)$Player
+  top10_similar <- head(.similarPlayers(playerName,numberPlayersToCompare,pickAge),numberTeamsForVariation)$Player
   thisAgeFrame <- filter(playersHist, Player == playerName)
   thisAge <- max(filter(thisAgeFrame, Player == playerName)$Age)
   
   # Now calculate average variation in their stats when they went from current age to age + 1
   thisAgeData <- .tSNE_prepare(thisAge)
+  #thisAgeData <- read.csv(paste0("data/tsneBlock_",thisAge,".csv"))
   namesKeep <- names(thisAgeData)
   names(thisAgeData)[2:ncol(thisAgeData)] <- sapply(names(thisAgeData)[2:ncol(thisAgeData)],
                                                     function(x) paste0(x,"_",thisAge))
@@ -311,7 +312,7 @@
   for (i in 1:ncol(top10_var)){
     predAgeData[i+3] <- predAgeData[i+3]*(1+top10_var[i])
   }
-  names(predAgeData) <- names(data_tsne)
+  names(predAgeData) <- namesKeep
   # Update the Season and Age of the player
   predAgeData$Season <- paste0(as.numeric(substr(predAgeData$Season,1,4))+1,"-",
                                as.numeric(substr(predAgeData$Season,1,4))+2)

@@ -19,10 +19,12 @@ team_stats <- merge(team_stats,franchises,by.x="Team",by.y="Franchise",all.x=TRU
 # conferences according to last season
 conferences <- read.csv("data/nba_conferences.csv", stringsAsFactors = FALSE)
 
+#### NEW SEASON/CURRENT SEASON --------------------------------- 
+
 # Actual Season schedule
 realSeasonSchedule <- read.csv("data/realSeasonSchedule.csv",stringsAsFactors = FALSE)
 datesRange <- unique(realSeasonSchedule$Date)
-# If not new data yet, -----------------------------------------
+# If not new data yet (transfers not finished so teams rosters not final), -----------------------------------------
 # use last season's as new data, removing PTS & PTSA
 team_statsNew <- team_stats %>%
   filter(Season == max(as.character(Season))) %>%
@@ -42,6 +44,9 @@ nn_Defense <- list.load("data/nn_Defense.rds")
 # Default to pre-calculated for quick start of the app
 teamsPredicted <- read.csv("data/teamsPredicted.csv", 
                            colClasses = c("factor",rep("numeric",2),rep("character",2)))
+
+###### ---------------------------------------------------
+
 #.teamsPredictedPower() 
 tsne_points <- read.csv("data/tsne_points_All.csv",stringsAsFactors = FALSE)
 
