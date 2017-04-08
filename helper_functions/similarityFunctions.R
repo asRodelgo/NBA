@@ -53,7 +53,7 @@
   
 }
 
-.tSNE_prepare <- function(playerAge){
+.tSNE_prepare <- function(playerAge,per_Min){
   # Players that changed teams in the season have a column Tm == "TOT" with their total stats
   # and because I don't care about the team, this should be enough filter
   # playerAge <- 34
@@ -72,7 +72,7 @@
            effTOV = TOV/(3936*effMin),effPF = PF/(3936*effMin),
            effPTS = PTS/(3936*effMin)) %>%
     filter(keep == 0 | Tm == "TOT") %>%
-    filter(effMin >= .15) %>% # Played at least 15% of total available minutes
+    filter(effMin >= per_Min) %>% # Played at least X% of total available minutes
     dplyr::select(Player,Pos,Season,Age,FGPer = FG.,FG3Per = X3P., FG2Per = X2P., effFGPer = eFG.,
            FTPer = FT., starts_with("eff"),
            -Tm,-keep,-G,-GS,-MP,FG,-FGA,-X3P,-X3PA,-X2P,-X2PA,-FG,-FTA,-ORB,-DRB,-TRB,-AST,
@@ -143,7 +143,7 @@
 
 .tSNE_compute <- function(num_iter, max_num_neighbors, playerAge){
   
-  data_tsne <- .tSNE_prepare(playerAge)
+  data_tsne <- .tSNE_prepare(playerAge,per_Min = .15)
   # calculate tsne-points Dimensionality reduction to 2-D
   if (nrow(data_tsne)>0){
     set.seed(456) # reproducitility
@@ -161,7 +161,7 @@
 # compute colors for regions
 .getColors <- function(num_iter, max_num_neighbors,playerAge,colVar){
   
-  data_tsne <- .tSNE_prepare(playerAge)
+  data_tsne <- .tSNE_prepare(playerAge,per_Min=.15)
   if (colVar == "Season"){
     colors <- rainbow(length(unique(data_tsne$Season)))
     names(colors) <- unique(data_tsne$Season)
@@ -189,12 +189,14 @@
 }
 
 # tsne dist ---------------------------------------------------------
-.tSNE_dist <- function(playerName, num_iter, max_num_neighbors, playerAge){
+.tSNE_dist <- function(playerName, num_iter, max_num_neighbors, playerAge, firstSeason = NULL){
   
-  data_tsne <- .tSNE_prepare(playerAge)
+  if(is.null(firstSeason)) firstSeason <- "1979-1980"
+  
+  data_tsne <- .tSNE_prepare(playerAge,per_Min=.15)
   #tsne_points <- .tSNE_compute(num_iter, max_num_neighbors, playerAge)
   tsne_points <- tsneBlock[[playerAge]]
-  if (length(tsne_points)>0 & nrow(filter(data_tsne, Player == playerName))>0){
+  if (length(tsne_points)>0 & nrow(filter(data_tsne, Player == playerName, Season >= firstSeason))>0){
     # calculate the euclidean distance between the selected player and the rest
     dist_mat <- cbind(tsne_points,as.character(data_tsne$Player))
     dist_mat <- as.data.frame(dist_mat, stringsAsFactors=FALSE)
@@ -221,7 +223,7 @@
 # as NBA player. Unless pickAge is explicitly entered
 .similarPlayers <- function(playerName,numberPlayersToCompare, pickAge){
   
-  thisAgeFrame <- filter(playersHist, Player == playerName)
+  thisAgeFrame <- filter(playersHist, Player == playerName, Season >= paste0(as.numeric(thisYear)-pickAge+19,"-",as.numeric(thisYear)-pickAge+20))
   
   if (nrow(thisAgeFrame) > 0){
     #thisAge <- filter(thisAgeFrame, Season == max(as.character(Season)))$Age
@@ -276,17 +278,17 @@
 
   # Top 10 more similar to selected player for past 5 years
   top10_similar <- head(.similarPlayers(playerName,numberPlayersToCompare,pickAge),numberTeamsForVariation)$Player
-  thisAgeFrame <- filter(playersHist, Player == playerName)
+  thisAgeFrame <- filter(playersHist, Player == playerName, Season >= paste0(as.numeric(thisYear)-pickAge+19,"-",as.numeric(thisYear)-pickAge+20))
   thisAge <- max(filter(thisAgeFrame, Player == playerName)$Age)
   
   # Now calculate average variation in their stats when they went from current age to age + 1
-  thisAgeData <- .tSNE_prepare(thisAge)
+  thisAgeData <- .tSNE_prepare(thisAge,per_Min=.001)
   #thisAgeData <- read.csv(paste0("data/tsneBlock_",thisAge,".csv"))
   namesKeep <- names(thisAgeData)
   names(thisAgeData)[2:ncol(thisAgeData)] <- sapply(names(thisAgeData)[2:ncol(thisAgeData)],
                                                     function(x) paste0(x,"_",thisAge))
   #thisAgeData$Age <- thisAge
-  nextAgeData <- .tSNE_prepare(thisAge+1)
+  nextAgeData <- .tSNE_prepare(thisAge+1,per_Min=.001)
   #nextAgeData$Age <- thisAge + 1
   names(nextAgeData)[2:ncol(nextAgeData)] <- sapply(names(nextAgeData)[2:ncol(nextAgeData)],
                                                     function(x) paste0(x,"_",thisAge+1))
@@ -308,6 +310,7 @@
   # Median variations for top 10 most similar players 
   top10_var <- summarise_each(top10_var, funs(median(.)),-Player)
   # Apply this variation to predict stats for this player for next season  
+##  ### NOTE: This may fail when player didn't play much at this age. Think about alternatives
   predAgeData <- filter(thisAgeData, Player == playerName)
   for (i in 1:ncol(top10_var)){
     predAgeData[i+3] <- predAgeData[i+3]*(1+top10_var[i])

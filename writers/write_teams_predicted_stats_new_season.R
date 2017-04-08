@@ -36,14 +36,24 @@ current_rosters <- mutate(current_rosters, Age = thisSeason - as.numeric(substr(
 write.csv(current_rosters, "data/currentRosters.csv",row.names = FALSE)
 
 # 2
-
-for (team in unique(current_rosters$Team)){
+current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE)
+#for (team in unique(current_rosters$Team)){
+for (team in c("ATL")){
   thisTeam <- filter(current_rosters, Team == team)
+  thisTeamStats <- data.frame()
   for (player in thisTeam$Player){
     thisPlayer <- filter(thisTeam, Player == player)
-    if (thisPlayer$Experience >= 1){ # not a rookie
-      
+    if (thisPlayer$Experience %in% seq(1,25,1)){ # not a rookie
+      print(paste0("Processing ",thisPlayer$Player))
+      thisPlayerStats <- .predictPlayer(thisPlayer$Player,20,thisPlayer$Age-1,10)
+      print(" OK!")
     }
+    if (nrow(thisTeamStats)>0){
+      thisTeamStats <- bind_rows(thisTeamStats,thisPlayerStats)
+    } else{
+      thisTeamStats <- thisPlayerStats
+    }
+    
   }
 }
 

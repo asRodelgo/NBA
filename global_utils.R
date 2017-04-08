@@ -11,6 +11,9 @@ library(RColorBrewer)
 #devtools:install_github("jerryzhujian9/ezmisc")
 library(ezmisc)#
 
+thisYear <- substr(Sys.Date(),1,4)
+thisSeason <- paste0(as.numeric(substr(Sys.Date(),1,4))-2,"-",as.numeric(substr(Sys.Date(),1,4))-1) 
+
 source("data/read_data.R")
 # Source all files from server_files directory and subdirectories
 files <- list.files("helper_functions", full.names = TRUE, recursive = TRUE)
