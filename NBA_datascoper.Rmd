@@ -63,7 +63,7 @@ selectizeInput('colAge', 'Age:', choices=c("All",sort(unique(data_tsne_sample$Ag
 # })  
 ```
 
-Row
+Row {data-height=800}
 -----------------------------------------------------------------------
 
 ### Cloud of points {data-width=700}
@@ -150,8 +150,20 @@ output$hover_info <- renderUI({
   # actual tooltip created as wellPanel
   wellPanel(
     style = style,
-    p(HTML(paste0(point$Player, "<br/>",point$Tm," - ",point$Season, "<b> (Age: </b>", point$Age, ") <br/>",
-                  input$colSkill,": ",eval(parse(text=paste0("point$",input$colSkill))))))
+    p(HTML(paste0(point$Player, "<br/>",point$Tm," - ",point$Season, "(Age: ", point$Age,") ", 
+                  "<b> Min: </b>", round(point$effMin,3), 
+                  "<b> Pts: </b>", round(point$effPTS,3),
+                  "<b> Ast: </b>", round(point$effAST,3), 
+                  "<b> ORb: </b>", round(point$effORB,3), 
+                  "<b> DRb: </b>", round(point$effDRB,3), 
+                  "<b> FT%: </b>", round(point$effFTM/point$effFTA,3),
+                  "<b> 3P%: </b>", round(point$eff3PM/point$eff3PA,3),
+                  "<b> Stl: </b>", round(point$effSTL,3),
+                  "<b> Blk: </b>", round(point$effBLK,3),
+                  "<b> Tov: </b>", round(point$effTOV,3),
+                  "<b> PFl: </b>", round(point$effPF,3),
+                  " <br/>"
+                  )))
   )
 })
 
@@ -159,7 +171,7 @@ output$hover_info <- renderUI({
 output$click_info <- renderUI({
   click <- input$plot_click
   point <- nearPoints(.tSNE_plot_filter(input$colTeam,input$colSeason,input$colPlayer,
-                                     input$colAge,input$colSkill), click, threshold = 3, maxpoints = 1, addDist = TRUE)
+                                     input$colAge,input$colSkill), click, threshold = 5, maxpoints = 1, addDist = TRUE)
   
   #     
   if (nrow(point) == 0) return(NULL)
@@ -196,9 +208,9 @@ output$click_info <- renderUI({
   style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
                   "left:", left_px + 2, "px; top:", top_px + 2, "px;")
   # actual tooltip created as wellPanel
-  panel_input <- paste0('Closest 10 Players (Eucl. dist.) to ',filter(data_tsne_sample, name==tableTop10$Player[1])$Player,' in ',tableTop10$Season[1],'</a><br/><br/>')
+  panel_input <- paste0('Closest 10 Players (Eucl. dist.) to ',filter(data_tsne_sample, Player==tableTop10$Player[1])$Player,' in ',tableTop10$Season[1],'</a><br/><br/>')
   for (i in 2:11){
-    panel_input <- paste0(panel_input, country_url,filter(data_tsne_sample, name==tableTop10$Player[i])$Player,' (',tableTop10$Season[i],')</a><br/><br/>',round(tableTop10$dist[i],3),'<br/>')
+    panel_input <- paste0(panel_input, filter(data_tsne_sample, Player==tableTop10$Player[i])$Player,' (',tableTop10$Season[i],')</a><br/><br/>',round(tableTop10$dist[i],3),'<br/>')
   }
   
   wellPanel(
@@ -209,7 +221,23 @@ output$click_info <- renderUI({
 
 ```
 
-Row
+### Table {data-width=300}
+
+```{r}
+# ui
+library(shinyBS)
+tableOutput('tableBrushed')
+
+# server
+output$tableBrushed <- shiny::renderDataTable({
+  brush <- input$plot_brush
+  pointsBrushed <- brushedPoints(.tSNE_plot_filter(input$colTeam,input$colSeason,input$colPlayer,input$colAge,input$colSkill), brush)
+  tableBrushed <- .brushTable(pointsBrushed)
+  return(tableBrushed)
+})
+```
+
+Row {data-height=200}
 -----------------------------------------------------------------------
 
 ### Box-plots

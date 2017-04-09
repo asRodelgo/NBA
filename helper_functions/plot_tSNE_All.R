@@ -114,8 +114,8 @@
     if (is.null(clickPlayer)){
       
       ggplot(data=tsne_ready_gather,aes(value)) + 
-        geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey") +  
-        geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.6, fill="brown") +  
+        geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey",colour="grey",size=1) +  
+        geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.6, fill="blue") +  
         facet_wrap(~skill, ncol=1, scales="free_x") +
         theme(legend.key=element_blank(),
               legend.title=element_blank(),
@@ -136,8 +136,8 @@
         dplyr::select(skill, value)
       
       ggplot(data=tsne_ready_gather,aes(value)) + 
-        geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey") +  
-        geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.8, fill="brown") +  
+        geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey",colour="grey",size=1) +  
+        geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.8, fill="blue") +  
         facet_wrap(~skill, ncol=1, scales="free_x") +
         geom_vline(data=verticalLine, aes(xintercept = value), colour="red", size = 1) +
         theme(legend.key=element_blank(),
@@ -157,8 +157,8 @@
       if (is.null(clickPlayer)){
         
         ggplot(data=tsne_ready_gather,aes(value)) + 
-          geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey") +  
-          geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.6, fill="brown") +  
+          geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey",colour="grey",size=1) +  
+          geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.6, fill="blue") +  
           facet_wrap(~skill, nrow=1, scales="free_x") +
           theme(legend.key=element_blank(),
                 legend.title=element_blank(),
@@ -179,8 +179,8 @@
           dplyr::select(skill, value)
         
         ggplot(data=tsne_ready_gather,aes(value)) + 
-          geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey") +  
-          geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.8, fill="brown") +  
+          geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey",colour="grey",size=1) +  
+          geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.8, fill="blue") +  
           facet_wrap(~skill, nrow=1, scales="free_x") +
           geom_vline(data=verticalLine, aes(xintercept = value), colour="red", size = 1) +
           theme(legend.key=element_blank(),
@@ -285,10 +285,10 @@
     distCouPerY <- filter(tsne_ready,Player %in% colPlayer, Season %in% colSeason)$y
     
     tsne_points_filter <- tsne_ready %>%
-      select(Season,Player,x,y) %>%
+      dplyr::select(Season,Player,x,y) %>%
       mutate(dist = sqrt((x-distCouPerX)^2+(y-distCouPerY)^2)) %>%
       arrange(dist) %>%
-      select(-x,-y)
+      dplyr::select(-x,-y)
     
   } else{ return()}
   
