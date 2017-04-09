@@ -103,55 +103,99 @@
 }
 
 # Density plots
-.densityPlots <- function(colTeam,colSeason,colPlayer,colAge,colSkill,clickPlayer,clickSeason){
+.densityPlots <- function(colTeam,colSeason,colPlayer,colAge,colSkill,clickPlayer,clickSeason,horiz=TRUE){
   
   tsne_points_filter <- .tSNE_plot_filter(colTeam,colSeason,colPlayer,colAge,colSkill)
   tsne_points_filter <- gather(tsne_points_filter, skill, value, -Player,-Tm,-Age,-Season,-Pos,-x,-y)
   tsne_ready_gather <- gather(tsne_ready, skill, value, -Player,-Tm,-Age,-Season,-Pos,-x,-y)
   
-  if (is.null(clickPlayer)){
+  if (!horiz){
     
-    ggplot(data=tsne_ready_gather,aes(value)) + 
-      geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey") +  
-      geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.6, fill="brown") +  
-      facet_wrap(~skill, nrow=1, scales="free_x") +
-      theme(legend.key=element_blank(),
-            legend.title=element_blank(),
-            panel.border = element_blank(),
-            panel.background = element_blank(),
-            plot.title = element_text(lineheight=.5),
-            #axis.text.x = element_blank(),
-            #axis.text.y = element_blank(),
-            axis.title.x = element_blank(),
-            axis.title.y = element_blank()
-            #axis.ticks = element_blank()
-      )
+    if (is.null(clickPlayer)){
+      
+      ggplot(data=tsne_ready_gather,aes(value)) + 
+        geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey") +  
+        geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.6, fill="brown") +  
+        facet_wrap(~skill, ncol=1, scales="free_x") +
+        theme(legend.key=element_blank(),
+              legend.title=element_blank(),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              plot.title = element_text(lineheight=.5),
+              #axis.text.x = element_blank(),
+              #axis.text.y = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank()
+              #axis.ticks = element_blank()
+        )
+      
+    } else {
+      
+      verticalLine <- tsne_points_filter %>%
+        filter(Player == clickPlayer, Season == clickSeason) %>%
+        dplyr::select(skill, value)
+      
+      ggplot(data=tsne_ready_gather,aes(value)) + 
+        geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey") +  
+        geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.8, fill="brown") +  
+        facet_wrap(~skill, ncol=1, scales="free_x") +
+        geom_vline(data=verticalLine, aes(xintercept = value), colour="red", size = 1) +
+        theme(legend.key=element_blank(),
+              legend.title=element_blank(),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              plot.title = element_text(lineheight=.5),
+              #axis.text.x = element_blank(),
+              #axis.text.y = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank()
+              #axis.ticks = element_blank()
+        )
+      } 
     
-  } else {
-    
-    verticalLine <- tsne_points_filter %>%
-      filter(Player == clickPlayer, Season == clickSeason) %>%
-      dplyr::select(skill, value)
-    
-    ggplot(data=tsne_ready_gather,aes(value)) + 
-      geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey") +  
-      geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.8, fill="brown") +  
-      facet_wrap(~skill, nrow=1, scales="free_x") +
-      geom_vline(data=verticalLine, aes(xintercept = value), colour="red", size = 1) +
-      theme(legend.key=element_blank(),
-            legend.title=element_blank(),
-            panel.border = element_blank(),
-            panel.background = element_blank(),
-            plot.title = element_text(lineheight=.5),
-            #axis.text.x = element_blank(),
-            #axis.text.y = element_blank(),
-            axis.title.x = element_blank(),
-            axis.title.y = element_blank()
-            #axis.ticks = element_blank()
-      )
-    
-  }
-    
+    } else {
+      if (is.null(clickPlayer)){
+        
+        ggplot(data=tsne_ready_gather,aes(value)) + 
+          geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey") +  
+          geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.6, fill="brown") +  
+          facet_wrap(~skill, nrow=1, scales="free_x") +
+          theme(legend.key=element_blank(),
+                legend.title=element_blank(),
+                panel.border = element_blank(),
+                panel.background = element_blank(),
+                plot.title = element_text(lineheight=.5),
+                #axis.text.x = element_blank(),
+                #axis.text.y = element_blank(),
+                axis.title.x = element_blank(),
+                axis.title.y = element_blank()
+                #axis.ticks = element_blank()
+          )
+        
+      } else {
+        
+        verticalLine <- tsne_points_filter %>%
+          filter(Player == clickPlayer, Season == clickSeason) %>%
+          dplyr::select(skill, value)
+        
+        ggplot(data=tsne_ready_gather,aes(value)) + 
+          geom_density(data=tsne_ready_gather,aes(y=..density..),alpha=.8, fill="grey") +  
+          geom_histogram(data=tsne_points_filter,aes(y=..density..),alpha=.8, fill="brown") +  
+          facet_wrap(~skill, nrow=1, scales="free_x") +
+          geom_vline(data=verticalLine, aes(xintercept = value), colour="red", size = 1) +
+          theme(legend.key=element_blank(),
+                legend.title=element_blank(),
+                panel.border = element_blank(),
+                panel.background = element_blank(),
+                plot.title = element_text(lineheight=.5),
+                #axis.text.x = element_blank(),
+                #axis.text.y = element_blank(),
+                axis.title.x = element_blank(),
+                axis.title.y = element_blank()
+                #axis.ticks = element_blank()
+          )
+      }
+    }
 }
 
 .radarPlot <- function(brushPoints){#,Off_Deff="All"){
@@ -227,4 +271,26 @@
   
   brushPoints <- as.data.frame(brushPoints)
   #return(str(brushPoints))
+}
+
+.compare10_click <- function(colSeason,colPlayer){
+  
+  if (colPlayer=="All" || is.null(colPlayer)) colPlayer <- players_list
+  if (colSeason=="All" || is.null(colSeason)) colSeason <- seasons_list
+  
+  if (length(tsne_ready)>0){ # if data do stuff
+    
+    # coordenates x,y of clicked point
+    distCouPerX <- filter(tsne_ready,Player %in% colPlayer, Season %in% colSeason)$x
+    distCouPerY <- filter(tsne_ready,Player %in% colPlayer, Season %in% colSeason)$y
+    
+    tsne_points_filter <- tsne_ready %>%
+      select(Season,Player,x,y) %>%
+      mutate(dist = sqrt((x-distCouPerX)^2+(y-distCouPerY)^2)) %>%
+      arrange(dist) %>%
+      select(-x,-y)
+    
+  } else{ return()}
+  
+  return(tsne_points_filter)
 }

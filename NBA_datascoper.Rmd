@@ -1,0 +1,239 @@
+---
+title: "NBA datascoper"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    social: menu
+    source_code: embed
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+source("global_utils.R", local = TRUE)
+```
+
+Sidebar {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+# ui
+library(shinyBS)
+
+tagList(
+  shinyjs::useShinyjs(),
+  #includeCSS("css/datascoper.css"),
+  
+  splitLayout(cellWidths = c("66%","33%"),
+              h4("Filter by"),
+              actionLink('help_click',"Help",icon = icon("info-sign", lib = "glyphicon")),
+              bsPopover('help_click', "Help",content = paste0('<p>The cloud of points represents a projection of many indicators in 2 dimensions using ',
+                                                              '<a href=',tsne_url,' target="_blank">tSNE</a>. ',
+                                                              'Each of the points corresponds to a player and a season. Basic controls:</p>',
+                                                              '<div><ul><li>hover over a point for player stats</li>',
+                                                              '<li>click on a point for top 10 closest players</li>',
+                                                              '<li>brush over a group of points to zoom</li>',
+                                                              '<li>double click over a group of points to zoom back out</li>',
+                                                              '<li>use filter selectors to visualize different elements on cloud</li>',
+                                                              '<li>use color selector to visualize level values for an indicator</li>'
+              ), trigger = 'click')
+  ),
+selectizeInput('colSeason', 'Season:', choices=c("All",sort(unique(data_tsne_sample$Season))),selected="All",multiple=TRUE,options = list(maxItems = 5,dropdownParent = 'body')),
+selectizeInput('colTeam', 'Team:', choices=c("All",sort(unique(data_tsne_sample$Tm))),selected="All",multiple=TRUE,options = list(maxItems = 5,dropdownParent = 'body')),
+selectizeInput('colPlayer', 'Player:', choices=c("All",sort(unique(data_tsne_sample$Player))),selected="All",multiple=TRUE,options = list(maxItems = 5,dropdownParent = 'body')),
+selectizeInput('colAge', 'Age:', choices=c("All",sort(unique(data_tsne_sample$Age))),selected="All",multiple=TRUE,options = list(maxItems = 5,dropdownParent = 'body')),
+  #),
+  HTML('<hr style="color: purple;">'),
+  h4("Color by"),
+  selectizeInput('colSkill', 'Skill:', choices=c("All",names(data_tsne_sample)[6:ncol(data_tsne_sample)]),selected="All",multiple=TRUE,options = list(maxItems = 5,dropdownParent = 'body')),
+  HTML('<hr style="color: purple;">')
+)
+
+# server
+# update country selector with region selector
+# observe({
+#   
+#   if (!((input$colRegion=="All") || (is.null(input$colRegion)))){
+#     region <- input$colRegion
+#     updateSelectizeInput(session, "colCountry",
+#                          choices=sort(unique(filter(data_tsne_sample, Region %in% region)$Country)), 
+#                          selected=NULL)
+#   }
+#   
+# })  
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Cloud of points {data-width=700}
+
+```{r}
+# ui
+library(shinyBS)
+
+plotOutput('plotTSNE', 
+                  hover = hoverOpts("plot_hover", delay = 100, delayType = "debounce"),
+                  click = clickOpts("plot_click"),
+                  brush = "plot_brush",
+                  dblclick = "plot_dblclick"
+           )
+uiOutput("hover_info")
+uiOutput("click_info")
+
+# server
+# Plot tSNE ---------------------
+# Single zoomable plot (on left)
+ranges <- reactiveValues(x = NULL, y = NULL)
+
+output$plotTSNE <- renderPlot({
+  plotTSNE <- .tSNE_plot_All(input$colTeam,input$colSeason,input$colPlayer,
+                             input$colAge,input$colSkill)
+  if (!is.null(ranges$x)){
+    plotTSNE <- plotTSNE + coord_cartesian(xlim = ranges$x, ylim = ranges$y)
+  } else {
+    plotTSNE <- plotTSNE + coord_cartesian(xlim = ranges$x, ylim = ranges$y)
+  }
+    #Sys.sleep(2)
+  return(plotTSNE)
+})
+# When a double-click happens, check if there's a brush on the plot.
+# If so, zoom to the brush bounds; if not, reset the zoom.
+observeEvent(input$plot_dblclick, {
+  brush <- input$plot_brush
+  if (!is.null(brush)) {
+    ranges$x <- c(brush$xmin, brush$xmax)
+    ranges$y <- c(brush$ymin, brush$ymax)
+    
+  } else {
+    ranges$x <- NULL
+    ranges$y <- NULL
+  }
+})
+
+# When a brush happens, check if there's a brush on the plot.
+# If so, zoom to the brush bounds; if not, do nothing.
+observeEvent(input$plot_brush, {
+  brush <- input$plot_brush
+  if (!is.null(brush)) {
+    ranges$x <- c(brush$xmin, brush$xmax)
+    ranges$y <- c(brush$ymin, brush$ymax)
+    
+  } else {
+    ranges$x <- NULL
+    ranges$y <- NULL
+  }
+})
+
+# tooltip hover over scatterplot points: see https://gitlab.com/snippets/16220
+output$hover_info <- renderUI({
+  hover <- input$plot_hover
+  point <- nearPoints(.tSNE_plot_filter(input$colTeam,input$colSeason,input$colPlayer,
+                                     input$colAge,input$colSkill), hover, threshold = 3, maxpoints = 1, addDist = TRUE)
+  
+  if (nrow(point) == 0) return(NULL)
+  # calculate point position INSIDE the image as percent of total dimensions
+  # from left (horizontal) and from top (vertical)
+  left_pct <- (hover$x - hover$domain$left) / (hover$domain$right - hover$domain$left)
+  top_pct <- (hover$domain$top - hover$y) / (hover$domain$top - hover$domain$bottom)
+  
+  # calculate distance from left and bottom side of the picture in pixels
+  left_px <- hover$range$left + left_pct * (hover$range$right - hover$range$left)
+  top_px <- hover$range$top + top_pct * (hover$range$bottom - hover$range$top)
+  
+  # create style property fot tooltip
+  # background color is set so tooltip is a bit transparent
+  # z-index is set so we are sure are tooltip will be on top
+  style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
+                  "left:", left_px + 2, "px; top:", top_px + 2, "px;")
+  
+  # actual tooltip created as wellPanel
+  wellPanel(
+    style = style,
+    p(HTML(paste0(point$Player, "<br/>",point$Tm," - ",point$Season, "<b> (Age: </b>", point$Age, ") <br/>",
+                  input$colSkill,": ",eval(parse(text=paste0("point$",input$colSkill))))))
+  )
+})
+
+# tooltip click over scatterplot points: see https://gitlab.com/snippets/16220
+output$click_info <- renderUI({
+  click <- input$plot_click
+  point <- nearPoints(.tSNE_plot_filter(input$colTeam,input$colSeason,input$colPlayer,
+                                     input$colAge,input$colSkill), click, threshold = 3, maxpoints = 1, addDist = TRUE)
+  
+  #     
+  if (nrow(point) == 0) return(NULL)
+  # calculate top 10 closest Country,Period pairs to the clicked one
+  tableTop10 <- .compare10_click(point$Season,point$Player)
+  # calculate point position INSIDE the image as percent of total dimensions
+  # from left (horizontal) and from top (vertical)
+  left_pct <- (click$x - click$domain$left) / (click$domain$right - click$domain$left)
+  top_pct <- (click$domain$top - click$y) / (click$domain$top - click$domain$bottom)
+  
+  # calculate distance from left and bottom side of the picture in pixels
+  # avoid overlapping with other objects by keeping the tooltip inside the frame
+  if (left_pct > .75){
+    if (top_pct >.75){
+      left_px <- -15*click$range$left + left_pct * (click$range$right - click$range$left)
+      top_px <- click$range$top + top_pct * (click$range$bottom - click$range$top)
+    } else {
+      left_px <- -15*click$range$left + left_pct * (click$range$right - click$range$left)
+      top_px <- click$range$top + top_pct * (click$range$bottom - click$range$top)
+    }
+  } else {
+    
+    if (top_pct >.75){
+      left_px <- click$range$left + left_pct * (click$range$right - click$range$left)
+      top_px <- click$range$top + top_pct * (click$range$bottom - click$range$top)
+    } else{
+      left_px <- click$range$left + left_pct * (click$range$right - click$range$left)
+      top_px <- click$range$top + top_pct * (click$range$bottom - click$range$top)
+    }
+  }
+  # create style property fot tooltip
+  # background color is set so tooltip is a bit transparent
+  # z-index is set so we are sure are tooltip will be on top
+  style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
+                  "left:", left_px + 2, "px; top:", top_px + 2, "px;")
+  # actual tooltip created as wellPanel
+  panel_input <- paste0('Closest 10 Players (Eucl. dist.) to ',filter(data_tsne_sample, name==tableTop10$Player[1])$Player,' in ',tableTop10$Season[1],'</a><br/><br/>')
+  for (i in 2:11){
+    panel_input <- paste0(panel_input, country_url,filter(data_tsne_sample, name==tableTop10$Player[i])$Player,' (',tableTop10$Season[i],')</a><br/><br/>',round(tableTop10$dist[i],3),'<br/>')
+  }
+  
+  wellPanel(
+    style = style,
+    p(HTML(panel_input))
+  )
+})
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Box-plots
+
+```{r}
+# ui
+library(shinyBS)
+plotOutput('plotTSNEdensities')
+
+# server
+output$plotTSNEdensities <- renderPlot({
+  
+  click <- input$plot_click
+  point <- nearPoints(.tSNE_plot_filter(input$colTeam,input$colSeason,input$colPlayer,
+                                        input$colAge,input$colSkill), click, threshold = 3, maxpoints = 1, addDist = TRUE)
+  
+  if (nrow(point) == 0){
+    plotTSNEdensities <- .densityPlots(input$colTeam,input$colSeason,input$colPlayer,
+                                       input$colAge,input$colSkill,NULL,NULL,TRUE)
+  } else {
+    plotTSNEdensities <- .densityPlots(input$colTeam,input$colSeason,input$colPlayer,input$colAge,input$colSkill,
+                                       point$Player,point$Season,TRUE)
+  }
+  return(plotTSNEdensities)
+})
+
+```

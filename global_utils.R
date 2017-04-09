@@ -44,5 +44,6 @@ seasons_list <- sort(unique(data_tsne_sample$Season))
 players_list <- sort(unique(data_tsne_sample$Player))
 skills_list <- names(data_tsne_sample)[6:ncol(data_tsne_sample)]
 #
+tsne_url <- "http://distill.pub/2016/misread-tsne/"
 #write.csv(tsne_ready, "data/tsne_ready.csv",row.names = FALSE)
 
