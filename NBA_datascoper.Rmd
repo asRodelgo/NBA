@@ -129,7 +129,7 @@ observeEvent(input$plot_brush, {
 output$hover_info <- renderUI({
   hover <- input$plot_hover
   point <- nearPoints(.tSNE_plot_filter(input$colTeam,input$colSeason,input$colPlayer,
-                                     input$colAge,input$colSkill), hover, threshold = 3, maxpoints = 1, addDist = TRUE)
+                                     input$colAge,input$colSkill), hover, threshold = 2, maxpoints = 1, addDist = TRUE)
   
   if (nrow(point) == 0) return(NULL)
   # calculate point position INSIDE the image as percent of total dimensions
@@ -145,7 +145,7 @@ output$hover_info <- renderUI({
   # background color is set so tooltip is a bit transparent
   # z-index is set so we are sure are tooltip will be on top
   style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
-                  "left:", left_px + 2, "px; top:", top_px + 2, "px;")
+                  "left:", left_px + 12, "px; top:", top_px + 12, "px;")
   
   # actual tooltip created as wellPanel
   wellPanel(
@@ -205,12 +205,12 @@ output$click_info <- renderUI({
   # create style property fot tooltip
   # background color is set so tooltip is a bit transparent
   # z-index is set so we are sure are tooltip will be on top
-  style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
+  style <- paste0("position:absolute; z-index:10; background-color: rgba(245, 245, 245, 0.85); ",
                   "left:", left_px + 2, "px; top:", top_px + 2, "px;")
   # actual tooltip created as wellPanel
-  panel_input <- paste0('Closest 10 Players (Eucl. dist.) to ',filter(data_tsne_sample, Player==tableTop10$Player[1])$Player,' in ',tableTop10$Season[1],'</a><br/><br/>')
+  panel_input <- paste0('Closest 10 Players (Eucl. dist.) to ',tableTop10$Player[1],' in ',tableTop10$Season[1],'</a><br/><br/>')
   for (i in 2:11){
-    panel_input <- paste0(panel_input, filter(data_tsne_sample, Player==tableTop10$Player[i])$Player,' (',tableTop10$Season[i],')</a><br/><br/>',round(tableTop10$dist[i],3),'<br/>')
+    panel_input <- paste0(panel_input, tableTop10$Player[i],' (',tableTop10$Season[i],') ',round(tableTop10$dist[i],3),'<br/>')
   }
   
   wellPanel(
@@ -226,15 +226,16 @@ output$click_info <- renderUI({
 ```{r}
 # ui
 library(shinyBS)
-tableOutput('tableBrushed')
+DT::dataTableOutput('tableBrushed')
 
 # server
-output$tableBrushed <- shiny::renderDataTable({
+output$tableBrushed <- DT::renderDataTable({
   brush <- input$plot_brush
-  pointsBrushed <- brushedPoints(.tSNE_plot_filter(input$colTeam,input$colSeason,input$colPlayer,input$colAge,input$colSkill), brush)
+  pointsBrushed <- brushedPoints(.tSNE_plot_filter(input$colTeam,input$colSeason,input$colPlayer,input$colAge,input$colSkill), brush) %>%
+    dplyr::select(Player,Season,Age,Tm)
   tableBrushed <- .brushTable(pointsBrushed)
   return(tableBrushed)
-})
+}, options = list(dom = 't'))
 ```
 
 Row {data-height=200}

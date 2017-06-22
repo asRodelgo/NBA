@@ -2,7 +2,11 @@
 
 # Read players stats -------------------------------------------
 #players <- read.csv("data/nba_players.csv") # from nba.com
+# TASK: Update this. I grabbed the data manually from nba.com. See if doable from
+# breference. Write a writer.
 playersHist <- read.csv("data/nba_players_allSeasons.csv", stringsAsFactors = FALSE)
+##
+##
 playersHist <- mutate(playersHist, Player = gsub("*","",Player, fixed=TRUE)) %>%
   group_by(Player) %>%
   mutate(yearBorn = as.numeric(substr(Season,1,4)) - Age) %>%
