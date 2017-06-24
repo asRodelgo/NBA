@@ -104,7 +104,7 @@
     data_team <- as.data.frame(data_team)
     
   } else{
-    data_team <- playersHist %>%
+    data_team <- playersNew %>%
       filter(Tm == thisTeam) %>%
       group_by(Player) %>%
       mutate(effMin = MP/3936, effFG = FG/(3936*effMin),

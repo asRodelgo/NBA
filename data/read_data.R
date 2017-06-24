@@ -3,7 +3,7 @@
 # Read players stats -------------------------------------------
 # and remove duplicate names (due to father-son, or others)
 playersHist <- read.csv("data/playersHist.csv", stringsAsFactors = FALSE)
-source("helper_functions/rename_PlayerName_Duplicates.R")
+playersHist <- .rename_PlayerDuplicates(playersHist)
 
 # Read team stats for all seasons ------------------------------
 #teams <- read.csv("data/nba_teams.csv") # from nba.com
@@ -35,7 +35,17 @@ team_statsNew <- team_stats %>%
 playersNew <- playersHist %>%
   filter(Season == max(as.character(Season))) %>%
   mutate(Season = as.factor(paste0(as.numeric(substr(Season,1,4))+1,"-",as.numeric(substr(Season,1,4))+2)))
-
+# Adjust minutes played by star players (top 5 in minutes by .2 percent )
+# (for instance come playoffs time)
+playersNew <- .adjust_Minutes(playersNew,.2)
+# Trade players
+# Eg: # playA <- "Jimmy Butler"
+# playB <- "Zach LaVine"
+# tmA <- "CHI"
+# tmB <- "MIN"
+playersNew <- .trade_Players(playersNew,"Jimmy Butler","CHI","Zach LaVine","MIN")
+playersNew <- .trade_Players(playersNew,"Paul George","IND","Edy Tavares","CLE")
+playersNew <- filter(playersNew, !(Player=="Edy Tavares"))
 # Read pre-calculated nnetwork models -------------------------
 nn_OffenseOLD <- list.load("data/nn_Offense.rds")
 nn_DefenseOLD <- list.load("data/nn_Defense.rds")
