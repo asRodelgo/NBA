@@ -9,7 +9,7 @@ library(rvest)
 thisYear <- substr(Sys.Date(),1,4)
 
 ##### ALL SEASONS ########
-firstYear <- 1979
+firstYear <- 1980
 
 ##### NEW SEASON ########
 firstYear <- thisYear
@@ -40,7 +40,7 @@ if (firstYear==thisYear) {
   playersHistOLD <- read.csv("data/playersHist.csv", stringsAsFactors = FALSE)
   playersHist <- bind_rows(playersHistOLD,playersHist)
 } 
-
+playersHist<- filter(playersHist, Season > "1978-1979")
 write.csv(playersHist, "data/playersHist.csv",row.names = FALSE)  
   
   

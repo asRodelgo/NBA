@@ -2,13 +2,8 @@
 
 # Read players stats -------------------------------------------
 # and remove duplicate names (due to father-son, or others)
-source("data/rename_PlayerName_Duplicates.R")
-
-# Read pre-calculated tSNE coordinates per Age -----------------
-tsneBlock <- list()
-for (a in 18:41){
-  tsneBlock[[a]] <- read.csv(paste0("data/tsneBlock","_",a,".csv"))
-}
+playersHist <- read.csv("data/playersHist.csv", stringsAsFactors = FALSE)
+source("helper_functions/rename_PlayerName_Duplicates.R")
 
 # Read team stats for all seasons ------------------------------
 #teams <- read.csv("data/nba_teams.csv") # from nba.com
@@ -17,6 +12,12 @@ franchises <- read.csv("data/franchisesHistory.csv",stringsAsFactors = FALSE)
 team_stats <- merge(team_stats,franchises,by.x="Team",by.y="Franchise",all.x=TRUE)
 # conferences according to last season
 conferences <- read.csv("data/nba_conferences.csv", stringsAsFactors = FALSE)
+
+# Read pre-calculated tSNE coordinates per Age -----------------
+tsneBlock <- list()
+for (a in 18:41){
+  tsneBlock[[a]] <- read.csv(paste0("data/tsneBlock","_",a,".csv"))
+}
 
 #### NEW SEASON/CURRENT SEASON --------------------------------- 
 
@@ -36,8 +37,8 @@ playersNew <- playersHist %>%
   mutate(Season = as.factor(paste0(as.numeric(substr(Season,1,4))+1,"-",as.numeric(substr(Season,1,4))+2)))
 
 # Read pre-calculated nnetwork models -------------------------
-nn_Offense <- list.load("data/nn_Offense.rds")
-nn_Defense <- list.load("data/nn_Defense.rds")
+nn_OffenseOLD <- list.load("data/nn_Offense.rds")
+nn_DefenseOLD <- list.load("data/nn_Defense.rds")
 
 # Predicted team powers for the upcoming season -------------------------
 # Default to pre-calculated for quick start of the app

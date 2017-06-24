@@ -1,6 +1,5 @@
 # Remove players duplicates names
 
-playersHist <- read.csv("data/playersHist.csv", stringsAsFactors = FALSE)
 ##
 ##
 playersHist <- mutate(playersHist, Player = gsub("*","",Player, fixed=TRUE)) %>%
@@ -22,4 +21,4 @@ playerDups <- group_by(playersHist,Player) %>%
 # Rename them: second: 2, third: 3, etc.
 playersHist <- merge(playersHist,playerDups, by=c("Player","yearBorn"),all.x = TRUE) %>%
   mutate(Player = ifelse(!is.na(id), ifelse(id > 1, paste(Player,id),Player), Player)) %>%
-  as.data.frame()
+  select(-id, -yearBorn) %>% distinct(Player, Tm, Season, .keep_all=TRUE) %>% as.data.frame()
