@@ -31,7 +31,7 @@
            effTOV = TOV/(3936*effMin),effPF = PF/(3936*effMin),
            effPTS = PTS/(3936*effMin)) %>%
     filter(keep == 0 | Tm == "TOT") %>%
-    filter(effMin >= .15) %>% # Played at least 15% of total available minutes
+    filter(effMin*G >= .15) %>% # Played at least 15% of total available minutes
     dplyr::select(Player,Pos,Season,Age,FGPer = FG.,FG3Per = X3P., FG2Per = X2P., effFGPer = eFG.,
            FTPer = FT., starts_with("eff"),
            -Tm,-keep,-G,-GS,-MP,FG,-FGA,-X3P,-X3PA,-X2P,-X2PA,-FG,-FTA,-ORB,-DRB,-TRB,-AST,
@@ -324,6 +324,8 @@
   return(predAgeData)
 
 }
+
+
 
 # Calculate centroid and other measures for selected cluster of points from tSNE
 .clusterMath <- function(colTeam,colSeason,colPlayer,colAge,colSkill){

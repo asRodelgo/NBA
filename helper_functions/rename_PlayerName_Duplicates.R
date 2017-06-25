@@ -8,6 +8,7 @@
     group_by(Player) %>%
     mutate(yearBorn = as.numeric(substr(Season,1,4)) - Age) %>%
     as.data.frame()
+  
   # Players with the same name will create silly duplicates. Identify them
   playerDups <- group_by(data,Player) %>%
     filter(max(yearBorn)-min(yearBorn) > 1) %>%

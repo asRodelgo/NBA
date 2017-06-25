@@ -39,14 +39,33 @@ current_rosters <- mutate(current_rosters, Age = thisSeason - as.numeric(substr(
 
 write.csv(current_rosters, "data/currentRosters.csv",row.names = FALSE)
 
-
+#############################################################
 
 # 2
 current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE)
 # apply rename_Player_Duplicate to avoid errors when different players share same name
-current_rosters <- .rename_PlayerDuplicates(current_rosters)
+# create a copy of playersHist as it already contains the modified names
+myPlayersHist <- filter(playersHist, Season == max(Season)) %>% 
+  mutate(originalPlayer = ifelse(grepl("[0-9]",substr(Player,nchar(Player),nchar(Player))),
+                                 substr(Player,1,nchar(Player)-2), Player)) %>%
+  distinct(originalPlayer,Player) %>% select(originalPlayer,PlayerNew = Player)
 
-#for (team in unique(current_rosters$Team)){
+current_rosters <- merge(current_rosters,myPlayersHist, by.x="Player", by.y="originalPlayer",all.x=TRUE) %>%
+  #mutate(changedName = ifelse(Player == PlayerNew,0,1))
+  select(Player = PlayerNew, everything(), PlayerHist = Player)
+# RETURN NON_MATCHING PLAYERS TO EDIT THEIR NAMES MANUALLY
+nonMatching <- filter(current_rosters, is.na(Player))
+theyShouldBe <- merge(myPlayersHist,current_rosters,by.x="originalPlayer", by.y="Player",all.x=TRUE) %>%
+  filter(is.na(PlayerHist)) %>% select(Player = originalPlayer, PlayerNew)
+
+# pattern: grepl(nonMatching) assign theyShouldBe$PlayerNew
+current_rosters[grepl("Oubre",current_rosters$PlayerHist),]$Player <- "Kelly Oubre"
+current_rosters[grepl("Nene",current_rosters$PlayerHist),]$Player <- "Nene Hilario"
+current_rosters[grepl("Gary Payton",current_rosters$PlayerHist),]$Player <- "Gary Payton 2"
+current_rosters[grepl("Glenn Robinson",current_rosters$PlayerHist),]$Player <- "Glenn Robinson 2"
+current_rosters[grepl("Taurean Prince",current_rosters$PlayerHist),]$Player <- "Taurean Waller-Prince"
+
+#for (team in unique(current_rosters$Tm)){
 for (team in c("ATL")){
   thisTeam <- filter(current_rosters, Tm == team)
   thisTeamStats <- data.frame()
@@ -54,8 +73,17 @@ for (team in c("ATL")){
     thisPlayer <- filter(thisTeam, Player == player)
     if (thisPlayer$Exp %in% seq(1,25,1)){ # not a rookie
       print(paste0("Processing ",thisPlayer$Player))
-      thisPlayerStats <- .predictPlayer(thisPlayer$Player,20,thisPlayer$Age-1,10)
+      thisPlayerStats <- .predictPlayer(thisPlayer$Player,20,thisPlayer$Age-1,10) %>% 
+        select(Player,Pos,Season,Age,everything())
       print(" OK!")
+    } else { # Rookie player
+      if (nchar(College)>0) { # College player
+        thisPlayerStats <- .predictPlayerCollegeRookie(player)
+      } else if (player %in% europePlayers$Player) { # European player
+        thisPlayerStatsEurope <- .predictPlayerNonCollegeRookie(player)
+      } else { # International player
+        # compute rookie player average stats for this player
+      }
     }
     if (nrow(thisTeamStats)>0){
       thisTeamStats <- bind_rows(thisTeamStats,thisPlayerStats)

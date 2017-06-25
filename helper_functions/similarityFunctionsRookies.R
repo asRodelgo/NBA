@@ -16,7 +16,6 @@
   # max_num_neighbors <- 20
   # playerName <- "Stephen Curry"
   rookieStats <- read.csv("data/rookieStats.csv", stringsAsFactors = FALSE)
-  rookieStats <- rookieStats[,1:29]
   rookieStats <- filter(rookieStats, !(College %in% c("International", "Europe")))
   
   rookieStatsHist <- read.csv("data/rookieStatsHist.csv", stringsAsFactors = FALSE)
@@ -200,12 +199,12 @@
   # assign stats to input player and then adjust those stats like in .tsnePrepare
   # get player's postition
   rookieStats <- read.csv("data/rookieStats.csv", stringsAsFactors = FALSE)
-  rookieStats <- rookieStats[,1:29]
   rookieStats <- filter(rookieStats, College %in% c("International", "Europe"))
+  #rookieStats <- rookieStats[,1:29]
   
   playerPredicted <- rookieStats %>%
     filter(Player == playerName) %>%
-    dplyr::select(Player,Pos,Tm=Team,Pick) %>%
+    dplyr::select(Player,Tm=Team,Pick) %>%
     mutate(Season = paste0(lastDraft,"-",lastDraft+1))
   playerPredicted <- bind_cols(playerPredicted,nonCollegeRookies_Stats)
   
@@ -221,7 +220,8 @@
            PTS = PTS/G)
   
   playerPredicted <- playerPredicted %>%
-    mutate(effFG = FG,
+    mutate(effFG = FG,effMin = MP/3936, # this will underestimate the minutes played
+          # but I don't mind as he's a rookie and will most likely play fewer minutes
            effFGA = FGA,eff3PM = X3P,eff3PA = X3PA,
            eff2PM = X2P,eff2PA = X2PA,
            effFTM = FT,effFTA = FTA,
@@ -230,7 +230,8 @@
            effSTL = STL,effBLK = BLK,
            effTOV = TOV,effPF = PF,
            effPTS = PTS) %>%
-    dplyr::select(Player,Pos,Season,Pick,starts_with("eff"))
+    dplyr::select(Player,Season,FGPer = FG.,FG3Per = X3P., FG2Per = X2P., effFGPer = eFG.,
+                  FTPer = FT., starts_with("eff")) %>% mutate(Pos = "X")
   
   return(playerPredicted)
   

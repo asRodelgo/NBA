@@ -1,10 +1,18 @@
 # Read draft players: http://www.basketball-reference.com/draft/NBA_2016.html
 
-writeHistoricalDraftedRookies <- function(){
+writeHistoricalDraftedRookies <- function(lastOnly = TRUE){
   
-  rookiesHist <- data.frame()
   lastDraft <- as.numeric(substr(max(as.character(playersHist$Season)),1,4)) + 1
-  for (draftYear in 1979:lastDraft) {
+  
+  if (lastOnly==TRUE){
+    firstDraft <- lastDraft
+    rookiesHist <- read.csv("data/rookiesHist.csv")
+  } else {
+    firstDraft <- 1979
+    rookiesHist <- data.frame()
+  }
+  
+  for (draftYear in firstDraft:lastDraft) {
     
     url <- paste0("http://www.basketball-reference.com/draft/NBA_",draftYear,".html")
     thisSeasonDraft <- url %>%
@@ -30,7 +38,7 @@ writeHistoricalDraftedRookies <- function(){
   
 }
 
-write_HistCollegeStats <- function(col_G,num_pages){
+write_HistCollegeStats <- function(col_G,num_pages,lastOnly=TRUE){
   # Read stats from college players and match to drafted players
   # query college players who played at least col_G games. Min per games not recorded before 2009
   col_G <- 15
@@ -39,10 +47,18 @@ write_HistCollegeStats <- function(col_G,num_pages){
   # http://www.sports-reference.com/cbb/play-index/psl_finder.cgi?request=1&match=single&year_min=1994&year_max=1994&conf_id=&school_id=&class_is_fr=Y&class_is_so=Y&class_is_jr=Y&class_is_sr=Y&pos_is_g=Y&pos_is_gf=Y&pos_is_f=Y&pos_is_fg=Y&pos_is_fc=Y&pos_is_c=Y&pos_is_cf=Y&games_type=A&qual=&c1stat=g&c1comp=gt&c1val=15&c2stat=&c2comp=gt&c2val=&c3stat=&c3comp=gt&c3val=&c4stat=&c4comp=gt&c4val=&order_by=pts
   # subsequent players in batches of 100:
   # http://www.sports-reference.com/cbb/play-index/psl_finder.cgi?request=1&match=single&year_min=1994&year_max=1994&conf_id=&school_id=&class_is_fr=Y&class_is_so=Y&class_is_jr=Y&class_is_sr=Y&pos_is_g=Y&pos_is_gf=Y&pos_is_fg=Y&pos_is_f=Y&pos_is_fc=Y&pos_is_cf=Y&pos_is_c=Y&games_type=A&qual=&c1stat=g&c1comp=gt&c1val=15&c2stat=&c2comp=gt&c2val=&c3stat=&c3comp=gt&c3val=&c4stat=&c4comp=gt&c4val=&order_by=pts&order_by_asc=&offset=100
-  collegePlayersHist <- data.frame()
+  
   lastDraft <- as.numeric(substr(max(as.character(playersHist$Season)),1,4)) + 1
   
-  for (season in 1994:(lastDraft-1)){
+  if (lastOnly==TRUE){
+    firstDraft <- lastDraft
+    collegePlayersHist <- read.csv("data/collegePlayersHist.csv")
+  } else {
+    firstDraft <- 1994
+    collegePlayersHist <- data.frame()
+  }
+  
+  for (season in (firstDraft-1):(lastDraft-1)){
     
     url <- paste0("http://www.sports-reference.com/cbb/play-index/psl_finder.cgi?request=1&match=single&year_min=",
                   season,"&year_max=",season,"&conf_id=&school_id=&class_is_fr=Y&class_is_so=Y&class_is_jr=Y&class_is_sr=Y&pos_is_g=Y&pos_is_gf=Y&pos_is_f=Y&pos_is_fg=Y&pos_is_fc=Y&pos_is_c=Y&pos_is_cf=Y&games_type=A&qual=&c1stat=g&c1comp=gt&c1val=",
@@ -56,6 +72,7 @@ write_HistCollegeStats <- function(col_G,num_pages){
     names(thisCollege) <- thisCollege[1,]
     thisCollege <- thisCollege[-1,]
     collegePlayers <- thisCollege[which(!(thisCollege$Rk=="" | thisCollege$Rk=="Rk")),]
+    collegePlayers$Rk <- as.numeric(collegePlayers$Rk)
     
     for (page in 1:(num_pages-1)){ # read a total of num_pages*100 college players
       url <- paste0("http://www.sports-reference.com/cbb/play-index/psl_finder.cgi?request=1&match=single&year_min=",
@@ -70,12 +87,16 @@ write_HistCollegeStats <- function(col_G,num_pages){
       names(thisCollege) <- thisCollege[1,]
       thisCollege <- thisCollege[-1,]
       thisCollege <- thisCollege[which(!(thisCollege$Rk=="" | thisCollege$Rk=="Rk")),]
-      collegePlayers <- bind_rows(collegePlayers,thisCollege)
+      thisCollege$Rk <- as.numeric(thisCollege$Rk)
+      collegePlayers <- rbind(collegePlayers,thisCollege)
     }
     
     collegePlayers <- mutate(collegePlayers, Season = season)
+    names(collegePlayers) <- gsub("2","X2",names(collegePlayers))
+    names(collegePlayers) <- gsub("3","X3",names(collegePlayers))
+    
     if (nrow(collegePlayersHist)>0){
-      collegePlayersHist <- bind_rows(collegePlayersHist,collegePlayers)
+      collegePlayersHist <- rbind(collegePlayersHist,collegePlayers)
     } else{
       collegePlayersHist <- collegePlayers
     }

@@ -12,6 +12,9 @@ for (a in 18:41){ # ages 18 to 41
 
 .tSNE_computeRookies <- function(num_iter, max_num_neighbors){
   
+  num_iter <- 400
+  max_num_neighbors <- 10
+  
   data_tsne <- .tSNE_prepareRookies()
   # calculate tsne-points Dimensionality reduction to 2-D
   if (nrow(data_tsne)>0){

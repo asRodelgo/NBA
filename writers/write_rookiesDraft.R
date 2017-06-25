@@ -19,9 +19,9 @@ writeDraftedRookies <- function(){
   rookies <- rookies[which(!(rookies$Pick=="" | rookies$Pick=="Pk")),]
   
   # Correct spelling errors 2016 draft
-  rookies[grepl("Chris",rookies$Player),]$Player <- "Marquese Chriss"
-  rookies[grepl("Dami",rookies$Player),]$Player <- "Damian Jones"
-  rookies[grepl("Zimmerm",rookies$Player),]$Player <- "Stephen Zimmerman Jr."
+  # rookies[grepl("Chris",rookies$Player),]$Player <- "Marquese Chriss"
+  # rookies[grepl("Dami",rookies$Player),]$Player <- "Damian Jones"
+  # rookies[grepl("Zimmerm",rookies$Player),]$Player <- "Stephen Zimmerman Jr."
   
   write.csv(rookies, "data/rookies.csv",row.names = FALSE)
 
@@ -77,7 +77,14 @@ write_RookieStats <- function(){
   
   rookies <- read.csv("data/rookies.csv", stringsAsFactors = FALSE)
   collegePlayers <- read.csv("data/collegePlayers.csv", stringsAsFactors = FALSE)
-  rookieStats <- merge(rookies, collegePlayers, by = "Player",all.x=TRUE)
+  # Correct spelling errors 2017 draft
+  collegePlayers[grepl("Adebayo",collegePlayers$Player),]$Player <- "Bam Adebayo"
+  collegePlayers[grepl("Dennis Smith",collegePlayers$Player),]$Player <- "Dennis Smith Jr."
+  collegePlayers[grepl("Leaf",collegePlayers$Player),]$Player <- "TJ Leaf"
+  
+  rookieStats <- merge(rookies, collegePlayers, by = "Player",all.x=TRUE) %>% 
+    group_by(Player) %>% summarise_if(is.numeric,funs(mean(.,na.rm=TRUE))) %>% 
+    left_join(select(rookies,-Pick), c("Player"="Player"))
   
   # Find stats from european players drafted
   europePlayers <- data.frame()
@@ -90,21 +97,27 @@ write_RookieStats <- function(){
       name_edited <- tolower(thisPlayer)
       name_edited <- gsub(" ","-",name_edited)
       url <- paste0("http://www.basketball-reference.com/euro/players/",name_edited,"-1.html")
-      thisEurope <- url %>%
-        read_html() %>%
-        html_nodes(xpath='//*[@id="totals"]') %>%
-        html_table(fill = TRUE)
-      if (length(thisEurope)>0){
-        rookieStats$College[i] <- "Europe"
-        thisEurope <- thisEurope[[1]] %>%
-          filter(G == max(G)) %>%
-          mutate(Player = thisPlayer)
-        europePlayers <- bind_rows(europePlayers,thisEurope)
-      } else{
+      
+      if(status_code(GET(url))==200){
+        thisEurope <- url %>%
+          read_html() %>%
+          html_nodes(xpath='//*[@id="per_gameCLU0"]') %>%
+          html_table(fill = TRUE)
+        if (length(thisEurope)>0){
+          rookieStats$College[i] <- "Europe"
+          thisEurope <- thisEurope[[1]]
+          names(thisEurope)[4] <- "Country"
+          thisEurope <- thisEurope %>%
+            filter(G == max(G)) %>%
+            mutate(Player = thisPlayer)
+          europePlayers <- bind_rows(europePlayers,thisEurope)
+        } else{
+          rookieStats$College[i] <- "International"
+        }
+      } else {
         rookieStats$College[i] <- "International"
       }
     }
-    
   }
   rookieStats$Season <- lastDraft
   # remove duplicates in europePlayers and merge with rookieStats
