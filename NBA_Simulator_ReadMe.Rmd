@@ -28,7 +28,7 @@ Also, it is possible to run a full season in one go or multiple repetitions of a
 
 There are 4 key elements of this simulation:
 
-- 2 independent Neural Networks estimate team power rankings: One for Offense, one for Defense. Inputs are average of players projected stats (minutes-played-weighted). Output is the power which corresponds to points for or received an average team.
+- 2 independent Neural Networks estimate team power rankings: One for Offense, one for Defense. Inputs are average of players projected stats (minutes-played-weighted). Output is the power which corresponds to points for or received against an average team.
 - Simulation happens when the team powers are used as the estimated mean of a Normal distribution and a fixed common variance (based on empirical data in points variation across the league). This way, all the different probabilites associated with every event can be computed analytically, for instance, every team matchup. 
 - Player similarity by age is computed using t-SNE algorithm which also allows for 2-D visualization of the data.
 - Player stats are weighted by the amount of minutes played. Might seem like an obvious choice but, most of the time, stats are presented as totals or by game.  
@@ -37,10 +37,42 @@ There are 4 key elements of this simulation:
 
 - Simulate an entire season, including playoffs (although the whole model is based on only regular season stats, adjustments can be made to simulate playoffs, for instance, increase the weights of the star players for each team by increasing the minutes they play)
 - Run thousands of simulations to calculate probabilities of teams reaching playoffs, winning the championship, or number of wins. 
-- Simulate trades between teams and calculate the change in offensive power and defensive power as a result of the trade. This allows teams to scan the market for the best possible replacement or direct acquisition of players in the market. Also allows ranking players by their offense and defense impact 
+- Simulate trades between teams and calculate the change in offensive power and defensive power as a result of the trade. This allows teams to scan the market for the best possible replacement or direct acquisition of players in the market. Also allows ranking players by their offense and defense impact. 
+- Explore data visually in 2D: 
+    - Evolution of players
+    - Geometric distribution of teams, find shapes or patterns that make a good/bad team
+    - Understand how players cluster by their skills: richer structure than the classic 5 positions
+    - Understand how NBA play has evolved over time. Example: the 3-point shooting
+    
+- Rank the players according to their Offensive and Defensive capabilities. Simulate players stats along with NBA scores during a season and find the perfect tune-in in minutes per game.
 
-- evolution by age
-- what constitutes a winning team based on tsne points distribution in 2D
+## Set up
+
+To set up a new season there are a few data files that need updating. The key is to follow **read_data.R**
+
+Outline of what needs to be updated
+
+- Data for a new season:
+    - Players stats up to last season: **write_playersHist.R**
+    - Team stats up to last season: **write_TeamStats.R**
+    - Franchises (there may be new franchises in the league)
+    - Conferences (one day might change)
+    - Season schedule
+
+- Update Neural Network: Use **write_nnet.R** (load all data, load helper_functions and then run)
+    
+- Compute all the t-SNEs: list of t-SNE blocks. Use **write_tsneBlocks.R**
+
+- Compute team powers:
+
+    - Calculate playersNew: To update roster: transfers, injuries, playoffs, etc, use playersNew. At this level (playersNew) I can really affect the team's roster
+    - Run **write_teams_power.R**:
+      - .teamsPredictedPower(): Puts results of predicted powers in table
+      - .computePower(): apply NNetwork model to input data
+    - Run **neural_network.R**:
+      - .prepareModelPrediction(): input for the NNetwork weighted average (minutes played) of playersNew.
+    - Run **prepareRoster.R**:
+      - .team_preparePredict(): Reads playersNew and calculates efficient stats.
 
 
 
