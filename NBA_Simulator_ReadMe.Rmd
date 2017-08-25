@@ -1,0 +1,49 @@
+---
+title: "NBA Simulator"
+author: "Alberto Sanchez Rodelgo"
+date: "8/25/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Motivation and brief description
+
+The objective of this project is to be able to simulate a complete NBA season as accurately as possible. The main driver behind the simulation engine are offensive and defensive power rankings of the teams. 
+
+Team Power Rankings are computed from players' directly observable statistics: points, rebounds, free throws, assists, steals, etc. Box plus minus are not considered as they concern mainly to individual performances and are implicitly included in the offensive and defensive team performaces.
+
+Players' stats are predicted based on their stats from previous seasons combined with historical data for similar players at the age they enter in the upcoming season. This allows for corrections when there may be declining/improving stats by age, or when there is lack of consistent historical stats. 
+
+Rookies stats are estimated from College stats adjusted to NBA minutes of play. Non-college rookies stats are estimated from their respective leagues stats (if existing, case of main European leagues or Euroleague). Everybody else's stats are estimated based on an average player performace historically for a player their age. 
+
+Finally, it is possible to run a real time simulation where offensive and defensive power ratings get updated along with players events: trades, injuries, etc.
+
+Also, it is possible to run a full season in one go or multiple repetitions of a season to estimate average performace of teams and players. 
+
+
+## Brief technical description
+
+There are 4 key elements of this simulation:
+
+- 2 independent Neural Networks estimate team power rankings: One for Offense, one for Defense. Inputs are average of players projected stats (minutes-played-weighted). Output is the power which corresponds to points for or received an average team.
+- Simulation happens when the team powers are used as the estimated mean of a Normal distribution and a fixed common variance (based on empirical data in points variation across the league). This way, all the different probabilites associated with every event can be computed analytically, for instance, every team matchup. 
+- Player similarity by age is computed using t-SNE algorithm which also allows for 2-D visualization of the data.
+- Player stats are weighted by the amount of minutes played. Might seem like an obvious choice but, most of the time, stats are presented as totals or by game.  
+
+## What can you simulate?
+
+- Simulate an entire season, including playoffs (although the whole model is based on only regular season stats, adjustments can be made to simulate playoffs, for instance, increase the weights of the star players for each team by increasing the minutes they play)
+- Run thousands of simulations to calculate probabilities of teams reaching playoffs, winning the championship, or number of wins. 
+- Simulate trades between teams and calculate the change in offensive power and defensive power as a result of the trade. This allows teams to scan the market for the best possible replacement or direct acquisition of players in the market. Also allows ranking players by their offense and defense impact 
+
+- evolution by age
+- what constitutes a winning team based on tsne points distribution in 2D
+
+
+
+
+
+
