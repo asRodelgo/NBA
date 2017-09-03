@@ -2,6 +2,24 @@
 
 .write_SeasonSchedule <- function(){
   
+  library(httr)
+  library(rvest)
+  
+  # If not new data yet (transfers not finished so teams rosters not final), -----------------------------------------
+  dataNewSeason <- FALSE
+  if (dataNewSeason==FALSE){
+    # use last season's as new data, removing PTS & PTSA
+    team_statsNew <- team_stats %>%
+      filter(Season == max(as.character(Season))) %>%
+      mutate(W = 0, L = 0, PTS = 0, PTSA = 0, SRS = 0, 
+             Season = paste0(as.numeric(substr(Season,1,4))+1,"-",as.numeric(substr(Season,1,4))+2)) %>%
+      distinct(Team, .keep_all=TRUE)
+    # same for players
+    playersNew <- playersHist %>%
+      filter(Season == max(as.character(Season))) %>%
+      mutate(Season = as.factor(paste0(as.numeric(substr(Season,1,4))+1,"-",as.numeric(substr(Season,1,4))+2)))
+  }
+  
   thisSeason <- substr(as.character(playersNew$Season[1]),6,9)
   months_list <- c("october","november","december",'january',"february","march","april")
   

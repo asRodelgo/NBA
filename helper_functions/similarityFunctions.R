@@ -107,7 +107,7 @@
   # eff2PM = X2P/(3936*effMin),effFTM = FT/(3936*effMin),
   data_tsne <- playersHist %>%
     group_by(Player,Season) %>%
-    mutate(keep = ifelse(n() > 1, 1, 0), effMin = MP/3936,
+    mutate(keep = ifelse(n() > 1, 1, 0), effMin = MP*82/3936,
            eff3PA = X3PA/(3936*effMin),eff3PM = X3P/(3936*effMin),
            eff2PA = X2PA/(3936*effMin),eff2PM = X2P/(3936*effMin),
            effFTA = FTA/(3936*effMin),effFTM = FT/(3936*effMin),

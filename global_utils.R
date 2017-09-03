@@ -1,6 +1,5 @@
 # Global utils -----------------------------
-library(dplyr)
-library(tidyr)
+library(tidyverse)
 library(tsne)
 library(rvest)
 library(rlist) # save and load list objects
@@ -12,8 +11,12 @@ library(RColorBrewer)
 #library(ezmisc)#
 
 thisYear <- substr(Sys.Date(),1,4)
-thisSeason <- paste0(as.numeric(substr(Sys.Date(),1,4))-2,"-",as.numeric(substr(Sys.Date(),1,4))-1) 
-
+if (substr(Sys.Date(),6,7) > '08'){
+  seasonOffset <- 0
+} else {
+  seasonOffset <- 1
+}
+thisSeason <- paste0(as.numeric(substr(Sys.Date(),1,4))-seasonOffset,"-",as.numeric(substr(Sys.Date(),1,4))-seasonOffset+1) 
 # Source all files from server_files directory and subdirectories
 files <- list.files("helper_functions", full.names = TRUE, recursive = TRUE)
 for (f in files) source(f, local = TRUE)
@@ -29,14 +32,20 @@ sigma <- 8 # constant std dev for all teams. ADJUST LATER ON!!
 
 #seasonSchedule <- .seasonSchedule()
 
-# Reg Season Outcome for default predicted season
+# Precompute Reg Season results for all season
 regSeasonOutcome <- .standings(real=TRUE)
 playoffs <- .getPlayoffResults()
 
 # tSNE
-data_tsne <- .tSNE_prepare_All()
-data_tsne_sample <- filter(data_tsne,Season > "1990-1991")
-tsne_ready <- cbind(data_tsne_sample,tsne_points)
+data_tsne <- .tSNE_prepare_All() # for tSNE visualization
+data_tsne_sample <- filter(data_tsne,Season > "1991-1992")
+# tsne_points are pre-calculated from write_tSNE_All.R
+if (!nrow(data_tsne_sample)==nrow(tsne_points)){ # in case labels and coordinates have different sizes
+  tsne_ready <- tsne_points
+} else {
+  tsne_ready <- cbind(data_tsne_sample,tsne_points)
+}
+
 names(tsne_ready)[ncol(tsne_ready)-1] <- "x"
 names(tsne_ready)[ncol(tsne_ready)] <- "y"
 # Default selector choices for tsne -----------

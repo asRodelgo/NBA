@@ -15,13 +15,12 @@ The objective of this project is to be able to simulate a complete NBA season as
 
 Team Power Rankings are computed from players' directly observable statistics: points, rebounds, free throws, assists, steals, etc. Box plus minus are not considered as they concern mainly to individual performances and are implicitly included in the offensive and defensive team performaces.
 
-Players' stats are predicted based on their stats from previous seasons combined with historical data for similar players at the age they enter in the upcoming season. This allows for corrections when there may be declining/improving stats by age, or when there is lack of consistent historical stats. 
-
-Rookies stats are estimated from College stats adjusted to NBA minutes of play. Non-college rookies stats are estimated from their respective leagues stats (if existing, case of main European leagues or Euroleague). Everybody else's stats are estimated based on an average player performace historically for a player their age. 
+Players' stats are predicted based on their stats from previous seasons combined with historical data for similar players at the age they enter the current season. This allows for corrections when there may be declining/improving stats by age, or when there is lack of consistent historical stats. 
+Rookies stats are estimated from College stats adjusted to NBA minutes of play. Non-college rookies stats are estimated from their respective leagues stats (if existing, case of main European leagues or Euroleague). Everybody else's stats are estimated based on an average player performace according to historical data for players of the same age. 
 
 Finally, it is possible to run a real time simulation where offensive and defensive power ratings get updated along with players events: trades, injuries, etc.
 
-Also, it is possible to run a full season in one go or multiple repetitions of a season to estimate average performace of teams and players. 
+Also, it is possible to run the entire season at once or multiple repetitions of a season to predict average performace of teams and players. 
 
 
 ## Brief technical description
@@ -64,17 +63,32 @@ Outline of what needs to be updated
 - Compute all the t-SNEs: list of t-SNE blocks. Use **write_tsneBlocks.R**
 
 - Compute team powers:
-
     - Calculate playersNew: To update roster: transfers, injuries, playoffs, etc, use playersNew. At this level (playersNew) I can really affect the team's roster
     - Run **write_teams_power.R**:
-      - .teamsPredictedPower(): Puts results of predicted powers in table
-      - .computePower(): apply NNetwork model to input data
+        - .teamsPredictedPower(): Puts results of predicted powers in table
+        - .computePower(): apply NNetwork model to input data
     - Run **neural_network.R**:
-      - .prepareModelPrediction(): input for the NNetwork weighted average (minutes played) of playersNew.
+        - .prepareModelPrediction(): input for the NNetwork weighted average (minutes played) of playersNew.
     - Run **prepareRoster.R**:
-      - .team_preparePredict(): Reads playersNew and calculates efficient stats.
+        - .team_preparePredict(): Reads playersNew and calculates efficient stats.
+
+## Data sources
+
+Main data source is: https://www.basketball-reference.com/
 
 
+
+## References
+
+## Abstract
+
+Use the motivation as part of the intro. Key points to make: 
+- Why Spurs signed Gasol to replace Duncan?
+- How good/bad is the trade Isaiah - Kyrie for Celtics/Cavs?
+- How 3-point game has shaped the game and NBA champions in the last 5 years vs 20 years ago
+- What type of player will Lonzo Ball be? Who can he be compared to?
+- How close are Houston Rockets now to Golden State? What's the worst team in each conference?
+- Who are the best defensive/ofensive player in the league?
 
 
 
