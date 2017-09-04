@@ -37,9 +37,10 @@ regSeasonOutcome <- .standings(real=TRUE)
 playoffs <- .getPlayoffResults()
 
 # tSNE
-data_tsne <- .tSNE_prepare_All() # for tSNE visualization
-data_tsne_sample <- filter(data_tsne,Season > "1991-1992")
-# tsne_points are pre-calculated from write_tSNE_All.R
+data_tsne <- .tSNE_prepare_All() # for tSNE visualization from similarityFunctions.R
+data_tsne_sample <- filter(data_tsne,Season > "1995-1996")
+# tsne_points are pre-calculated from write_tSNE_All.R and saved in data/ directory
+# using this function: tsne_points <- write_tSNE_compute_All()
 if (!nrow(data_tsne_sample)==nrow(tsne_points)){ # in case labels and coordinates have different sizes
   tsne_ready <- tsne_points
 } else {
