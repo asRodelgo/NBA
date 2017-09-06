@@ -77,8 +77,12 @@ Outline of what needs to be updated
 Main data source is: https://www.basketball-reference.com/
 
 
-
 ## References
+
+- Fivethirtyeight: Player similarity by age
+- Ayasdi: Data topology
+- Andrew Gelman: model goals scored (something you can actually measure) not wins
+- Neural Network package: R-blogger about NNet
 
 ## Abstract
 
@@ -89,6 +93,7 @@ Use the motivation as part of the intro. Key points to make:
 - What type of player will Lonzo Ball be? Who can he be compared to?
 - How close are Houston Rockets now to Golden State? What's the worst team in each conference?
 - Who are the best defensive/ofensive player in the league?
+- Classify players according to the way they play. What combination of these types does a team need to be a champion?
 
 
 
