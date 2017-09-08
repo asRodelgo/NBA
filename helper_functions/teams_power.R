@@ -2,11 +2,11 @@
 # Once rosters are updated (Phase 1), predict avg points and avg points against
 # per team for the new season or for a season in the past (back to 1979-1980)
 # compute avg PTS as offensive power and PTSA as defensive power
-.computePower <- function(Off_or_Def){
+.computePower <- function(data = playersNew, Off_or_Def, thisTeam = "All"){
   
   # specifically, this function will prepare playersNew dataset by default
   # It is understood, playersNew is the updated rosters at the beginning of a new season
-  playersSumm <- .prepareModelPrediction() 
+  playersSumm <- .prepareModelPrediction(data, thisTeam) 
   
   # scale the variables the same way the training dataset was scaled so the nnet makes sense
   scaleMaxMin <- .getScaleLimits(Off_or_Def)

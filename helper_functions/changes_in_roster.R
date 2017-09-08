@@ -36,13 +36,22 @@
 # playB <- "Edy Tavares"
 # tmA <- "IND"
 # tmB <- "CLE"
-.trade_Players <- function(data,playA,tmA,playB,tmB){
+.trade_Players <- function(data,playA,tmA,playB=NULL,tmB=NULL){
   
-  playerA_row <- filter(data, Player == playA, Tm == tmA) %>% mutate(Tm = tmB)
-  playerB_row <- filter(data, Player == playB, Tm == tmB) %>% mutate(Tm = tmA)
-  data <- filter(data, !(Player %in% c(playA, playB))) %>% 
-    bind_rows(playerA_row) %>% bind_rows(playerB_row)
-  
+  if (is.null(playB) | is.null(tmB)) { # player is traded out of NBA or retires
+    
+    playerA_row <- filter(data, Player %in% playA, Tm == tmA) %>% mutate(Tm = tmB)
+    data <- filter(data, !(Player %in% playA)) %>% 
+      bind_rows(playerA_row)
+    
+  } else {  # trade between 2 NBA teams
+    
+    playerA_row <- filter(data, Player %in% playA, Tm == tmA) %>% mutate(Tm = tmB)
+    playerB_row <- filter(data, Player %in% playB, Tm == tmB) %>% mutate(Tm = tmA)
+    data <- filter(data, !(Player %in% c(playA, playB))) %>% 
+      bind_rows(playerA_row) %>% bind_rows(playerB_row)
+  }
+    
   return(data)
   
 }

@@ -55,6 +55,12 @@ tagList(
              fluidPage(
                source(file.path("ui_files", "ui_plotTSNE.R"), local = TRUE)$value
              )
+    ),
+    tabPanel(title = "Trade Market",
+             h3("Trade Market"),
+             fluidPage(
+               source(file.path("ui_files", "ui_TradeMarket.R"), local = TRUE)$value
+             )
     )
     )
 )

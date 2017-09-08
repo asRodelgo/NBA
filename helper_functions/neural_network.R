@@ -50,12 +50,14 @@ library(neuralnet) # neural network for regression
 }
 
 # For prediction, i.e., no PTS per game data available
-.prepareModelPrediction <- function(){ 
+.prepareModelPrediction <- function(data = playersNew, thisTeam = "All"){ 
   # Approach: Summarize variables at team level to obtain input vector for the model
   # 1. By team: calculate weighted average of each characteristic: FGM, FGA, etc...
-  data_team <- .team_preparePredict() # If no arguments, will calculate for all teams
+  data_team <- .team_preparePredict(data, thisTeam) # If no arguments (or thisTeam = "All") will calculate for all teams
   # 2. Weights correspond to percentage of total team time played, ie, sum(effMin) = 5
   # Probably more efficient to scale weights to add up to 1: Wt = effMin/5
+  if (!(thisTeam == "All")) data_team <- mutate(data_team, Tm = thisTeam)
+    
   playersSumm <- data_team %>%
     filter(!(Tm == "TOT")) %>% # Those who played for more than 1 team have a Total team
     group_by(Tm, Season) %>%

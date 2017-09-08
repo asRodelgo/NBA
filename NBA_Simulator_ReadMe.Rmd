@@ -79,10 +79,10 @@ Main data source is: https://www.basketball-reference.com/
 
 ## References
 
-- Fivethirtyeight: Player similarity by age
-- Ayasdi: Data topology
-- Andrew Gelman: model goals scored (something you can actually measure) not wins
-- Neural Network package: R-blogger about NNet
+- Fivethirtyeight: Player similarity by age; https://fivethirtyeight.com/features/how-were-predicting-nba-player-career/
+- Ayasdi: Data topology, the new positions in basketball: https://www.youtube.com/watch?v=E-gpSQQe3w8
+- Andrew Gelman: model scores (something you can actually measure) not wins: http://andrewgelman.com/2014/02/25/basketball-stats-dont-model-probability-win-model-expected-score-differential/
+- Neural Network package: R-blogger about NNet: https://www.r-bloggers.com/visualizing-neural-networks-in-r-update/
 
 ## Abstract
 

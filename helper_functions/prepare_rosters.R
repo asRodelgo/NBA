@@ -71,11 +71,11 @@
 }
 
 # compute effective stats for one new season
-.team_preparePredict <- function(thisTeam="All"){
+.team_preparePredict <- function(data = playersNew, thisTeam="All"){
   
   if (thisTeam == "All"){
     
-    data_team <- playersNew %>%
+    data_team <- data %>%
       group_by(Player) %>%
       mutate(effMin = MP/3936, effFG = FG/(3936*effMin),
              effFGA = FGA/(3936*effMin),eff3PM = X3P/(3936*effMin),eff3PA = X3PA/(3936*effMin),
@@ -104,7 +104,7 @@
     data_team <- as.data.frame(data_team)
     
   } else{
-    data_team <- playersNew %>%
+    data_team <- data %>%
       filter(Tm == thisTeam) %>%
       group_by(Player) %>%
       mutate(effMin = MP/3936, effFG = FG/(3936*effMin),
@@ -136,7 +136,7 @@
   return(data_team)
 }
 
-# compute effective stats for all seasons
+# compute effective stats for all seasons. Uses playersHist
 .team_prepareAll <- function(){
   
   data_team <- playersHist %>%

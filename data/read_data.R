@@ -43,8 +43,8 @@ if (dataNewSeason==FALSE){
 }
 
 # Read pre-calculated nnetwork models -------------------------
-nn_OffenseOLD <- list.load("data/nn_Offense.rds")
-nn_DefenseOLD <- list.load("data/nn_Defense.rds")
+nn_Offense <- list.load("data/nn_Offense.rds")
+nn_Defense <- list.load("data/nn_Defense.rds")
 
 # Predicted team powers for the upcoming season -------------------------
 # Default to pre-calculated for quick start of the app

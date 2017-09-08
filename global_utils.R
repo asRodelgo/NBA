@@ -33,6 +33,7 @@ sigma <- 8 # constant std dev for all teams. ADJUST LATER ON!!
 #seasonSchedule <- .seasonSchedule()
 
 # Precompute Reg Season results for all season
+#teamsPredicted <- .teamsPredictedPower()
 regSeasonOutcome <- .standings(real=TRUE)
 playoffs <- .getPlayoffResults()
 
