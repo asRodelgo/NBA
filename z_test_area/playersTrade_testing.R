@@ -2,7 +2,7 @@
 
 data <- playersNew
 playA <- "Paul George"
-playB <- "Kevin Love"
+playB <- c("Kevin Love","LeBron James")
 tmA <- "IND"
 tmB <- "CLE"
 tmA_Power_before_Trade <- merge(.computePower(data,"PTS",tmA),.computePower(data,"PTSA",tmA),by="team_season")
