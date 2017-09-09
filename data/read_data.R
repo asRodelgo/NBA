@@ -48,8 +48,10 @@ nn_Defense <- list.load("data/nn_Defense.rds")
 
 # Predicted team powers for the upcoming season -------------------------
 # Default to pre-calculated for quick start of the app
-teamsPredicted <- read.csv("data/teamsPredicted.csv", 
-                           colClasses = c("factor",rep("numeric",2),rep("character",2)))
+teamsPredicted <- .teamsPredictedPower(playersNew, defaultMin = NULL) # from teams_power.R 
+## INTERESTING: High defaultMin powers Defenses while Low defaultMin powers Offenses
+# teamsPredicted <- read.csv("data/teamsPredicted.csv", 
+#                            colClasses = c("factor",rep("numeric",2),rep("character",2)))
 
 #.teamsPredictedPower() 
 tsne_points <- read.csv("data/tsne_points_All.csv",stringsAsFactors = FALSE)

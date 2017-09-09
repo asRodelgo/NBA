@@ -2,17 +2,22 @@
 
 data <- playersNew
 playA <- "Paul George"
-playB <- c("Kevin Love","LeBron James")
+playB <- c("LeBron James")
 tmA <- "IND"
 tmB <- "CLE"
-tmA_Power_before_Trade <- merge(.computePower(data,"PTS",tmA),.computePower(data,"PTSA",tmA),by="team_season")
-tmB_Power_before_Trade <- merge(.computePower(data,"PTS",tmB),.computePower(data,"PTSA",tmB),by="team_season")
+effMinutes <- NULL # approx the average of all
+tmA_Power_before_Trade <- merge(.computePower(data,"PTS",tmA,effMinutes),.computePower(data,"PTSA",tmA,effMinutes),by="team_season")
+tmB_Power_before_Trade <- merge(.computePower(data,"PTS",tmB,effMinutes),.computePower(data,"PTSA",tmB,effMinutes),by="team_season")
 # update rosters after trade happens
-newData <- .trade_Players(data, playA,tmA,playB,tmB)
+dataPostTrade <- .trade_Players(data, playA,tmA,playB,tmB)
 # compute new powers
-tmA_Power_after_Trade <- merge(.computePower(newData,"PTS",tmA),.computePower(newData,"PTSA",tmA),by="team_season")
-tmB_Power_after_Trade <- merge(.computePower(newData,"PTS",tmB),.computePower(newData,"PTSA",tmB),by="team_season")
+tmA_Power_after_Trade <- merge(.computePower(dataPostTrade,"PTS",tmA,effMinutes),.computePower(dataPostTrade,"PTSA",tmA,effMinutes),by="team_season")
+tmB_Power_after_Trade <- merge(.computePower(dataPostTrade,"PTS",tmB,effMinutes),.computePower(dataPostTrade,"PTSA",tmB,effMinutes),by="team_season")
 
+## Compute playoff powers
+tmC <- "GSW"
+dataPlayoffs <- .adjust_Minutes(data,increment = 0.2)
+tmC_Power_playoffs <- merge(.computePower(dataPlayoffs,"PTS",tmC,effMinutes),.computePower(dataPlayoffs,"PTSA",tmC,effMinutes),by="team_season")
 
 
 ### .computePower calls 2 functions internally

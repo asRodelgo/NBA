@@ -2,11 +2,19 @@
 # Once rosters are updated (Phase 1), predict avg points and avg points against
 # per team for the new season or for a season in the past (back to 1979-1980)
 # compute avg PTS as offensive power and PTSA as defensive power
-.computePower <- function(data = playersNew, Off_or_Def, thisTeam = "All"){
+.computePower <- function(data = playersNew, Off_or_Def, thisTeam = "All", defaultMinutes = NULL, removeEffMin = TRUE){
   
   # specifically, this function will prepare playersNew dataset by default
   # It is understood, playersNew is the updated rosters at the beginning of a new season
   playersSumm <- .prepareModelPrediction(data, thisTeam) 
+  # effMin is 1 of the variables that get averaged weighted by effMin, in case it adds noise to the
+  # neural network 
+  if (!is.null(defaultMinutes)) { 
+    playersSumm$effMin <- defaultMinutes
+  }
+  if (removeEffMin & ncol(select(playersSumm, one_of("effMin")))>0) { 
+    playersSumm <- select(playersSumm, -effMin)
+  }
   
   # scale the variables the same way the training dataset was scaled so the nnet makes sense
   scaleMaxMin <- .getScaleLimits(Off_or_Def)
@@ -39,10 +47,10 @@
 }
 
 # Put together teams and predicted powers as input to a new regular season
-.teamsPredictedPower <- function() {
+.teamsPredictedPower <- function(data = playersNew, defaultMin = NULL) {
   
-  Def <- .computePower("PTSA")
-  Off <- .computePower("PTS")
+  Def <- .computePower(data,"PTSA",defaultMinutes = defaultMin)
+  Off <- .computePower(data,"PTS", defaultMinutes = defaultMin)
   team_power <- merge(Off,Def,by="team_season")
   
   team_power <- team_power %>%

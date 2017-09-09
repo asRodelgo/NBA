@@ -14,7 +14,7 @@ library(neuralnet) # neural network for regression
 
 # DATA PROCESSING --------------------------------------------
 # Off_or_Def = "PTS" or "PTSA"
-.prepareModel <- function(Off_or_Def){ 
+.prepareModel <- function(Off_or_Def, removeEffMin = TRUE){ 
   # Approach: Summarize variables at team level to obtain input vector for the model
   # 1. By team: calculate weighted average of each characteristic: FGM, FGA, etc...
   data_team <- .team_prepareAll() # If no arguments, will calculate for all teams for all seasons
@@ -33,6 +33,9 @@ library(neuralnet) # neural network for regression
     mutate(team_season = paste0(Tm,"_",Season))
   playersSumm <- playersSumm[,!(names(playersSumm) %in% c("Tm","Season"))]
   
+  if (removeEffMin) {
+    playersSumm <- select(playersSumm, -effMin)
+  }
   playersSumm <- as.data.frame(playersSumm)
   
   ## add team's average points in season (output variable y~ in the regression)
@@ -50,7 +53,7 @@ library(neuralnet) # neural network for regression
 }
 
 # For prediction, i.e., no PTS per game data available
-.prepareModelPrediction <- function(data = playersNew, thisTeam = "All"){ 
+.prepareModelPrediction <- function(data = playersNew, thisTeam = "All", removeEffMin = TRUE){ 
   # Approach: Summarize variables at team level to obtain input vector for the model
   # 1. By team: calculate weighted average of each characteristic: FGM, FGA, etc...
   data_team <- .team_preparePredict(data, thisTeam) # If no arguments (or thisTeam = "All") will calculate for all teams
@@ -71,6 +74,9 @@ library(neuralnet) # neural network for regression
     mutate(team_season = paste0(Tm,"_",Season))
   playersSumm <- playersSumm[,!(names(playersSumm) %in% c("Tm","Season"))]
   
+  if (removeEffMin) {
+    playersSumm <- select(playersSumm, -effMin)
+  }
   playersSumm <- as.data.frame(playersSumm)
   
 #   ## add team's average points in season (output variable y~ in the regression)
@@ -163,9 +169,9 @@ library(neuralnet) # neural network for regression
 }
 
 # Once a model is selected, use this function to calculate team powers
-.selectedModel <- function(Off_or_Def) {
+.selectedModel <- function(Off_or_Def,removeEffMin = TRUE) {
   
-  playersSumm <- .prepareModel(Off_or_Def)
+  playersSumm <- .prepareModel(Off_or_Def, removeEffMin)
   # scale the data for easier convergence of backpropagation algorithm
   scaleMaxMin <- .getScaleLimits(Off_or_Def)
   maxs <- scaleMaxMin$maxs 
