@@ -83,8 +83,22 @@ Main data source is: https://www.basketball-reference.com/
 - Ayasdi: Data topology, the new positions in basketball: https://www.youtube.com/watch?v=E-gpSQQe3w8
 - Andrew Gelman: model scores (something you can actually measure) not wins: http://andrewgelman.com/2014/02/25/basketball-stats-dont-model-probability-win-model-expected-score-differential/
 - Neural Network package: R-blogger about NNet: https://www.r-bloggers.com/visualizing-neural-networks-in-r-update/
+- tSNE algorithm: 
+https://lvdmaaten.github.io/tsne/
+- about interpretability of t-SNE:
+http://distill.pub/2016/misread-tsne/
 
 ## Abstract
+
+In this paper I present a method to assess the impact of player trades for NBA teams. Assesing the potential of trades is complex as it affects not only the composition of the teams involved but also the rest of the conference they play for. By acquiring a player, a team may weaken the opposing teams and vice-versa.
+
+The main idea under this method is simulating the outcome of an entire NBA season under that trade scenario and compare it with the pre-trade outcome.
+
+The starting point is a Neural Network regression model of Offensive and Defensive power for teams based on individual players stats which allows for simulation of head to head matches and thus for an entire season. By running multiple seasons under the same trade scenario it is possible to assess the average outcome for a team (per the Law of Large numbers) and the impact of each trade. 
+
+The paper will show how Tthis model has implications beyond just the trade evaluation. For instance, by modeling the Offensive and Defensive power of teams, we will be able to answer questions like: Who won the Kyrie/Isaiah trade?; why the Spurs signed Pau Gasol to replace Tim Duncan?; who is the best/worst offensive/defensive player in the NBA?; and more.
+
+In addition, the model allows for team success evaluation by using spatial or topological analysis to provide answers on what's the shape of a champion calibre team, in terms of positions of players in a multidimensional manifold.
 
 Instructions:
 
@@ -110,7 +124,8 @@ Use the motivation as part of the intro. Key points to make:
   - How close are Houston Rockets now to Golden State? What's the worst team in each conference?
   - Who are the best defensive/ofensive player in the league?
   - Classify players according to the way they play. What combination of these types does a team need to be a champion?
+  - What type of player maximizes the winning chances of a team and who are the closest to that available in the market?
 
-
+Provide some bits of data: compare CLE/BOS Offense and Defense before and after the trades. Simulate 1000 seasons to estimate their performances before and after the trade. 
 
 

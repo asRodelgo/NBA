@@ -7,21 +7,21 @@
 # playersNew <- playersHist %>%
 #   filter(Season == max(as.character(Season))) %>%
 #   mutate(Season = as.factor(paste0(as.numeric(substr(Season,1,4))+1,"-",as.numeric(substr(Season,1,4))+2)))
-.adjust_Minutes <- function(data,increment){
+.adjust_Minutes <- function(data,increment,topHeavy = 5){
   #increment <- 0.2  
   minAdjust <- filter(data,!(Tm == "TOT"))
   playersAdj <- data.frame()  
   for (team in unique(minAdjust$Tm)) {
     atl <- filter(minAdjust, Tm == team) %>% arrange(desc(MP))
     total_min <- sum(atl$MP)
-    leftout_min <- sum(atl$MP[6:nrow(atl)])
+    leftout_min <- sum(atl$MP[(topHeavy+1):nrow(atl)])
     # top 5 highest minutes played increase their play time by x% 
     # Set a limit of 46 out of 48 max minutes per game per player
-    atl$MP[1:5] <- ifelse(atl$MP[1:5]*(1+increment)>46,46,atl$MP[1:5]*(1+increment))
+    atl$MP[1:topHeavy] <- ifelse(atl$MP[1:topHeavy]*(1+increment)>46,46,atl$MP[1:topHeavy]*(1+increment))
     # adjust the rest to sum up to total_min
-    increm_min <- sum(atl$MP[1:5])
+    increm_min <- sum(atl$MP[1:topHeavy])
     leftout_coef <- (total_min-increm_min)/leftout_min
-    atl$MP[6:nrow(atl)] <- leftout_coef*atl$MP[6:nrow(atl)]
+    atl$MP[(topHeavy+1):nrow(atl)] <- leftout_coef*atl$MP[(topHeavy+1):nrow(atl)]
     if (nrow(playersAdj)>0) playersAdj <- bind_rows(playersAdj,atl) else playersAdj <- atl
     
     #print(round(total_min,1) == round(sum(atl$MP),1))

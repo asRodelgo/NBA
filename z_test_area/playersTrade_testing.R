@@ -15,9 +15,13 @@ tmA_Power_after_Trade <- merge(.computePower(dataPostTrade,"PTS",tmA,effMinutes)
 tmB_Power_after_Trade <- merge(.computePower(dataPostTrade,"PTS",tmB,effMinutes),.computePower(dataPostTrade,"PTSA",tmB,effMinutes),by="team_season")
 
 ## Compute playoff powers
-tmC <- "GSW"
-dataPlayoffs <- .adjust_Minutes(data,increment = 0.2)
-tmC_Power_playoffs <- merge(.computePower(dataPlayoffs,"PTS",tmC,effMinutes),.computePower(dataPlayoffs,"PTSA",tmC,effMinutes),by="team_season")
+dataPlayoffs <- .adjust_Minutes(data,increment = 0.25, topHeavy = 8)
+tmC <- "HOU"
+tmC_Power_playoffs <- merge(.computePower(dataPlayoffs,"PTS","All",effMinutes),.computePower(dataPlayoffs,"PTSA","All",effMinutes),by="team_season")
+tmC_Power_playoffs
+
+## Average player
+avgPlayer <- .calculate_AvgPlayer(data)
 
 
 ### .computePower calls 2 functions internally
