@@ -223,7 +223,7 @@
 # as NBA player. Unless pickAge is explicitly entered
 .similarPlayers <- function(playerName,numberPlayersToCompare, pickAge){
   
-  thisAgeFrame <- filter(playersHist, Player == playerName, Season >= paste0(as.numeric(thisYear)-pickAge+19,"-",as.numeric(thisYear)-pickAge+20))
+  thisAgeFrame <- filter(playersHist, Player == playerName, Season >= paste0(as.numeric(thisYear)-pickAge+18,"-",as.numeric(thisYear)-pickAge+19))
   
   if (nrow(thisAgeFrame) > 0){
     #thisAge <- filter(thisAgeFrame, Season == max(as.character(Season)))$Age
@@ -278,7 +278,7 @@
 
   # Top 10 more similar to selected player for past 5 years
   top10_similar <- head(.similarPlayers(playerName,numberPlayersToCompare,pickAge),numberTeamsForVariation)$Player
-  thisAgeFrame <- filter(playersHist, Player == playerName, Season >= paste0(as.numeric(thisYear)-pickAge+19,"-",as.numeric(thisYear)-pickAge+20))
+  thisAgeFrame <- filter(playersHist, Player == playerName, Season >= paste0(as.numeric(thisYear)-pickAge+18,"-",as.numeric(thisYear)-pickAge+19))
   thisAge <- max(filter(thisAgeFrame, Player == playerName)$Age)
   
   # Now calculate average variation in their stats when they went from current age to age + 1

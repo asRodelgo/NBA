@@ -78,9 +78,9 @@ write_RookieStats <- function(){
   rookies <- read.csv("data/rookies.csv", stringsAsFactors = FALSE)
   collegePlayers <- read.csv("data/collegePlayers.csv", stringsAsFactors = FALSE)
   # Correct spelling errors 2017 draft
-  collegePlayers[grepl("Adebayo",collegePlayers$Player),]$Player <- "Bam Adebayo"
-  collegePlayers[grepl("Dennis Smith",collegePlayers$Player),]$Player <- "Dennis Smith Jr."
-  collegePlayers[grepl("Leaf",collegePlayers$Player),]$Player <- "TJ Leaf"
+  #collegePlayers[grepl("Adebayo",collegePlayers$Player),]$Player <- "Bam Adebayo"
+  #collegePlayers[grepl("Dennis Smith",collegePlayers$Player),]$Player <- "Dennis Smith Jr."
+  #ollegePlayers[grepl("Leaf",collegePlayers$Player),]$Player <- "TJ Leaf"
   
   rookieStats <- merge(rookies, collegePlayers, by = "Player",all.x=TRUE) %>% 
     group_by(Player) %>% summarise_if(is.numeric,funs(mean(.,na.rm=TRUE))) %>% 

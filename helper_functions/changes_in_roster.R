@@ -57,11 +57,19 @@
 }
 
 # Calculate the average player
-.calculate_AvgPlayer <- function(data) {
+.calculate_AvgPlayer <- function(data, age=NULL) {
   thisSeason <- data$Season[1]
-  avgPlayer <- summarise_if(data,is.numeric,funs(mean)) %>% 
-    mutate(Player = "Average Player", Pos = "X", Tm = "X", Season = thisSeason) %>%
-    select(Player,Pos,Age,Tm,everything())
+  if (is.null(age)){ # average all
+    avgPlayer <- summarise_if(data,is.numeric,funs(mean)) %>% 
+      mutate(Player = "Average Player", Pos = "X", Tm = "X", Season = thisSeason) %>%
+      select(Player,Pos,Age,Tm,everything())
+  } else { # average by age
+    avgPlayer <- filter(data, Age == age) %>% 
+      summarise_if(is.numeric,funs(mean)) %>% 
+      mutate(Player = "Average Player", Pos = "X", Tm = "X", Season = thisSeason) %>%
+      select(Player,Pos,Age,Tm,everything())
+  }
+  
   
   return(avgPlayer)
 }

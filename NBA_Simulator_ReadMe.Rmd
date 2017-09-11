@@ -90,15 +90,17 @@ http://distill.pub/2016/misread-tsne/
 
 ## Abstract
 
-In this paper I present a method to assess the impact of player trades for NBA teams. Assesing the potential of trades is complex as it affects not only the composition of the teams involved but also the rest of the conference they play for. By acquiring a player, a team may weaken the opposing teams and vice-versa.
+In this paper I present a method to evaluate the impact of player trades for NBA teams. Assesing the potential of trades is complex as it affects not only the composition of the teams involved but also the rest of the conference they play for. By acquiring a player, a team may strenghthen or weaken the opposing teams or themselves.
 
 The main idea under this method is simulating the outcome of an entire NBA season under that trade scenario and compare it with the pre-trade outcome.
 
 The starting point is a Neural Network regression model of Offensive and Defensive power for teams based on individual players stats which allows for simulation of head to head matches and thus for an entire season. By running multiple seasons under the same trade scenario it is possible to assess the average outcome for a team (per the Law of Large numbers) and the impact of each trade. 
 
-The paper will show how Tthis model has implications beyond just the trade evaluation. For instance, by modeling the Offensive and Defensive power of teams, we will be able to answer questions like: Who won the Kyrie/Isaiah trade?; why the Spurs signed Pau Gasol to replace Tim Duncan?; who is the best/worst offensive/defensive player in the NBA?; and more.
+The paper will show how Tthis model has implications beyond just the trade evaluation. For instance, by modeling the Offensive and Defensive power of teams, we will be able to answer questions like: Who won the Kyrie/Isaiah trade?; why the Spurs signed Pau Gasol to replace Tim Duncan?; who is the best/worst offensive/defensive player in the NBA?; who is Lonzo Ball's closest player?; and more.
 
 In addition, the model allows for team success evaluation by using spatial or topological analysis to provide answers on what's the shape of a champion calibre team, in terms of positions of players in a multidimensional manifold.
+
+*Note: At the writing of this paper, rosters are not yet final so I will be using rosters as of the end of last season 
 
 Instructions:
 
