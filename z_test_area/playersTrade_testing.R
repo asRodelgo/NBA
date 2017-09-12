@@ -23,6 +23,13 @@ tmC_Power_playoffs
 ## Average player
 avgPlayer <- .calculate_AvgPlayer(data)
 
+## Compute team powers after players stat get predicted
+data <- playersNew
+dataPredicted <- playersNewPredicted
+effMinutes <- NULL # approx the average of all  
+tmA <- "All"
+tmA_Power_before_Prediction <- merge(.computePower(data,"PTS",tmA,effMinutes),.computePower(data,"PTSA",tmA,effMinutes),by="team_season")
+tmA_Power_after_Prediction <- merge(.computePower(dataPredicted,"PTS",tmA,effMinutes,actualOrPredicted = "predicted"),.computePower(dataPredicted,"PTSA",tmA,effMinutes,actualOrPredicted = "predicted"),by="team_season")
 
 ### .computePower calls 2 functions internally
 ## adjust playersNew to eff stats per minute for all or 1 particular team

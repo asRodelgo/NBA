@@ -2,11 +2,16 @@
 # Once rosters are updated (Phase 1), predict avg points and avg points against
 # per team for the new season or for a season in the past (back to 1979-1980)
 # compute avg PTS as offensive power and PTSA as defensive power
-.computePower <- function(data = playersNew, Off_or_Def, thisTeam = "All", defaultMinutes = NULL, removeEffMin = TRUE){
+.computePower <- function(data = playersNew, Off_or_Def, thisTeam = "All", defaultMinutes = NULL, removeEffMin = TRUE, actualOrPredicted = "actual"){
   
   # specifically, this function will prepare playersNew dataset by default
   # It is understood, playersNew is the updated rosters at the beginning of a new season
-  playersSumm <- .prepareModelPrediction(data, thisTeam) 
+  if (actualOrPredicted=="actual"){ # whether actual data (before prediction) or predicted data
+    playersSumm <- .prepareModelPrediction(data, thisTeam)  
+  } else {
+    playersSumm <- .prepareModelOncePredicted(data, thisTeam)  
+  }
+  
   # effMin is 1 of the variables that get averaged weighted by effMin, in case it adds noise to the
   # neural network 
   if (!is.null(defaultMinutes)) { 

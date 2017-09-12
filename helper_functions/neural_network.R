@@ -52,7 +52,7 @@ library(neuralnet) # neural network for regression
   return(playersSumm)
 }
 
-# For prediction, i.e., no PTS per game data available
+# For prediction before the prediction, i.e., no PTS per game data available
 .prepareModelPrediction <- function(data = playersNew, thisTeam = "All", removeEffMin = TRUE){ 
   # Approach: Summarize variables at team level to obtain input vector for the model
   # 1. By team: calculate weighted average of each characteristic: FGM, FGA, etc...
@@ -84,6 +84,42 @@ library(neuralnet) # neural network for regression
 #   team_stats2 <- team_statsNew %>%
 #     mutate(team_season = paste0(teamCode,"_",Season))
 #   team_stats2 <- team_stats2[,!(names(team_stats2) %in% c("Team","teamCode","Season"))]
+  
+  return(playersSumm)
+}
+
+# Once predicted, to be able to computePower, i.e., no PTS per game data available
+.prepareModelOncePredicted <- function(data_team = playersNewPredicted, thisTeam = "All", removeEffMin = TRUE){ 
+  # Approach: Summarize variables at team level to obtain input vector for the model
+  # 1. By team: calculate weighted average of each characteristic: FGM, FGA, etc...
+  # data_team <- .team_preparePredict(data, thisTeam) # If no arguments (or thisTeam = "All") will calculate for all teams
+  # 2. Weights correspond to percentage of total team time played, ie, sum(effMin) = 5
+  # Probably more efficient to scale weights to add up to 1: Wt = effMin/5
+  if (!(thisTeam == "All")) data_team <- filter(data_team, Tm == thisTeam)
+  
+  playersSumm <- data_team %>%
+    filter(!(Tm == "TOT")) %>% # Those who played for more than 1 team have a Total team
+    group_by(Tm, Season) %>%
+    mutate(Wt = effMin) %>%
+    mutate_each(funs(weighted.mean(.,Wt)),-Player,-Pos,-Season,-Wt) %>%
+    dplyr::select(-Player,-Pos,-Wt) %>%
+    distinct(.keep_all=TRUE)
+  
+  # Paste Team and Season to have 1 field as identifier
+  playersSumm <- playersSumm %>%
+    mutate(team_season = paste0(Tm,"_",Season))
+  playersSumm <- playersSumm[,!(names(playersSumm) %in% c("Tm","Season"))]
+  
+  if (removeEffMin) {
+    playersSumm <- select(playersSumm, -effMin)
+  }
+  playersSumm <- as.data.frame(playersSumm)
+  
+  #   ## add team's average points in season (output variable y~ in the regression)
+  #   # Paste Team and Season to have 1 field as identifier
+  #   team_stats2 <- team_statsNew %>%
+  #     mutate(team_season = paste0(teamCode,"_",Season))
+  #   team_stats2 <- team_stats2[,!(names(team_stats2) %in% c("Team","teamCode","Season"))]
   
   return(playersSumm)
 }

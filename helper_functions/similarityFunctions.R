@@ -312,14 +312,22 @@
   # Apply this variation to predict stats for this player for next season  
 ##  ### NOTE: This may fail when player didn't play much at this age. Think about alternatives
   predAgeData <- filter(thisAgeData, Player == playerName)
-  for (i in 1:ncol(top10_var)){
-    predAgeData[i+3] <- predAgeData[i+3]*(1+top10_var[i])
+  if (nrow(predAgeData[1])>0){
+    for (i in 1:ncol(top10_var)){
+      predAgeData[i+3] <- predAgeData[i+3]*(1+top10_var[i])
+    }
+    names(predAgeData) <- namesKeep
+    # Update the Season and Age of the player
+    predAgeData$Season <- paste0(as.numeric(substr(predAgeData$Season,1,4))+1,"-",
+                                 as.numeric(substr(predAgeData$Season,1,4))+2)
+    predAgeData$Age <- thisAge + 1
+  
+  } else {
+    names(predAgeData) <- namesKeep
+    predAgeData <- mutate(predAgeData, Age = NA, effPTS = NA)
   }
-  names(predAgeData) <- namesKeep
-  # Update the Season and Age of the player
-  predAgeData$Season <- paste0(as.numeric(substr(predAgeData$Season,1,4))+1,"-",
-                               as.numeric(substr(predAgeData$Season,1,4))+2)
-  predAgeData$Age <- thisAge + 1
+  
+  
   
   return(predAgeData)
 

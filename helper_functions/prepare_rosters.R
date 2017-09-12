@@ -71,7 +71,7 @@
 }
 
 # compute effective stats for one new season
-.team_preparePredict <- function(data = playersNew, thisTeam="All"){
+.team_preparePredict <- function(data = playersNew, thisTeam="All", singlePlayer = FALSE){
   
   if (thisTeam == "All"){
     
@@ -103,7 +103,7 @@
     
     data_team <- as.data.frame(data_team)
     
-  } else{
+  } else {
     data_team <- data %>%
       filter(Tm == thisTeam) %>%
       group_by(Player) %>%
@@ -127,8 +127,10 @@
       data_team[is.na(data_team[,i]),i] <- 0
     }
     # Adjust effMin to reflect percentage of total team time played, ie, sum(effMin) = 5
-    teamMinutes <- sum(data_team$effMin)
-    data_team$effMin <- 5*data_team$effMin/teamMinutes
+    if (singlePlayer==FALSE){
+      teamMinutes <- sum(data_team$effMin)
+      data_team$effMin <- 5*data_team$effMin/teamMinutes
+    }
     
     data_team <- as.data.frame(data_team)
     

@@ -90,6 +90,8 @@ http://distill.pub/2016/misread-tsne/
 
 ## Abstract
 
+Title: Game of Trades: Simulating trade scenarios in the NBA
+
 In this paper I present a method to evaluate the impact of player trades for NBA teams. Assesing the potential of trades is complex as it affects not only the composition of the teams involved but also the rest of the conference they play for. By acquiring a player, a team may strenghthen or weaken the opposing teams or themselves.
 
 The main idea under this method is simulating the outcome of an entire NBA season under that trade scenario and compare it with the pre-trade outcome.

@@ -75,43 +75,78 @@
   rookieStats <- read.csv("data/rookieStats.csv", stringsAsFactors = FALSE)
   europePlayers <- read.csv("data/europePlayers.csv", stringsAsFactors = FALSE)
   
+  playersNewPredicted <- data.frame()
   for (team in unique(current_rosters$Tm)){
   #for (team in c("CLE")){
     #thisTeam <- filter(current_rosters, Tm == team)
     thisTeam <- filter(playersNew, Tm == team)
     thisTeamStats <- data.frame()
     for (player in thisTeam$Player){
-      thisPlayer <- filter(thisTeam, Player == player)
-      print(paste0("Processing ",thisPlayer$Player))
-      #if (thisPlayer$Exp %in% seq(1,25,1)){ # not a rookie
+      if (!(player %in% playersNewPredicted$Player)){ # skip running all. Start over where it failed
+        thisPlayer <- filter(thisTeam, Player == player)
+        print(paste0("Team: ", team,": Processing ",thisPlayer$Player))
+        #if (thisPlayer$Exp %in% seq(1,25,1)){ # not a rookie
+        if (thisPlayer$Age < 20) { # not enough players to compare to at age 19 or younger
+          thisPlayer$Age <- 20
+        }
+        if (thisPlayer$Age > 40) { # not enough players to compare to at age 41 or older
+          thisPlayer$Age <- 40
+        }
         thisPlayerStats <- .predictPlayer(thisPlayer$Player,20,thisPlayer$Age-1,10) %>% 
           select(Player,Pos,Season,Age,everything())
-      if (!is.na(thisPlayerStats$effPTS)){ # rosters not yet updated so include R (last season rookies)
-      #if (thisPlayer$Exp %in% c(seq(1,25,1),"R")){ # rosters not yet updated so include R (last season rookies)
-        print("NBA player: OK!")
-      } else { # Rookie player
-        # if (nchar(thisPlayer$College)>0) { # College player
-        #   thisPlayerStats <- .predictPlayerCollegeRookie(player)
-        #   print("Rookie College player: OK!")
-        # } else if (player %in% europePlayers$Player) { # European player
-        #   thisPlayerStatsEurope <- .predictPlayerNonCollegeRookie(player)
-        #   print("Rookie Europe player: OK!")
-        # } else { # International player
-          # compute rookie player average stats for this player
+        
+        if (nrow(thisPlayerStats)>0){ # in case thisPlayerStats return an empty data.frame
+          if (!is.na(thisPlayerStats$effPTS)){ # rosters not yet updated so include R (last season rookies)
+            #if (thisPlayer$Exp %in% c(seq(1,25,1),"R")){ # rosters not yet updated so include R (last season rookies)
+            print("NBA player: OK!")
+            print(thisPlayerStats)
+          } else { # Rookie player
+            # if (nchar(thisPlayer$College)>0) { # College player
+            #   thisPlayerStats <- .predictPlayerCollegeRookie(player)
+            #   print("Rookie College player: OK!")
+            # } else if (player %in% europePlayers$Player) { # European player
+            #   thisPlayerStatsEurope <- .predictPlayerNonCollegeRookie(player)
+            #   print("Rookie Europe player: OK!")
+            # } else { # International player
+            # compute rookie player average stats for this player
+            thisPlayerStats <- .calculate_AvgPlayer(playersNew, thisPlayer$Age + 1) %>%
+              mutate(Player = as.character(thisPlayer$Player), Pos = as.character(thisPlayer$Pos), 
+                     G = as.numeric(thisPlayer$G), GS = as.numeric(thisPlayer$GS), Tm = team) 
+            thisPlayerStats <- .team_preparePredict(data = thisPlayerStats, thisTeam = as.character(thisPlayer$Tm),singlePlayer = TRUE)
+            #MP = as.numeric(thisPlayer$MP))
+            print("Average player: OK!")
+            print(thisPlayerStats)
+            #}
+          }
+        } else {
           thisPlayerStats <- .calculate_AvgPlayer(playersNew, thisPlayer$Age + 1) %>%
             mutate(Player = as.character(thisPlayer$Player), Pos = as.character(thisPlayer$Pos), 
-                   G = as.numeric(thisPlayer$G), GS = as.numeric(thisPlayer$GS)) 
-                   #MP = as.numeric(thisPlayer$MP))
+                   G = as.numeric(thisPlayer$G), GS = as.numeric(thisPlayer$GS), Tm = team) 
+          thisPlayerStats <- .team_preparePredict(data = thisPlayerStats, thisTeam = as.character(thisPlayer$Tm),singlePlayer = TRUE)
+          #MP = as.numeric(thisPlayer$MP))
           print("Average player: OK!")
-        #}
+          print(thisPlayerStats)
+        }  
+        
+        if (nrow(thisTeamStats)>0){
+          thisTeamStats <- bind_rows(thisTeamStats,thisPlayerStats)
+        } else{
+          thisTeamStats <- thisPlayerStats
+        }
       }
-      if (nrow(thisTeamStats)>0){
-        thisTeamStats <- bind_rows(thisTeamStats,thisPlayerStats)
-      } else{
-        thisTeamStats <- thisPlayerStats
-      }
-      
     }
+    if (nrow(thisTeamStats) > 0) {
+      thisTeamStats <- mutate(thisTeamStats, Tm = team)
+      if (nrow(playersNewPredicted)>0){
+        playersNewPredicted <- bind_rows(playersNewPredicted,thisTeamStats)
+      } else{
+        playersNewPredicted <- thisTeamStats
+      }
+    }
+    
+    
   }
+  playersNewPredicted <- distinct(playersNewPredicted, Player, Tm, .keep_all=TRUE)
+  write.csv(playersNewPredicted, "data/playersNewPredicted.csv", row.names = FALSE)
   
 }  
