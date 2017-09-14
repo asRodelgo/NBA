@@ -31,6 +31,11 @@ tmA <- "All"
 tmA_Power_before_Prediction <- merge(.computePower(data,"PTS",tmA,effMinutes),.computePower(data,"PTSA",tmA,effMinutes),by="team_season")
 tmA_Power_after_Prediction <- merge(.computePower(dataPredicted,"PTS",tmA,effMinutes,actualOrPredicted = "predicted"),.computePower(dataPredicted,"PTSA",tmA,effMinutes,actualOrPredicted = "predicted"),by="team_season")
 
+# Keep rosters as they were at the end of last season for the purpose of the Abstract
+
+
+
+
 ### .computePower calls 2 functions internally
 ## adjust playersNew to eff stats per minute for all or 1 particular team
 #preparePredict <- .team_preparePredict(data = newData,thisTeam = "BOS") # prepare_rosters.R

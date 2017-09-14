@@ -35,6 +35,7 @@ sigma <- 8 # constant std dev for all teams. ADJUST LATER ON!!
 # Precompute Reg Season results for all season
 #teamsPredicted <- .teamsPredictedPower()
 regSeasonOutcome <- .standings(real=TRUE)
+#regSeasonOutcome[[1]]$`2018-04-11`
 playoffs <- .getPlayoffResults()
 
 # tSNE

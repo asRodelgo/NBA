@@ -76,21 +76,21 @@
   europePlayers <- read.csv("data/europePlayers.csv", stringsAsFactors = FALSE)
   
   playersNewPredicted <- data.frame()
-  for (team in unique(current_rosters$Tm)){
+  for (team in unique(playersNew$Tm)){
   #for (team in c("CLE")){
     #thisTeam <- filter(current_rosters, Tm == team)
     thisTeam <- filter(playersNew, Tm == team)
     thisTeamStats <- data.frame()
     for (player in thisTeam$Player){
-      if (!(player %in% playersNewPredicted$Player)){ # skip running all. Start over where it failed
+      #if (!(player %in% playersNewPredicted$Player)){ # skip running all. Start over where it failed
         thisPlayer <- filter(thisTeam, Player == player)
         print(paste0("Team: ", team,": Processing ",thisPlayer$Player))
         #if (thisPlayer$Exp %in% seq(1,25,1)){ # not a rookie
         if (thisPlayer$Age < 20) { # not enough players to compare to at age 19 or younger
           thisPlayer$Age <- 20
         }
-        if (thisPlayer$Age > 40) { # not enough players to compare to at age 41 or older
-          thisPlayer$Age <- 40
+        if (thisPlayer$Age > 39) { # not enough players to compare to at age 41 or older
+          thisPlayer$Age <- 39
         }
         thisPlayerStats <- .predictPlayer(thisPlayer$Player,20,thisPlayer$Age-1,10) %>% 
           select(Player,Pos,Season,Age,everything())
@@ -134,7 +134,7 @@
           thisTeamStats <- thisPlayerStats
         }
       }
-    }
+    #}
     if (nrow(thisTeamStats) > 0) {
       thisTeamStats <- mutate(thisTeamStats, Tm = team)
       if (nrow(playersNewPredicted)>0){
