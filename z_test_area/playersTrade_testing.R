@@ -40,6 +40,30 @@ tmA_Power_after_Prediction <- merge(.computePower(dataPredicted,"PTS",tmA,effMin
 # multiple iterations of a season to estimate wins for each scenatio
 # 6. Create a summary table of the different results.
 
+#1 
+playersNewPredicted <- .computePredictedPlayerStats
+#2
+playersNewPredicted_Current <- .mergePredictedWithCurrent()
+#3
+playersMatch <- merge(current_rosters,playersNewPredicted, by = "Player", all.x = TRUE) %>%
+  distinct(Player)
+
+playersNonMatch <- filter(playersNewPredicted_Current, !(Player %in% playersMatch$Player))
+# add the players, irrespective of the team
+playersManuallyChanged <- filter(playersNonMatch, Player %in% c(
+  "Mike Dunleavy 2","Taurean Waller-Prince","Tim Hardaway 2","Nene Hilario","Glenn Robinson 2",
+  "Gary Payton 2","Gerald Henderson 2","Kelly Oubre"
+))
+# now remove those with several teams:
+playersManuallyChanged <- filter(playersManuallyChanged, !(grepl("Dunleavy",Player) & !(Tm =="ATL") ))
+# now remove those non-matching from playersNewPredicted
+playersNewPredicted_Current <- filter(playersNewPredicted_Current, !is.na(Exp))
+# and add the manually changed to match non-matching players
+playersNewPredicted_Current <- bind_rows(playersNewPredicted_Current,playersManuallyChanged)
+
+#4 
+
+
 
 
 # prepare Rookie stats

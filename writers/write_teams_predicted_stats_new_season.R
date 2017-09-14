@@ -157,6 +157,6 @@
   
   playersNewPredicted_Current <- merge(playersNewPredicted, current_rosters[,c("Player","Tm","Exp","College")], by=c("Player","Tm"), all.x=TRUE)
   
-  
+  return(playersNewPredicted_Current)
 }
 
