@@ -32,9 +32,18 @@ tmA_Power_before_Prediction <- merge(.computePower(data,"PTS",tmA,effMinutes),.c
 tmA_Power_after_Prediction <- merge(.computePower(dataPredicted,"PTS",tmA,effMinutes,actualOrPredicted = "predicted"),.computePower(dataPredicted,"PTSA",tmA,effMinutes,actualOrPredicted = "predicted"),by="team_season")
 
 # Keep rosters as they were at the end of last season for the purpose of the Abstract
+# 1. calculate playersNewPredicted
+# 2. Merge with current_rosters into playersNewPredicted_Current
+# 3. Complete playersNewPredicted with names not matching in current_rosters. Ex: Tim Hardaway vs. Tim Hardaway 2
+# 4. Compute power: .computePower()
+# 5. If results as expected, go ahead and simulate Kyrie/Isaiah trade for the abstract and simulate
+# multiple iterations of a season to estimate wins for each scenatio
+# 6. Create a summary table of the different results.
 
 
 
+# prepare Rookie stats
+#rookieStats_Prepared <- .team_preparePredict(data = rookieStats, thisTeam = "All",singlePlayer = FALSE)
 
 ### .computePower calls 2 functions internally
 ## adjust playersNew to eff stats per minute for all or 1 particular team

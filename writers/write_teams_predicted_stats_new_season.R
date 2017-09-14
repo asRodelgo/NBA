@@ -150,3 +150,13 @@
   write.csv(playersNewPredicted, "data/playersNewPredicted.csv", row.names = FALSE)
   
 }  
+
+.mergePredictedWithCurrent <- function(){
+  
+  playersNewPredicted <- read.csv("data/playersNewPredicted.csv", stringsAsFactors = FALSE)
+  
+  playersNewPredicted_Current <- merge(playersNewPredicted, current_rosters[,c("Player","Tm","Exp","College")], by=c("Player","Tm"), all.x=TRUE)
+  
+  
+}
+
