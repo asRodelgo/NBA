@@ -60,9 +60,25 @@ playersManuallyChanged <- filter(playersManuallyChanged, !(grepl("Dunleavy",Play
 playersNewPredicted_Current <- filter(playersNewPredicted_Current, !is.na(Exp))
 # and add the manually changed to match non-matching players
 playersNewPredicted_Current <- bind_rows(playersNewPredicted_Current,playersManuallyChanged)
-
+playersNewPredicted_Current <- select(playersNewPredicted_Current, -c(Exp,College))
 #4 
+teamPowers_after_Prediction <- merge(.computePower(playersNewPredicted_Current,"PTS","All",effMinutes,actualOrPredicted = "predicted"),.computePower(playersNewPredicted_Current,"PTSA","All",effMinutes,actualOrPredicted = "predicted"),by="team_season")
+# simulate a season to test this
+teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Current,actualOrPred="predicted")
+# Testing regular season ----------------------------------
+regSeasonOutcome <- .standings(real = TRUE)
 
+for (i in 1:10){
+  
+}
+thisTeam <- regSeasonOutcome[[1]][[168]]$team
+thisWins <- regSeasonOutcome[[1]][[168]]$win
+thisLoses <- regSeasonOutcome[[1]][[168]]$lose
+
+scores <- regSeasonOutcome[[2]]
+
+
+#5
 
 
 

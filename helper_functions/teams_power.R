@@ -52,10 +52,10 @@
 }
 
 # Put together teams and predicted powers as input to a new regular season
-.teamsPredictedPower <- function(data = playersNew, defaultMin = NULL) {
+.teamsPredictedPower <- function(data = playersNew, defaultMin = NULL, actualOrPred="actual") {
   
-  Def <- .computePower(data,"PTSA",defaultMinutes = defaultMin)
-  Off <- .computePower(data,"PTS", defaultMinutes = defaultMin)
+  Def <- .computePower(data,"PTSA","All",defaultMinutes = defaultMin,actualOrPredicted = actualOrPred)
+  Off <- .computePower(data,"PTS", "All",defaultMinutes = defaultMin,actualOrPredicted = actualOrPred)
   team_power <- merge(Off,Def,by="team_season")
   
   team_power <- team_power %>%
