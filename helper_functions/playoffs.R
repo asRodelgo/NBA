@@ -85,9 +85,9 @@
 }
 
 # Plot playoff bracket
-.getPlayoffResults <- function(){
+.getPlayoffResults <- function(standings){
 
-  standings <- regSeasonOutcome[[1]]
+  #standings <- standings[[1]]
   
   pEast <- as.character(head(arrange(filter(dplyr::select(standings[[tail(datesRange,1)]], teamCode,conference,win,lose), conference == "E"), desc(win/(win+lose))),8)$teamCode)
   pWest <- as.character(head(arrange(filter(dplyr::select(standings[[tail(datesRange,1)]], teamCode,conference,win,lose), conference == "W"), desc(win/(win+lose))),8)$teamCode)

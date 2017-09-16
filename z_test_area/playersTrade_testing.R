@@ -66,18 +66,48 @@ teamPowers_after_Prediction <- merge(.computePower(playersNewPredicted_Current,"
 # simulate a season to test this
 teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Current,actualOrPred="predicted")
 # Testing regular season ----------------------------------
+
+# one single season
 regSeasonOutcome <- .standings(real = TRUE)
 
-for (i in 1:10){
+####################################################################
+################# ABSTRACT TABLE ##################
+### Scenario 1: Before Trades
+# one single season to start it off
+regSeasonOutcome <- .standings(real = TRUE)
+# Initialize parameters
+regSeasonAvg <- data.frame(
+  team = regSeasonOutcome[[1]][[168]]$team,
+  teamCode = regSeasonOutcome[[1]][[168]]$teamCode,
+  conference = regSeasonOutcome[[1]][[168]]$conference,
+  win = 0,
+  lose = 0,
+  win2 = 0,
+  sd = 0,
+  probChamp = 0)
+
+num_seasons <- 10
+
+for (i in 1:num_seasons){
   
+  playoffs <- .getPlayoffResults(regSeasonOutcome[[1]]) %>% mutate(round = ifelse(round == 0,1,0)) %>%
+    group_by(teamCode) %>% summarise(round = sum(round)) %>% ungroup()
+  regSeasonAvg$win <- regSeasonAvg$win + regSeasonOutcome[[1]][[168]]$win
+  regSeasonAvg$win2 <- regSeasonAvg$win2 + (regSeasonOutcome[[1]][[168]]$win)^2
+  probChamp <- merge(regSeasonOutcome[[1]][[168]], playoffs[,c("teamCode","round")],by="teamCode",all.x=TRUE) %>%
+    mutate(round = ifelse(is.na(round),0,round))
+  regSeasonAvg$probChamp <- regSeasonAvg$probChamp + probChamp$round
+  # generate a new season outcome
+  regSeasonOutcome <- .standings(real = TRUE)
+  # keep count
+  print(paste0("iteration: ",i))
 }
-thisTeam <- regSeasonOutcome[[1]][[168]]$team
-thisWins <- regSeasonOutcome[[1]][[168]]$win
-thisLoses <- regSeasonOutcome[[1]][[168]]$lose
 
-scores <- regSeasonOutcome[[2]]
-
-
+regSeasonAvg$win <- regSeasonAvg$win/num_seasons
+regSeasonAvg$lose <- 82 - regSeasonAvg$win
+regSeasonAvg$win2 <- regSeasonAvg$win2/num_seasons
+regSeasonAvg$sd <- sqrt(regSeasonAvg$win2 - (regSeasonAvg$win)^2)
+regSeasonAvg$probChamp <- regSeasonAvg$probChamp/num_seasons
 #5
 
 
