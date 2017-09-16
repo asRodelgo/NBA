@@ -38,10 +38,10 @@ tagList(
                                                               '<li>use color selector to visualize level values for an indicator</li>'
               ), trigger = 'click')
   ),
-selectizeInput('colSeason', 'Season:', choices=c("All",sort(unique(data_tsne_sample$Season))),selected="All",multiple=TRUE,options = list(maxItems = 5,dropdownParent = 'body')),
-selectizeInput('colTeam', 'Team:', choices=c("All",sort(unique(data_tsne_sample$Tm))),selected="All",multiple=TRUE,options = list(maxItems = 5,dropdownParent = 'body')),
-selectizeInput('colPlayer', 'Player:', choices=c("All",sort(unique(data_tsne_sample$Player))),selected="All",multiple=TRUE,options = list(maxItems = 5,dropdownParent = 'body')),
-selectizeInput('colAge', 'Age:', choices=c("All",sort(unique(data_tsne_sample$Age))),selected="All",multiple=TRUE,options = list(maxItems = 5,dropdownParent = 'body')),
+selectizeInput('colSeason', 'Season:', choices=c("All",sort(unique(data_tsne_sample$Season))),selected="All",multiple=TRUE,options = list(maxItems = 10,dropdownParent = 'body')),
+selectizeInput('colTeam', 'Team:', choices=c("All",sort(unique(data_tsne_sample$Tm))),selected="All",multiple=TRUE,options = list(maxItems = 10,dropdownParent = 'body')),
+selectizeInput('colPlayer', 'Player:', choices=c("All",sort(unique(data_tsne_sample$Player))),selected="All",multiple=TRUE,options = list(maxItems = 20,dropdownParent = 'body')),
+selectizeInput('colAge', 'Age:', choices=c("All",sort(unique(data_tsne_sample$Age))),selected="All",multiple=TRUE,options = list(maxItems = 10,dropdownParent = 'body')),
   #),
   HTML('<hr style="color: purple;">'),
   h4("Color by"),

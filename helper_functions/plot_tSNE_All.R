@@ -53,11 +53,14 @@
       
         ggplot(NULL, aes(x,y)) +  
         geom_point(data=tsne_points_filter,color = "blue",size=2) +
+        geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")"),
+                                              group = Player,color = Player)) +
         geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.1)) +
-        geom_point(data=centroid,color="red",size=3) + 
-        theme(legend.key=element_blank(),
-              legend.title=element_blank(),
-              legend.text = element_blank(),
+        #geom_point(data=centroid,color="red",size=3) + 
+        theme(#legend.key=element_blank(),
+              #legend.title=element_blank(),
+              #legend.text = element_blank(),
+              legend.position = "top",
               panel.border = element_blank(),
               panel.background = element_blank(),
               axis.text.x = element_blank(),

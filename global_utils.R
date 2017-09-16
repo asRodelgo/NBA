@@ -36,7 +36,7 @@ sigma <- 8 # constant std dev for all teams. ADJUST LATER ON!!
 #teamsPredicted <- .teamsPredictedPower()
 regSeasonOutcome <- .standings(real=TRUE)
 #regSeasonOutcome[[1]]$`2018-04-11`
-playoffs <- .getPlayoffResults(regSeasonOutcome)
+playoffs <- .getPlayoffResults(regSeasonOutcome[[1]])
 
 # tSNE
 data_tsne <- .tSNE_prepare_All() # for tSNE visualization from similarityFunctions.R

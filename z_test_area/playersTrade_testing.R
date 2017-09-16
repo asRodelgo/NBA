@@ -70,9 +70,13 @@ teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Current,actual
 # one single season
 regSeasonOutcome <- .standings(real = TRUE)
 
+
 ####################################################################
-################# ABSTRACT TABLE ##################
+########################## ABSTRACT TABLE ##########################
 ### Scenario 1: Before Trades
+# Starting point: playersNewPredicted_Current
+playersNewPredicted_Current_Adj <- .redistributeMinutes(playersNewPredicted_Current,topHeavy = 7, topMinShare = .7)
+teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Current_Adj,actualOrPred="predicted")
 # one single season to start it off
 regSeasonOutcome <- .standings(real = TRUE)
 # Initialize parameters
@@ -86,17 +90,18 @@ regSeasonAvg <- data.frame(
   sd = 0,
   probChamp = 0)
 
-num_seasons <- 10
+num_seasons <- 1000
 
 for (i in 1:num_seasons){
   
-  playoffs <- .getPlayoffResults(regSeasonOutcome[[1]]) %>% mutate(round = ifelse(round == 0,1,0)) %>%
-    group_by(teamCode) %>% summarise(round = sum(round)) %>% ungroup()
-  regSeasonAvg$win <- regSeasonAvg$win + regSeasonOutcome[[1]][[168]]$win
-  regSeasonAvg$win2 <- regSeasonAvg$win2 + (regSeasonOutcome[[1]][[168]]$win)^2
-  probChamp <- merge(regSeasonOutcome[[1]][[168]], playoffs[,c("teamCode","round")],by="teamCode",all.x=TRUE) %>%
+  final_standings <- regSeasonOutcome[[1]][[168]]
+  #playoffs <- .getPlayoffResults(final_standings) %>% mutate(round = ifelse(round == 0,1,0)) %>%
+  #  group_by(teamCode) %>% summarise(round = sum(round)) %>% ungroup()
+  regSeasonAvg$win <- regSeasonAvg$win + final_standings$win
+  regSeasonAvg$win2 <- regSeasonAvg$win2 + (final_standings$win)^2
+  probChamp <- merge(final_standings, playoffs[,c("teamCode","round")],by="teamCode",all.x=TRUE) %>%
     mutate(round = ifelse(is.na(round),0,round))
-  regSeasonAvg$probChamp <- regSeasonAvg$probChamp + probChamp$round
+  #regSeasonAvg$probChamp <- regSeasonAvg$probChamp + probChamp$round
   # generate a new season outcome
   regSeasonOutcome <- .standings(real = TRUE)
   # keep count
@@ -108,9 +113,165 @@ regSeasonAvg$lose <- 82 - regSeasonAvg$win
 regSeasonAvg$win2 <- regSeasonAvg$win2/num_seasons
 regSeasonAvg$sd <- sqrt(regSeasonAvg$win2 - (regSeasonAvg$win)^2)
 regSeasonAvg$probChamp <- regSeasonAvg$probChamp/num_seasons
+write.csv(regSeasonAvg, "data/abstract_regSeasonAvg.csv", row.names = FALSE)
+
 #5
+### Scenario 2: Trade: Kyrie for Isaiah
+# 5.1 Trade players
+# Starting point: playersNewPredicted_Current
+playA <- c("Kyrie Irving")
+playB <- c("Isaiah Thomas")
+tmA <- "CLE"
+tmB <- "BOS"
+effMinutes <- NULL # approx the average of all
+playersNewPredicted_Trade2 <- .trade_Players(playersNewPredicted_Current, playA,tmA,playB,tmB)
+# 5.2 Adjust minutes of play. Convert minutes to percent of total time
+playersNewPredicted_Trade_Adj2 <- .redistributeMinutes(playersNewPredicted_Trade2,topHeavy = 7, topMinShare = .7)
+# 5.3 Recalculate teamsPredicted
+teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Trade_Adj2,actualOrPred="predicted")
+# 5.4 Simulate N seasons
+# one single season to start it off
+regSeasonOutcome <- .standings(real = TRUE)
+# Initialize parameters
+regSeasonAvg2 <- data.frame(
+  team = regSeasonOutcome[[1]][[168]]$team,
+  teamCode = regSeasonOutcome[[1]][[168]]$teamCode,
+  conference = regSeasonOutcome[[1]][[168]]$conference,
+  win = 0,
+  lose = 0,
+  win2 = 0,
+  sd = 0,
+  probChamp = 0)
+
+num_seasons <- 1000
+
+for (i in 1:num_seasons){
+  
+  final_standings <- regSeasonOutcome[[1]][[168]]
+  #playoffs <- .getPlayoffResults(final_standings) %>% mutate(round = ifelse(round == 0,1,0)) %>%
+  #  group_by(teamCode) %>% summarise(round = sum(round)) %>% ungroup()
+  regSeasonAvg2$win <- regSeasonAvg2$win + final_standings$win
+  regSeasonAvg2$win2 <- regSeasonAvg2$win2 + (final_standings$win)^2
+  probChamp <- merge(final_standings, playoffs[,c("teamCode","round")],by="teamCode",all.x=TRUE) %>%
+    mutate(round = ifelse(is.na(round),0,round))
+  #regSeasonAvg2$probChamp <- regSeasonAvg2$probChamp + probChamp$round
+  # generate a new season outcome
+  regSeasonOutcome <- .standings(real = TRUE)
+  # keep count
+  print(paste0("iteration: ",i))
+}
+
+regSeasonAvg2$win <- regSeasonAvg2$win/num_seasons
+regSeasonAvg2$lose <- 82 - regSeasonAvg2$win
+regSeasonAvg2$win2 <- regSeasonAvg2$win2/num_seasons
+regSeasonAvg2$sd <- sqrt(regSeasonAvg2$win2 - (regSeasonAvg2$win)^2)
+regSeasonAvg2$probChamp <- regSeasonAvg2$probChamp/num_seasons
+write.csv(regSeasonAvg2, "data/abstract_regSeasonAvg_Kyrie_Isaiah.csv", row.names = FALSE)
+
+### Scenario 3: Trade: Kyrie for Isaiah + Jae Crowder
+# 5.1 Trade players
+# Starting point: playersNewPredicted_Current
+playA <- c("Kyrie Irving")
+playB <- c("Isaiah Thomas", "Jae Crowder")
+tmA <- "CLE"
+tmB <- "BOS"
+effMinutes <- NULL # approx the average of all
+playersNewPredicted_Trade2 <- .trade_Players(playersNewPredicted_Current, playA,tmA,playB,tmB)
+# 5.2 Adjust minutes of play. Convert minutes to percent of total time
+playersNewPredicted_Trade_Adj2 <- .redistributeMinutes(playersNewPredicted_Trade2,topHeavy = 7, topMinShare = .7)
+# 5.3 Recalculate teamsPredicted
+teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Trade_Adj2,actualOrPred="predicted")
+# 5.4 Simulate N seasons
+# one single season to start it off
+regSeasonOutcome <- .standings(real = TRUE)
+# Initialize parameters
+regSeasonAvg2 <- data.frame(
+  team = regSeasonOutcome[[1]][[168]]$team,
+  teamCode = regSeasonOutcome[[1]][[168]]$teamCode,
+  conference = regSeasonOutcome[[1]][[168]]$conference,
+  win = 0,
+  lose = 0,
+  win2 = 0,
+  sd = 0,
+  probChamp = 0)
+
+num_seasons <- 1000
+
+for (i in 1:num_seasons){
+  
+  final_standings <- regSeasonOutcome[[1]][[168]]
+  #playoffs <- .getPlayoffResults(final_standings) %>% mutate(round = ifelse(round == 0,1,0)) %>%
+  #  group_by(teamCode) %>% summarise(round = sum(round)) %>% ungroup()
+  regSeasonAvg2$win <- regSeasonAvg2$win + final_standings$win
+  regSeasonAvg2$win2 <- regSeasonAvg2$win2 + (final_standings$win)^2
+  probChamp <- merge(final_standings, playoffs[,c("teamCode","round")],by="teamCode",all.x=TRUE) %>%
+    mutate(round = ifelse(is.na(round),0,round))
+  #regSeasonAvg2$probChamp <- regSeasonAvg2$probChamp + probChamp$round
+  # generate a new season outcome
+  regSeasonOutcome <- .standings(real = TRUE)
+  # keep count
+  print(paste0("iteration: ",i))
+}
+
+regSeasonAvg2$win <- regSeasonAvg2$win/num_seasons
+regSeasonAvg2$lose <- 82 - regSeasonAvg2$win
+regSeasonAvg2$win2 <- regSeasonAvg2$win2/num_seasons
+regSeasonAvg2$sd <- sqrt(regSeasonAvg2$win2 - (regSeasonAvg2$win)^2)
+regSeasonAvg2$probChamp <- regSeasonAvg2$probChamp/num_seasons
+write.csv(regSeasonAvg2, "data/abstract_regSeasonAvg_Kyrie_Isaiah_Jae.csv", row.names = FALSE)
 
 
+### Scenario 4: Trade: Kyrie for Isaiah + Jae Crowder. Isaiah can't play due to hip injury
+# 5.1 Trade players
+# Starting point: playersNewPredicted_Current
+playA <- c("Kyrie Irving")
+playB <- c("Jae Crowder")
+tmA <- "CLE"
+tmB <- "BOS"
+effMinutes <- NULL # approx the average of all
+playersNewPredicted_Trade2 <- .trade_Players(playersNewPredicted_Current, playA,tmA,playB,tmB)
+# 5.2 Adjust minutes of play. Convert minutes to percent of total time
+playersNewPredicted_Trade_Adj2 <- .redistributeMinutes(playersNewPredicted_Trade2,topHeavy = 7, topMinShare = .7)
+# 5.3 Recalculate teamsPredicted
+teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Trade_Adj2,actualOrPred="predicted")
+# 5.4 Simulate N seasons
+# one single season to start it off
+regSeasonOutcome <- .standings(real = TRUE)
+# Initialize parameters
+regSeasonAvg2 <- data.frame(
+  team = regSeasonOutcome[[1]][[168]]$team,
+  teamCode = regSeasonOutcome[[1]][[168]]$teamCode,
+  conference = regSeasonOutcome[[1]][[168]]$conference,
+  win = 0,
+  lose = 0,
+  win2 = 0,
+  sd = 0,
+  probChamp = 0)
+
+num_seasons <- 1000
+
+for (i in 1:num_seasons){
+  
+  final_standings <- regSeasonOutcome[[1]][[168]]
+  #playoffs <- .getPlayoffResults(final_standings) %>% mutate(round = ifelse(round == 0,1,0)) %>%
+  #  group_by(teamCode) %>% summarise(round = sum(round)) %>% ungroup()
+  regSeasonAvg2$win <- regSeasonAvg2$win + final_standings$win
+  regSeasonAvg2$win2 <- regSeasonAvg2$win2 + (final_standings$win)^2
+  probChamp <- merge(final_standings, playoffs[,c("teamCode","round")],by="teamCode",all.x=TRUE) %>%
+    mutate(round = ifelse(is.na(round),0,round))
+  #regSeasonAvg2$probChamp <- regSeasonAvg2$probChamp + probChamp$round
+  # generate a new season outcome
+  regSeasonOutcome <- .standings(real = TRUE)
+  # keep count
+  print(paste0("iteration: ",i))
+}
+
+regSeasonAvg2$win <- regSeasonAvg2$win/num_seasons
+regSeasonAvg2$lose <- 82 - regSeasonAvg2$win
+regSeasonAvg2$win2 <- regSeasonAvg2$win2/num_seasons
+regSeasonAvg2$sd <- sqrt(regSeasonAvg2$win2 - (regSeasonAvg2$win)^2)
+regSeasonAvg2$probChamp <- regSeasonAvg2$probChamp/num_seasons
+write.csv(regSeasonAvg2, "data/abstract_regSeasonAvg_Kyrie_Jae.csv", row.names = FALSE)
 
 # prepare Rookie stats
 #rookieStats_Prepared <- .team_preparePredict(data = rookieStats, thisTeam = "All",singlePlayer = FALSE)
