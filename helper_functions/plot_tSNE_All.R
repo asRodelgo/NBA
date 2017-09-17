@@ -51,10 +51,20 @@
 
     } else {
       
+        starPlayers <- c("LeBron James","Russell Westbrook","Kawhi Leonard","Stephen Curry",
+                         "Draymond Green","Kevin Durant","Anthony Davis",
+                         "James Harden","Klay Thompson","DeMarcus Cousins",
+                         "Chris Paul","John Wall","Paul George",
+                         "Marc Gasol","JaVale McGee","Andre Drummond",
+                         "Kelly Oubre","Ryan Anderson","Kelly Olynyk","Channing Frye",
+                         "Brandon Jennings","Tony Allen","Tristan Thompson","Ian Mahinmi",
+                         "Dennis Schroder","Justin Harper","Luis Scola")
+        labelsPlayers <- filter(tsne_ready_plot, Player %in% starPlayers, Season == "2016-2017")
         ggplot(NULL, aes(x,y)) +  
-        geom_point(data=tsne_points_filter,color = "blue",size=2) +
-        geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")"),
-                                              group = Player,color = Player)) +
+        geom_point(data=tsne_points_filter,color = "red",size=4) +
+        geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")"))) +
+        geom_text(data=labelsPlayers,aes(label = Player,
+                                                group = Player,color = Player)) +  
         geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.1)) +
         #geom_point(data=centroid,color="red",size=3) + 
         theme(#legend.key=element_blank(),
