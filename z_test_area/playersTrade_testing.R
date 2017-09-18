@@ -354,6 +354,42 @@ scenario5 <- read.csv("data/abstract_regSeasonAvg_Kyrie_Jae_7_60.csv") %>%
 
 abstract_table1 <- bind_rows(scenario1,scenario2,scenario3,scenario4,scenario5)
 write.csv(abstract_table1, "data/abstract_table1.csv", row.names = FALSE)
+
+abstract_table1 <- read.csv("data/abstract_table1.csv", stringsAsFactors = FALSE)
+team1 <- filter(abstract_table1, teamCode == "CLE") %>% 
+  select(-teamCode) %>% mutate(TEAM_PTS = round(TEAM_PTS,2),TEAM_PTSAG = round(TEAM_PTSAG,2), win = round(win,2))
+team2 <- filter(abstract_table1, teamCode == "BOS") %>% 
+  select(-teamCode) %>% mutate(TEAM_PTS = round(TEAM_PTS,2),TEAM_PTSAG = round(TEAM_PTSAG,2), win = round(win,2))
+abstract_table1 <- merge(team1,team2, by="scenario") %>% 
+  select(scenario, everything(), -starts_with("team.")) %>%
+  arrange(desc(scenario))
+
+library(DT)
+extra_column = htmltools::withTags(table(
+  class = 'display',
+  thead(
+    tr(
+      th(rowspan = 2, 'Trade Scenario'), 
+      th(colspan = 3, 'Cleveland'),
+      th(colspan = 3, 'Boston')
+    ),
+    tr(
+      lapply(rep(c('Wins','Offense Power', 'Defense Power'),2), th)
+    )
+  )
+))
+
+datatable(abstract_table1, 
+          options = list(
+            dom = 't',
+            pageLength = 10
+          ),
+          container = extra_column,
+          rownames = FALSE,
+          caption = htmltools::tags$caption(style = 'caption-side: top; text-align: left',
+                                            'Table 1: this is a table very nice indeed')
+          )
+
 # prepare Rookie stats
 #rookieStats_Prepared <- .team_preparePredict(data = rookieStats, thisTeam = "All",singlePlayer = FALSE)
 
