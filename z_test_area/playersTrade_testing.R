@@ -226,12 +226,15 @@ write.csv(regSeasonAvg2, "data/abstract_regSeasonAvg_Kyrie_Isaiah_Jae.csv", row.
 # Starting point: playersNewPredicted_Current
 playA <- c("Kyrie Irving")
 playB <- c("Jae Crowder")
+playC <- c("Isaiah Thomas")
+tmC <- "BOS"
 tmA <- "CLE"
 tmB <- "BOS"
 effMinutes <- NULL # approx the average of all
 playersNewPredicted_Trade2 <- .trade_Players(playersNewPredicted_Current, playA,tmA,playB,tmB)
+playersNewPredicted_Trade2 <- .trade_Players(playersNewPredicted_Trade2, playC,tmC)
 # 5.2 Adjust minutes of play. Convert minutes to percent of total time
-playersNewPredicted_Trade_Adj2 <- .redistributeMinutes(playersNewPredicted_Trade2,topHeavy = 7, topMinShare = .7)
+playersNewPredicted_Trade_Adj2 <- .redistributeMinutes(playersNewPredicted_Trade2,topHeavy = 7, topMinShare = .6)
 # 5.3 Recalculate teamsPredicted
 teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Trade_Adj2,actualOrPred="predicted")
 # 5.4 Simulate N seasons
@@ -271,7 +274,7 @@ regSeasonAvg2$lose <- 82 - regSeasonAvg2$win
 regSeasonAvg2$win2 <- regSeasonAvg2$win2/num_seasons
 regSeasonAvg2$sd <- sqrt(regSeasonAvg2$win2 - (regSeasonAvg2$win)^2)
 regSeasonAvg2$probChamp <- regSeasonAvg2$probChamp/num_seasons
-write.csv(regSeasonAvg2, "data/abstract_regSeasonAvg_Kyrie_Jae.csv", row.names = FALSE)
+write.csv(regSeasonAvg2, "data/abstract_regSeasonAvg_Kyrie_Jae_7_60.csv", row.names = FALSE)
 
 # prepare Rookie stats
 #rookieStats_Prepared <- .team_preparePredict(data = rookieStats, thisTeam = "All",singlePlayer = FALSE)

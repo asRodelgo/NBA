@@ -79,9 +79,8 @@
   
   if (is.null(playB) | is.null(tmB)) { # player is traded out of NBA or retires
     
-    playerA_row <- filter(data, Player %in% playA, Tm == tmA) %>% mutate(Tm = tmB)
-    data <- filter(data, !(Player %in% playA)) %>% 
-      bind_rows(playerA_row)
+    #playerA_row <- filter(data, Player %in% playA, Tm == tmA)
+    data <- filter(data, !(Player %in% playA))
     
   } else {  # trade between 2 NBA teams
     
