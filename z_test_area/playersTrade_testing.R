@@ -276,6 +276,84 @@ regSeasonAvg2$sd <- sqrt(regSeasonAvg2$win2 - (regSeasonAvg2$win)^2)
 regSeasonAvg2$probChamp <- regSeasonAvg2$probChamp/num_seasons
 write.csv(regSeasonAvg2, "data/abstract_regSeasonAvg_Kyrie_Jae_7_60.csv", row.names = FALSE)
 
+
+
+
+
+#6
+playersNewPredicted_Current_Adj <- .redistributeMinutes(playersNewPredicted_Current,topHeavy = 7, topMinShare = .7)
+teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Current_Adj,actualOrPred="predicted")
+scenario1 <- read.csv("data/abstract_regSeasonAvg.csv") %>% 
+  select(team, teamCode,win) %>%
+  merge(teamsPredicted[,c("TeamCode","TEAM_PTS","TEAM_PTSAG")], by.x="teamCode", by.y = "TeamCode") %>%
+  filter(teamCode %in% c("CLE","BOS")) %>%
+  mutate(scenario = "Pre-Trades")
+
+playA <- c("Kyrie Irving")
+playB <- c("Isaiah Thomas")
+tmA <- "CLE"
+tmB <- "BOS"
+effMinutes <- NULL # approx the average of all
+playersNewPredicted_Trade2 <- .trade_Players(playersNewPredicted_Current, playA,tmA,playB,tmB)
+playersNewPredicted_Trade_Adj2 <- .redistributeMinutes(playersNewPredicted_Trade2,topHeavy = 7, topMinShare = .7)
+teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Trade_Adj2,actualOrPred="predicted")
+scenario2 <- read.csv("data/abstract_regSeasonAvg_Kyrie_Isaiah.csv") %>% 
+  select(team, teamCode,win) %>%
+  merge(teamsPredicted[,c("TeamCode","TEAM_PTS","TEAM_PTSAG")], by.x="teamCode", by.y = "TeamCode") %>%
+  filter(teamCode %in% c("CLE","BOS")) %>%
+  mutate(scenario = "Kyrie - Isaiah trade")
+
+playA <- c("Kyrie Irving")
+playB <- c("Isaiah Thomas", "Jae Crowder")
+tmA <- "CLE"
+tmB <- "BOS"
+effMinutes <- NULL # approx the average of all
+playersNewPredicted_Trade2 <- .trade_Players(playersNewPredicted_Current, playA,tmA,playB,tmB)
+playersNewPredicted_Trade_Adj2 <- .redistributeMinutes(playersNewPredicted_Trade2,topHeavy = 7, topMinShare = .7)
+teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Trade_Adj2,actualOrPred="predicted")
+scenario3 <- read.csv("data/abstract_regSeasonAvg_Kyrie_Isaiah_Jae.csv") %>% 
+  select(team, teamCode,win) %>%
+  merge(teamsPredicted[,c("TeamCode","TEAM_PTS","TEAM_PTSAG")], by.x="teamCode", by.y = "TeamCode") %>%
+  filter(teamCode %in% c("CLE","BOS")) %>%
+  mutate(scenario = "Kyrie - Isaiah, Jae Crowder trade")
+
+playA <- c("Kyrie Irving")
+playB <- c("Jae Crowder")
+playC <- c("Isaiah Thomas")
+tmC <- "BOS"
+tmA <- "CLE"
+tmB <- "BOS"
+effMinutes <- NULL # approx the average of all
+playersNewPredicted_Trade2 <- .trade_Players(playersNewPredicted_Current, playA,tmA,playB,tmB)
+playersNewPredicted_Trade2 <- .trade_Players(playersNewPredicted_Trade2, playC,tmC)
+playersNewPredicted_Trade_Adj2 <- .redistributeMinutes(playersNewPredicted_Trade2,topHeavy = 7, topMinShare = .7)
+teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Trade_Adj2,actualOrPred="predicted")
+scenario4 <- read.csv("data/abstract_regSeasonAvg_Kyrie_Jae.csv") %>% 
+  select(team, teamCode,win) %>%
+  merge(teamsPredicted[,c("TeamCode","TEAM_PTS","TEAM_PTSAG")], by.x="teamCode", by.y = "TeamCode") %>%
+  filter(teamCode %in% c("CLE","BOS")) %>%
+  mutate(scenario = "Kyrie - Jae Crowder. 7 top play 70%")
+
+
+playA <- c("Kyrie Irving")
+playB <- c("Jae Crowder")
+playC <- c("Isaiah Thomas")
+tmC <- "BOS"
+tmA <- "CLE"
+tmB <- "BOS"
+effMinutes <- NULL # approx the average of all
+playersNewPredicted_Trade2 <- .trade_Players(playersNewPredicted_Current, playA,tmA,playB,tmB)
+playersNewPredicted_Trade2 <- .trade_Players(playersNewPredicted_Trade2, playC,tmC)
+playersNewPredicted_Trade_Adj2 <- .redistributeMinutes(playersNewPredicted_Trade2,topHeavy = 7, topMinShare = .6)
+teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Trade_Adj2,actualOrPred="predicted")
+scenario5 <- read.csv("data/abstract_regSeasonAvg_Kyrie_Jae_7_60.csv") %>% 
+  select(team, teamCode,win) %>%
+  merge(teamsPredicted[,c("TeamCode","TEAM_PTS","TEAM_PTSAG")], by.x="teamCode", by.y = "TeamCode") %>%
+  filter(teamCode %in% c("CLE","BOS")) %>%
+  mutate(scenario = "Kyrie - Jae Crowder. 7 top play 60%")
+
+abstract_table1 <- bind_rows(scenario1,scenario2,scenario3,scenario4,scenario5)
+write.csv(abstract_table1, "data/abstract_table1.csv", row.names = FALSE)
 # prepare Rookie stats
 #rookieStats_Prepared <- .team_preparePredict(data = rookieStats, thisTeam = "All",singlePlayer = FALSE)
 
