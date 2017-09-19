@@ -387,7 +387,7 @@ datatable(abstract_table1,
           container = extra_column,
           rownames = FALSE,
           caption = htmltools::tags$caption(style = 'caption-side: top; text-align: left',
-                                            'Table 1: this is a table very nice indeed')
+                                            'Table 1: Effect of different trade scenarios on offensive and defensive powers and expected number of wins assuming the rest of the teams remain unaltered')
           )
 
 # prepare Rookie stats

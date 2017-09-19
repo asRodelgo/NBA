@@ -1,0 +1,145 @@
+---
+title: "Game of Trades"
+output: html_notebook
+---
+
+## Abstract
+
+Title: Game of Trades: Simulating trade scenarios in the NBA
+
+abstractText <- "In this paper I present a method to evaluate the impact of player trades for NBA teams. Assessing the potential of trades is a complex task as it affects not only the composition of the teams involved but also the rest of the league. By acquiring a player, a team may strenghthen or weaken the opposing teams or themselves.
+
+In brief, team's Power Offense and Defense are computed from players' directly observable statistics: points, rebounds, free throws, assists, steals, etc. Box plus minus are not considered as they concern mainly to individual performances and are implicitly included in the offensive and defensive team performaces.
+
+At the start of each season, players' stats are predicted based on previous seasons combined with historical data for similar players at the age they enter the current season. This allows for corrections when there may be declining/improving stats by age, or when there is lack of consistent historical stats. Rookies' stats are estimated from College stats adjusted to NBA minutes of play. Non-college rookies stats are estimated from their respective leagues stats (if existing, case of main European leagues or Euroleague). Everybody else's stats are estimated based on an average player performace according to historical data for players of the same age. 
+
+There are 3 key elements in this simulation:
+
+- 2 independent Neural Networks to estimate team powers: One for Offense (points for), one for Defense (points against). Inputs are players' projected per minute stats weighted by their share of minutes of play.
+- Team powers are used as the estimated mean of a Normal distribution and a fixed common variance (based on empirical historical data). Knowing the probability distribution allows for simulation of any possible matchup. 
+- Player similarity by age is computed using t-SNE algorithm which also allows for 2-D visualization of the data.
+
+I will show how this model has implications beyond just the trade evaluation. For instance, by modeling the Offensive and Defensive power of teams, we will be able to answer questions like: Who won the Kyrie/Isaiah trade?; why the Spurs signed Pau Gasol to replace Tim Duncan?; who is the best/worst offensive/defensive player in the NBA?; and many more. Table 1 shows a few trade scenarios."
+
+```{r}
+abstract_table1 <- read.csv("data/abstract_table1.csv", stringsAsFactors = FALSE)
+team1 <- filter(abstract_table1, teamCode == "CLE") %>% 
+  select(-teamCode) %>% mutate(TEAM_PTS = round(TEAM_PTS,2),TEAM_PTSAG = round(TEAM_PTSAG,2), win = round(win,2))
+team2 <- filter(abstract_table1, teamCode == "BOS") %>% 
+  select(-teamCode) %>% mutate(TEAM_PTS = round(TEAM_PTS,2),TEAM_PTSAG = round(TEAM_PTSAG,2), win = round(win,2))
+abstract_table1 <- merge(team1,team2, by="scenario") %>% 
+  select(scenario, everything(), -starts_with("team.")) %>%
+  mutate(order = c(2,3,4,5,1)) %>%
+  arrange(order)
+
+library(DT)
+extra_column = htmltools::withTags(table(
+  class = 'display',
+  thead(
+    tr(
+      th(rowspan = 2, 'Trade Scenario *'), 
+      th(colspan = 3, 'Cleveland'),
+      th(colspan = 3, 'Boston')
+    ),
+    tr(
+      lapply(rep(c('Wins','Offense Power', 'Defense Power'),2), th)
+    )
+  )
+))
+
+datatable(abstract_table1[,-ncol(abstract_table1)], 
+          options = list(iDisplayLength = 7,bSearchable = FALSE
+                                                         ,bFilter=FALSE,bPaginate=FALSE,bAutoWidth=TRUE
+                                                         ,bInfo=0,bSort=0
+                                                         , "sDom" = "rt"
+                                                         ),
+          container = extra_column,
+          rownames = FALSE,
+          caption = htmltools::tags$caption(style = 'caption-side: top; text-align: left; font-size: 90%',
+                                            'Table 1: Different scenarios involving the Kyrie Irving - Isaiah Thomas trade this summer. Wins are averaged over 1,000 simulation runs')
+          ) %>% formatStyle(c(1:ncol(abstract_table1)),target="row",fontWeight = '60%',lineHeight = '90%')
+```
+
+Finally, I can use the t-SNE algorithm and spatial or topological analysis to provide answers on what's the shape of a champion calibre team, according to how players are mapped in a 2-dimensional space. Furthermore, plotting players over time series allows for evaluation of players style of play and performance. Plot 1 provides an example.
+
+```{r}
+
+# load data
+data_tsne <- .tSNE_prepare_All() # for tSNE visualization from similarityFunctions.R
+data_tsne_sample <- filter(data_tsne,Season > "1995-1996")
+# tsne_points are pre-calculated from write_tSNE_All.R and saved in data/ directory
+# using this function: tsne_points <- write_tSNE_compute_All()
+if (!nrow(data_tsne_sample)==nrow(tsne_points)){ # in case labels and coordinates have different sizes
+  tsne_ready <- tsne_points
+} else {
+  tsne_ready <- cbind(data_tsne_sample,tsne_points)
+}
+
+names(tsne_ready)[ncol(tsne_ready)-1] <- "x"
+names(tsne_ready)[ncol(tsne_ready)] <- "y"
+# Default selector choices for tsne -----------
+teams_list <- sort(unique(data_tsne_sample$Tm))
+ages_list <- sort(unique(data_tsne_sample$Age))
+
+# plot data
+
+  colPlayer <- "Kyrie Irving"
+  colAge <- ages_list
+  colTeam <- teams_list
+  colSeason <- c("2014-2015","2015-2016","2016-2017")
+  #
+  par(mar=c(0,0,0,0))
+    
+  tsne_ready_plot <- tsne_ready %>% # by default all colored grey
+    mutate(color = "lightgrey", colorDots = "grey")
+   
+    # General Filters
+  tsne_points_filter <- tsne_ready_plot %>%
+    filter(Player %in% colPlayer & Age %in% colAge
+           & Tm %in% colTeam & Season %in% colSeason)
+  centroid <- data.frame(x=(mean(tsne_points_filter$x)),y=mean(tsne_points_filter$y))
+  
+  tsne_points_filter_out <- tsne_ready_plot %>%
+    filter(!(Player %in% colPlayer & Age %in% colAge
+           & Tm %in% colTeam & Season %in% colSeason))
+      
+    starPlayers <- c("LeBron James","Russell Westbrook","Kawhi Leonard","Stephen Curry",
+                     "Draymond Green","Kevin Durant","Anthony Davis",
+                     "James Harden","Klay Thompson","DeMarcus Cousins",
+                     "Chris Paul","Paul George",
+                     "Marc Gasol","JaVale McGee","Andre Drummond",
+                     "Kelly Oubre","Ryan Anderson","Kelly Olynyk","Channing Frye",
+                     "Brandon Jennings","Tony Allen","Tristan Thompson","Ian Mahinmi",
+                     "Dennis Schroder","Justin Harper","Luis Scola")
+    labelsPlayers <- filter(tsne_ready_plot, Player %in% starPlayers, Season == "2016-2017")
+    ggplot(NULL, aes(x,y)) +  
+    geom_point(data=tsne_points_filter,color = "red",size=4) +
+    geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3) +
+    geom_text(data=labelsPlayers,aes(label = Player,
+                                            group = Player,color = Player), size=3) +  
+    geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.1)) +
+    labs(title = "Figure 1. tSNE 2D projection of players stats for the past 20 seasons. Highlighted players correspond to 2016-2017 season. \nVisually, Kyrie is moving away from star players towards a region of secondary stars/3-point shooters. The closest players to \nKyrie last season were C.J. McCollum and Bradley Beal, both sidekicks to Damian Lillard and John Wall respectively. This could \nexplain Kyrie’s move out of Cleveland and LeBron’s shadow in search of a protagonist role.", size=2) +
+    theme(legend.key=element_blank(),
+          legend.title=element_blank(),
+          legend.text = element_blank(),
+          legend.position="none",
+          plot.title = element_text(size=9),
+          panel.border = element_blank(),
+          panel.background = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.ticks = element_blank())
+    
+```
+
+
+
+*Note: At the writing of this paper, rosters are not yet final so I will be using rosters as of the end of last season. In the paper I will update rosters and present predictions for the entire season."
+
+
+require(stringr)
+str_count(abstractText, "\\S+")
+
+
