@@ -1,13 +1,15 @@
 ---
 title: "Game of Trades"
-output: html_notebook
+output:
+  pdf_document: default
+  html_notebook: default
 ---
 
 ## Abstract
 
 Title: Game of Trades: Simulating trade scenarios in the NBA
 
-abstractText <- "In this paper I present a method to evaluate the impact of player trades for NBA teams. Assessing the potential of trades is a complex task as it affects not only the composition of the teams involved but also the rest of the league. By acquiring a player, a team may strenghthen or weaken the opposing teams or themselves.
+In this paper I present a method to evaluate the impact of player trades for NBA teams. Assessing the potential of trades is a complex task as it affects not only the composition of the teams involved but also the rest of the league. By acquiring a player, a team may strenghthen or weaken the opposing teams or themselves.
 
 In brief, team's Power Offense and Defense are computed from players' directly observable statistics: points, rebounds, free throws, assists, steals, etc. Box plus minus are not considered as they concern mainly to individual performances and are implicitly included in the offensive and defensive team performaces.
 
@@ -19,9 +21,10 @@ There are 3 key elements in this simulation:
 - Team powers are used as the estimated mean of a Normal distribution and a fixed common variance (based on empirical historical data). Knowing the probability distribution allows for simulation of any possible matchup. 
 - Player similarity by age is computed using t-SNE algorithm which also allows for 2-D visualization of the data.
 
-I will show how this model has implications beyond just the trade evaluation. For instance, by modeling the Offensive and Defensive power of teams, we will be able to answer questions like: Who won the Kyrie/Isaiah trade?; why the Spurs signed Pau Gasol to replace Tim Duncan?; who is the best/worst offensive/defensive player in the NBA?; and many more. Table 1 shows a few trade scenarios."
+I will show how this model has implications beyond just the trade evaluation. For instance, by modeling the Offensive and Defensive power of teams, we will be able to answer questions like: Who won the Kyrie/Isaiah trade?; why the Spurs signed Pau Gasol to replace Tim Duncan?; who is the best/worst offensive/defensive player in the NBA?; and many more. Table 1 shows a few trade scenarios.
 
 ```{r}
+require(tidyverse)
 abstract_table1 <- read.csv("data/abstract_table1.csv", stringsAsFactors = FALSE)
 team1 <- filter(abstract_table1, teamCode == "CLE") %>% 
   select(-teamCode) %>% mutate(TEAM_PTS = round(TEAM_PTS,2),TEAM_PTSAG = round(TEAM_PTSAG,2), win = round(win,2))
@@ -37,12 +40,12 @@ extra_column = htmltools::withTags(table(
   class = 'display',
   thead(
     tr(
-      th(rowspan = 2, 'Trade Scenario *'), 
+      th(rowspan = 2, 'Trade Scenario**'), 
       th(colspan = 3, 'Cleveland'),
       th(colspan = 3, 'Boston')
     ),
     tr(
-      lapply(rep(c('Wins','Offense Power', 'Defense Power'),2), th)
+      lapply(rep(c('Wins*','Offense Power', 'Defense Power'),2), th)
     )
   )
 ))
@@ -60,10 +63,13 @@ datatable(abstract_table1[,-ncol(abstract_table1)],
           ) %>% formatStyle(c(1:ncol(abstract_table1)),target="row",fontWeight = '60%',lineHeight = '90%')
 ```
 
+* At the writing of this abstract, rosters are not yet final so results are calculated using last season rosters. In the paper I will update rosters and present predictions for the entire season.
+** '7 top play 60%' means I adjust minutes of play so the top most play 60% of total time. Because I will use stats per minute played, this is an example of how coaching can also be simulated or playoff situations in which the top players of each team tend to play higher minutes. 
+
 Finally, I can use the t-SNE algorithm and spatial or topological analysis to provide answers on what's the shape of a champion calibre team, according to how players are mapped in a 2-dimensional space. Furthermore, plotting players over time series allows for evaluation of players style of play and performance. Plot 1 provides an example.
 
 ```{r}
-
+source("helper_functions/similarityFunctions.R")
 # load data
 data_tsne <- .tSNE_prepare_All() # for tSNE visualization from similarityFunctions.R
 data_tsne_sample <- filter(data_tsne,Season > "1995-1996")
@@ -136,10 +142,8 @@ ages_list <- sort(unique(data_tsne_sample$Age))
 
 
 
-*Note: At the writing of this paper, rosters are not yet final so I will be using rosters as of the end of last season. In the paper I will update rosters and present predictions for the entire season."
 
 
-require(stringr)
-str_count(abstractText, "\\S+")
+
 
 
