@@ -42,7 +42,7 @@ playersNewPredicted <- read.csv("data/playersNewPredicted.csv", stringsAsFactors
 playersNewPredicted_Current <- .mergePredictedWithCurrent() # from write_teams_predicted_stats_new_season.R
 
 # 3. Complete playersNewPredicted with names not matching in current_rosters. Ex: Tim Hardaway vs. Tim Hardaway 2
-current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE) # .getLatestRosters from write_teams_predicted_stats_new_season.R
+current_rosters <- read.csv("data/rostersLastSeason.csv", stringsAsFactors = FALSE) # .getLatestRosters from write_teams_predicted_stats_new_season.R
 playersMatch <- merge(current_rosters,playersNewPredicted, by = "Player", all.x = TRUE) %>%
   distinct(Player)
 
@@ -59,8 +59,17 @@ playersNewPredicted_Current <- bind_rows(playersNewPredicted_Current,playersManu
 playersNewPredicted_Current <- select(playersNewPredicted_Current, -c(Exp,College))
 
 # 4. Add rookieStats to complete rosters for new season
+playersNewPredicted_Current_All <- bind_rows(playersNewPredicted_Current,rookieEffStats)
+    # avoid inconsistencies with rookie players vs veterans
+    # compare_players <- filter(playersNewPredicted_Current_All, Player %in% c("Lonzo Ball","Milos Teodosic","Kyrie Irving","Ricky Rubio","John Wall"))
+# now update rosters to reflect current. 
+current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE)
+playersNewPredicted_Current_All <- merge(select(current_rosters,Player,Tm,Exp),
+                                         playersNewPredicted_Current_All, by = "Player", all.x = TRUE)
 
-
+# some players will not be matched: Different Player name spelling or Players returning to NBA who didn't play last season (that is their Exp != "R")
+unmatched_Players <- filter(playersNewPredicted_Current_All, is.na(Tm.y))
+# USE slugs to avoid players names mismatch?
 
 
 

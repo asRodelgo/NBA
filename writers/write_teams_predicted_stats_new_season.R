@@ -10,12 +10,13 @@
   
   library(httr)
   new_rosters <- data.frame()
+  thisSeason <- as.numeric(thisSeason) + 1
   
   current_rosters <- data.frame()
   playersNew <- filter(playersNew,!(Tm == "TOT"))
   for (thisTeam in unique(playersNew$Tm)){
     
-    url <- paste0("http://www.basketball-reference.com/teams/",thisTeam,"/",thisSeason,".html")
+    url <- paste0("https://www.basketball-reference.com/teams/",thisTeam,"/",thisSeason,".html")
     if (status_code(GET(url)) == 200){ # successful response
       getRoster <- url %>%
         read_html() %>%
@@ -23,7 +24,7 @@
         html_table(fill = TRUE)
       thisRoster <- getRoster[[1]] %>% select(-`No.`)
       names(thisRoster)[which(names(thisRoster)=='')] <- "Nationality"
-      thisRoster <- mutate(thisRoster, Tm = thisTeam)  
+      thisRoster <- mutate(thisRoster, Tm = thisTeam, Exp = as.character(Exp))  
       if (nrow(current_rosters)>0){
         current_rosters <- bind_rows(current_rosters,thisRoster)
       } else{
@@ -37,6 +38,8 @@
   current_rosters <- mutate(current_rosters, Age = thisSeason - as.numeric(substr(Birth_Date,nchar(Birth_Date)-3,nchar(Birth_Date))),
                             Season = paste0(thisSeason-1,"-",thisSeason))
   
+  # write current_rosters or rostersLastSeason depending on value of thisSeason
+  write.csv(current_rosters, "data/rostersLastSeason.csv",row.names = FALSE)
   write.csv(current_rosters, "data/currentRosters.csv",row.names = FALSE)
 
 }
