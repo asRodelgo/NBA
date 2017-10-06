@@ -279,7 +279,15 @@
   # Top 10 more similar to selected player for past 5 years
   top10_similar <- head(.similarPlayers(playerName,numberPlayersToCompare,pickAge),numberTeamsForVariation)$Player
   thisAgeFrame <- filter(playersHist, Player == playerName, Season >= paste0(as.numeric(thisYear)-pickAge+18,"-",as.numeric(thisYear)-pickAge+19))
-  thisAge <- max(filter(thisAgeFrame, Player == playerName)$Age)
+  
+  if (nrow(thisAgeFrame)>0){
+    thisAge <- max(filter(thisAgeFrame, Player == playerName)$Age) 
+  } else { # this player has been out of the league for way too long
+    lastSeasonPlayed <- filter(playersHist, Player == playerName) %>%
+      arrange(desc(Season)) %>%
+      head(1)
+    thisAge <- max(pickAge, pickAge + as.numeric(substr(thisSeason,1,4)) - (as.numeric(substr(lastSeasonPlayed$Season,1,4))+1))
+  }
   
   # Now calculate average variation in their stats when they went from current age to age + 1
   thisAgeData <- .tSNE_prepare(thisAge,per_Min=.001)
