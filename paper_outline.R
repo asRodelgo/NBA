@@ -34,8 +34,21 @@ for (a in 18:41){
   tsneBlock[[a]] <- read.csv(paste0("data/tsneBlock","_",a,".csv"))
 }
 
+# Read team stats for all seasons ------------------------------
+team_stats <- read.csv("data/teamStats.csv") # from write_TeamStats.R
+
+## These data may not change from season to season
+franchises <- read.csv("data/franchisesHistory.csv",stringsAsFactors = FALSE) # Manually obtained. No need to change unless there are changes in team names or new teams get added to the league
+team_stats <- merge(team_stats,franchises,by.x="Team",by.y="Franchise",all.x=TRUE)
+# conferences according to last season
+conferences <- read.csv("data/nba_conferences.csv", stringsAsFactors = FALSE) # Same as franchises 
+
+# Read pre-calculated nnetwork models -------------------------
+nn_Offense <- list.load("data/nn_Offense.rds")
+nn_Defense <- list.load("data/nn_Defense.rds")
 
 
+########################################
 # 1. calculate playersNewPredicted
 
 playersHist <- read.csv("data/playersHist.csv", stringsAsFactors = FALSE) # read historical players from write_playersHist.R
@@ -155,4 +168,19 @@ playersNewPredicted_Current_All <- filter(playersNewPredicted_Current_All, !is.n
   select(-Tm.x,-Tm.y,-Exp,-historical_name)
 playersNewPredicted_Final <- rbind(playersNewPredicted_Current_All,playersNewLeftover3)
 write.csv(playersNewPredicted_Final, "data/playersNewPredicted_Final.csv",row.names = FALSE)
+
+# adjust players minutes. Reduce new players effMin (rookies + others) by 30%
+playersNewPredicted_Final_adjMin <- mutate(playersNewPredicted_Final,
+                                           effMin = ifelse(is.na(Age),effMin*.7,effMin))
+# adjust percent of play time
+playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin,topHeavy = 9, topMinShare = .7)
+
+# make sure Season column shows the new season to come
+playersNewPredicted_Final_adjMin2 <- mutate(playersNewPredicted_Final_adjMin2, Season = paste0(thisSeason-1,"-",thisSeason))
+# compute team powers
+effMinutes <- NULL # approx the average of all 
+teamPowers_newSeason <- merge(.computePower(playersNewPredicted_Final_adjMin2,"PTS","All",effMinutes,actualOrPredicted = "predicted"),.computePower(playersNewPredicted_Final_adjMin2,"PTSA","All",effMinutes,actualOrPredicted = "predicted"),by="team_season")
+# First analysis: OKC and BOS defenses are awful. Looks like they have great starting lineups but crappy benches
+# The rest of the teams get more or less expected predictions
+
 

@@ -65,7 +65,7 @@ library(neuralnet) # neural network for regression
     filter(!(Tm == "TOT")) %>% # Those who played for more than 1 team have a Total team
     group_by(Tm, Season) %>%
     mutate(Wt = effMin/5) %>%
-    mutate_each(funs(weighted.mean(.,Wt)),-Player,-Pos,-Season,-Wt) %>%
+    mutate_each(funs(weighted.mean(.,Wt,na.rm=TRUE)),-Player,-Pos,-Season,-Wt) %>%
     dplyr::select(-Player,-Pos,-Wt) %>%
     distinct(.keep_all=TRUE)
   
@@ -101,7 +101,7 @@ library(neuralnet) # neural network for regression
     filter(!(Tm == "TOT")) %>% # Those who played for more than 1 team have a Total team
     group_by(Tm, Season) %>%
     mutate(Wt = effMin) %>%
-    mutate_each(funs(weighted.mean(.,Wt)),-Player,-Pos,-Season,-Wt) %>%
+    mutate_each(funs(weighted.mean(.,Wt,na.rm = TRUE)),-Player,-Pos,-Season,-Wt) %>%
     dplyr::select(-Player,-Pos,-Wt) %>%
     distinct(.keep_all=TRUE)
   
