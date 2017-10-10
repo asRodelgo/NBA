@@ -22,10 +22,10 @@ library(neuralnet) # neural network for regression
   # Probably more efficient to scale weights to add up to 1: Wt = effMin/5
   playersSumm <- data_team %>%
     filter(!(Tm == "TOT")) %>% # Those who played for more than 1 team have a Total team
-    group_by(Tm, Season) %>%
     mutate(Wt = effMin/5) %>%
-    mutate_each(funs(weighted.mean(.,Wt)),-Player,-Pos,-Season,-Wt) %>%
-    dplyr::select(-Player,-Pos,-Wt) %>%
+    group_by(Tm,Season) %>%
+    summarise_if(is.numeric, funs(sum(.*Wt, na.rm=TRUE))) %>%
+    dplyr::select(-Wt) %>%
     distinct(.keep_all=TRUE)
   
   # Paste Team and Season to have 1 field as identifier
@@ -63,10 +63,10 @@ library(neuralnet) # neural network for regression
     
   playersSumm <- data_team %>%
     filter(!(Tm == "TOT")) %>% # Those who played for more than 1 team have a Total team
-    group_by(Tm, Season) %>%
     mutate(Wt = effMin/5) %>%
-    mutate_each(funs(weighted.mean(.,Wt,na.rm=TRUE)),-Player,-Pos,-Season,-Wt) %>%
-    dplyr::select(-Player,-Pos,-Wt) %>%
+    group_by(Tm,Season) %>%
+    summarise_if(is.numeric, funs(sum(.*Wt, na.rm=TRUE))) %>%
+    dplyr::select(-Wt) %>%
     distinct(.keep_all=TRUE)
   
   # Paste Team and Season to have 1 field as identifier
@@ -99,10 +99,10 @@ library(neuralnet) # neural network for regression
   
   playersSumm <- data_team %>%
     filter(!(Tm == "TOT")) %>% # Those who played for more than 1 team have a Total team
-    group_by(Tm, Season) %>%
     mutate(Wt = effMin) %>%
-    mutate_each(funs(weighted.mean(.,Wt,na.rm = TRUE)),-Player,-Pos,-Season,-Wt) %>%
-    dplyr::select(-Player,-Pos,-Wt) %>%
+    group_by(Tm,Season) %>%
+    summarise_if(is.numeric, funs(sum(.*Wt, na.rm=TRUE))) %>%
+    dplyr::select(-Wt) %>%
     distinct(.keep_all=TRUE)
   
   # Paste Team and Season to have 1 field as identifier
@@ -204,6 +204,82 @@ library(neuralnet) # neural network for regression
   return(nn) # returns nnet model based on training data (perc of the total teams)
 }
 
+.computeModel_MxNet <- function(Off_or_Def){
+  
+  # Neural Network MXNET ---
+  
+  # mxnet package installation --
+  #for mxnet package install in R using this command for only CPU**
+  #cran <- getOption("repos")
+  #cran["dmlc"] <- "https://s3-us-west-2.amazonaws.com/apache-mxnet/R/CRAN/"
+  #options(repos = cran)
+  #install.packages("mxnet",dependencies = T)
+  ### ---
+  
+  playersSumm <- .prepareModel(Off_or_Def)
+  scaleMaxMin <- .getScaleLimits(Off_or_Def)
+  # scale the data [0,1] for easier convergence of backpropagation algorithm
+  maxs <- scaleMaxMin$maxs 
+  mins <- scaleMaxMin$mins
+  
+  team_season <- playersSumm[,1]
+  scaled <- as.data.frame(scale(playersSumm[,-1], center = mins, scale = maxs - mins))
+  scaled <- cbind(team_season,scaled)
+  
+  ###
+  set.seed(998)
+  perc <- 0.75
+  train_split <- round(perc*nrow(playersSumm))
+  
+  teams_train <- sample(playersSumm$team_season,train_split)
+  teams_test <- filter(playersSumm, !(team_season %in% teams_train))$team_season
+  training <- filter(scaled, team_season %in% teams_train)
+  testing <- filter(scaled, team_season %in% teams_test)
+  
+  # remove non-numeric variables
+  train_teamSeasonCodes <- training$team_season
+  test_teamSeasonCodes <- testing$team_season
+  training <- training[,-1]
+  testing <- testing[,-1]
+  
+  fitControl <- trainControl(## 10-fold CV
+    method = "repeatedcv",
+    number = 10,
+    ## repeated ten times
+    repeats = 10)
+  
+  nnetGrid <-  expand.grid(layer1 = c(4,6,8), 
+                           layer2 = c(2,3,4,5), 
+                           layer3 = c(1,2,3),
+                           learning.rate = c(0.07), 
+                           momentum = 0.9, 
+                           dropout = c(0.1), 
+                           activation = c('relu','sigmoid','tanh')
+  )
+  
+  library(mxnet)
+  library(caret)
+  #library(tidyverse)
+  
+  set.seed(825)
+  # uses rmse for regression and softmax for classification by default (corresponds to parameter out_activation)
+  nnetFit <- train(PTS ~ ., data = training, 
+                   method = "mxnet", 
+                   trControl = fitControl, 
+                   tuneGrid = nnetGrid)
+  
+  ##########################################################################################
+  # Model checking ----------------------------------------
+  ##########################################################################################
+  
+  # check predictions
+  model <- nnetFit
+  #save(model, file = paste0("data/model_","nnetFit","_",Sys.Date(),".Rdata"))
+  predict_data <- testing
+  predicted <- predict(model, newdata = predict_data)
+  
+}
+
 # Once a model is selected, use this function to calculate team powers
 .selectedModel <- function(Off_or_Def,removeEffMin = TRUE) {
   
@@ -246,6 +322,51 @@ library(neuralnet) # neural network for regression
   # For classification problem, linear.output=F
   nn <- neuralnet(f,data=training,hidden=hidden_neurons,linear.output=T)
 
+  return(nn) # returns nnet model based on training data (perc of the total teams)
+}
+
+# Once a model is selected, use this function to calculate team powers
+.selectedModel_MxNet <- function(Off_or_Def,removeEffMin = TRUE) {
+  
+  playersSumm <- .prepareModel(Off_or_Def, removeEffMin)
+  # scale the data for easier convergence of backpropagation algorithm
+  scaleMaxMin <- .getScaleLimits(Off_or_Def)
+  maxs <- scaleMaxMin$maxs 
+  mins <- scaleMaxMin$mins
+  
+  team_season <- playersSumm[,1]
+  scaled <- as.data.frame(scale(playersSumm[,-1], center = mins, scale = maxs - mins))
+  scaled <- cbind(team_season,scaled)
+  
+  # train_split: number of teams or percentage of data in training set
+  set.seed(450)
+  perc <- 0.80
+  train_split <- round(perc*nrow(playersSumm))
+  hidden_neurons <- c(6,4,2)
+  #c(4,2)
+  #c(6,4,2)
+  # neuralnet requires explicit formula for the model (f)
+  n <- names(scaled[,-1])
+  f <- as.formula(paste("PTS ~", paste(n[!n %in% "PTS"], collapse = " + ")))
+  
+  teams_train <- sample(playersSumm$team_season,train_split)
+  #teams_test <- filter(playersSumm, !(team_season %in% teams_train))$team_season
+  training <- filter(scaled, team_season %in% teams_train)
+  #testing <- filter(scaled, team_season %in% teams_test)
+  
+  # remove non-numeric variables
+  train_teamSeasonCodes <- training$team_season
+  #test_teamSeasonCodes <- testing$team_season
+  training <- training[,-1]
+  #testing <- testing[,-1]
+  
+  ## Model Neural Network
+  # Hidden layers and neurons per layer specified by hidden. 
+  # Number of input neurons is the number of columns
+  # Output neurons is 1 as we are doing regression (linear.output=T)
+  # For classification problem, linear.output=F
+  nn <- neuralnet(f,data=training,hidden=hidden_neurons,linear.output=T)
+  
   return(nn) # returns nnet model based on training data (perc of the total teams)
 }
 
