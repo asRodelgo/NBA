@@ -275,9 +275,75 @@ library(neuralnet) # neural network for regression
   # check predictions
   model <- nnetFit
   #save(model, file = paste0("data/model_","nnetFit","_",Sys.Date(),".Rdata"))
-  predict_data <- testing
+  predict_data <- training
   predicted <- predict(model, newdata = predict_data)
+  save(model, file = paste0("data/modelMxNet_",Off_or_Def,".Rdata"))
+  predictions <- data.frame(actual_PTS = predict_data$PTS, predicted_PTS = predicted)
+  plot(predictions)
+}
+
+.computeModel_neuralnet <- function(Off_or_Def){
   
+  playersSumm <- .prepareModel(Off_or_Def)
+  scaleMaxMin <- .getScaleLimits(Off_or_Def)
+  # scale the data [0,1] for easier convergence of backpropagation algorithm
+  maxs <- scaleMaxMin$maxs 
+  mins <- scaleMaxMin$mins
+  
+  team_season <- playersSumm[,1]
+  scaled <- as.data.frame(scale(playersSumm[,-1], center = mins, scale = maxs - mins))
+  scaled <- cbind(team_season,scaled)
+  
+  ###
+  set.seed(998)
+  perc <- 0.75
+  train_split <- round(perc*nrow(playersSumm))
+  
+  teams_train <- sample(playersSumm$team_season,train_split)
+  teams_test <- filter(playersSumm, !(team_season %in% teams_train))$team_season
+  training <- filter(scaled, team_season %in% teams_train)
+  testing <- filter(scaled, team_season %in% teams_test)
+  
+  # remove non-numeric variables
+  train_teamSeasonCodes <- training$team_season
+  test_teamSeasonCodes <- testing$team_season
+  training <- training[,-1]
+  testing <- testing[,-1]
+  
+  fitControl <- trainControl(## 10-fold CV
+    method = "repeatedcv",
+    number = 10,
+    ## repeated ten times
+    repeats = 10)
+  
+  nnetGrid <-  expand.grid(layer1 = c(4,6,8), 
+                           layer2 = c(2,3,4,5), 
+                           layer3 = c(1,2,3)
+  )
+  
+  library(neuralnet)
+  library(caret)
+  #library(tidyverse)
+  
+  set.seed(825)
+  # uses rmse for regression and softmax for classification by default (corresponds to parameter out_activation)
+  nnetFit <- train(PTS ~ ., data = training, 
+                   method = "neuralnet", 
+                   trControl = fitControl, 
+                   tuneGrid = nnetGrid)
+  
+  ##########################################################################################
+  # Model checking ----------------------------------------
+  ##########################################################################################
+  
+  # check predictions
+  model <- nnetFit
+  #save(model, file = paste0("data/model_","nnetFit","_",Sys.Date(),".Rdata"))
+  predict_data <- training
+  predicted <- predict(model, newdata = predict_data)
+  save(model, file = paste0("data/modelNeuralnet_",Off_or_Def,".Rdata"))
+  predictions <- data.frame(actual_PTS = predict_data$PTS, predicted_PTS = predicted)
+  plot(predictions)
 }
 
 # Once a model is selected, use this function to calculate team powers
@@ -324,52 +390,6 @@ library(neuralnet) # neural network for regression
 
   return(nn) # returns nnet model based on training data (perc of the total teams)
 }
-
-# Once a model is selected, use this function to calculate team powers
-.selectedModel_MxNet <- function(Off_or_Def,removeEffMin = TRUE) {
-  
-  playersSumm <- .prepareModel(Off_or_Def, removeEffMin)
-  # scale the data for easier convergence of backpropagation algorithm
-  scaleMaxMin <- .getScaleLimits(Off_or_Def)
-  maxs <- scaleMaxMin$maxs 
-  mins <- scaleMaxMin$mins
-  
-  team_season <- playersSumm[,1]
-  scaled <- as.data.frame(scale(playersSumm[,-1], center = mins, scale = maxs - mins))
-  scaled <- cbind(team_season,scaled)
-  
-  # train_split: number of teams or percentage of data in training set
-  set.seed(450)
-  perc <- 0.80
-  train_split <- round(perc*nrow(playersSumm))
-  hidden_neurons <- c(6,4,2)
-  #c(4,2)
-  #c(6,4,2)
-  # neuralnet requires explicit formula for the model (f)
-  n <- names(scaled[,-1])
-  f <- as.formula(paste("PTS ~", paste(n[!n %in% "PTS"], collapse = " + ")))
-  
-  teams_train <- sample(playersSumm$team_season,train_split)
-  #teams_test <- filter(playersSumm, !(team_season %in% teams_train))$team_season
-  training <- filter(scaled, team_season %in% teams_train)
-  #testing <- filter(scaled, team_season %in% teams_test)
-  
-  # remove non-numeric variables
-  train_teamSeasonCodes <- training$team_season
-  #test_teamSeasonCodes <- testing$team_season
-  training <- training[,-1]
-  #testing <- testing[,-1]
-  
-  ## Model Neural Network
-  # Hidden layers and neurons per layer specified by hidden. 
-  # Number of input neurons is the number of columns
-  # Output neurons is 1 as we are doing regression (linear.output=T)
-  # For classification problem, linear.output=F
-  nn <- neuralnet(f,data=training,hidden=hidden_neurons,linear.output=T)
-  
-  return(nn) # returns nnet model based on training data (perc of the total teams)
-}
-
 
 # Plotting --------------------------------
 # # plot MSE distribution after C-V
