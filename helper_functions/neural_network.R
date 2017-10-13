@@ -344,7 +344,7 @@ library(neuralnet) # neural network for regression
   #save(model, file = paste0("data/model_","nnetFit","_",Sys.Date(),".Rdata"))
   predict_data <- training
   predicted <- predict(model, newdata = predict_data)
-  save(model, file = paste0("data/modelNeuralnet_",Off_or_Def,".Rdata"))
+  save(model, file = paste0("data/modelNeuralnet2_",Off_or_Def,".Rdata"))
   predictions <- data.frame(actual_PTS = predict_data$PTS, predicted_PTS = predicted)
   plot(predictions)
 }

@@ -46,9 +46,9 @@ conferences <- read.csv("data/nba_conferences.csv", stringsAsFactors = FALSE) # 
 # Read pre-calculated nnetwork models -------------------------
 #nn_Offense <- list.load("data/nn_Offense.rds")
 #nn_Defense <- list.load("data/nn_Defense.rds")
-load("data/modelNeuralnet_PTS.Rdata")
+load("data/modelNeuralnet2_PTS.Rdata")
 nn_Offense <- model$finalModel
-load("data/modelNeuralnet_PTSA.Rdata")
+load("data/modelNeuralnet2_PTSA.Rdata")
 nn_Defense <- model$finalModel
 
 # Actual Season schedule
@@ -188,18 +188,25 @@ playersNewPredicted_Final <- read.csv("data/playersNewPredicted_Final.csv",strin
 playersNewPredicted_Final_adjMin <- mutate(playersNewPredicted_Final,
                                            effMin = ifelse(is.na(Age),effMin*.7,effMin))
 # adjust percent of play time (change this to use empirical data from past seasons)
-playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin,topHeavy = 9, topMinShare = .7)
-
+# Empirically:
+topMinShare <- .minutes_density(playersHist,10)
+averageShare <- group_by(topMinShare,Season) %>%
+  summarise_if(is.numeric, mean) %>%
+  ungroup() %>%
+  summarise_if(is.numeric, mean)
+incrementShare <- gather(averageShare,top_n,percent)
+plot(seq(13,1,-1),incrementShare$percent)
+# top7 seems to be the turning point at 60%, after it, the scale of time every new player adds goes down (slope). 
+# I will use this as estimate. Although the trend is going down, in last 5 seasons, % is 59%
+# because rosters are getting bigger thus utilize more players. 
+playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin,topHeavy = 7, topMinShare = .6)
 # make sure Season column shows the new season to come
 playersNewPredicted_Final_adjMin2 <- mutate(playersNewPredicted_Final_adjMin2, Season = paste0(thisYear,"-",as.numeric(thisYear)+1))
 
 # compute team powers. See teams_power.R for details
-effMinutes <- NULL # approx the average of all 
+#effMinutes <- NULL # approx the average of all 
 #teamPowers_newSeason <- merge(.computePower(playersNewPredicted_Final_adjMin2,"PTS","All",effMinutes,actualOrPredicted = "predicted"),.computePower(playersNewPredicted_Final_adjMin2,"PTSA","All",effMinutes,actualOrPredicted = "predicted"),by="team_season")
 teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMin2,actualOrPred="predicted")
-# First analysis: OKC and BOS defenses are awful. Looks like they have great starting lineups but crappy benches
-# The rest of the teams get more or less expected predictions
-# Solution: Improve NNet model. I had previously used an ad-hoc selection of layers. 
 
 # Simulate a few seasons
 regSeasonOutcome <- .standings(real = TRUE)
@@ -214,7 +221,7 @@ regSeasonAvg2 <- data.frame(
   sd = 0,
   probChamp = 0)
 
-num_seasons <- 100
+num_seasons <- 10
 
 for (i in 1:num_seasons){
   

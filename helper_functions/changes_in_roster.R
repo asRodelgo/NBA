@@ -112,11 +112,53 @@
   return(avgPlayer)
 }
 
-# draft player
-
-# update players skills due to aging
-
-
+# Calculate average distribution of minutes for top 1,2,3,...10 players to help adjust minutes before prediction
+.minutes_density <- function(data, seasons = 5) {
+  
+    data_team <- data %>%
+      filter(Season %in% top_n(distinct(data,Season),seasons)$Season, !(Tm == "TOT")) %>% # take last 5 seasons as sample
+      group_by(Player) %>%
+      mutate(effMin = MP/3936) %>%
+      select(Player,Season,Tm,effMin)
+    
+    # Adjust effMin to reflect percentage of total team time played, ie, sum(effMin) = 5
+    data_team2 <- data_team %>%
+      group_by(Tm,Season) %>%
+      mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>%
+      arrange(Season,Tm,desc(effMin)) %>%
+      top_n(13,effMin) %>%
+      mutate(top13 = sum(effMin)) %>%
+      top_n(12,effMin) %>%
+      mutate(top12 = sum(effMin)) %>%
+      top_n(11,effMin) %>%
+      mutate(top11 = sum(effMin)) %>%
+      top_n(10,effMin) %>%
+      mutate(top10 = sum(effMin)) %>%
+      top_n(9,effMin) %>%
+      mutate(top9 = sum(effMin)) %>%
+      top_n(8,effMin) %>%
+      mutate(top8 = sum(effMin)) %>%
+      top_n(7,effMin) %>%
+      mutate(top7 = sum(effMin)) %>%
+      top_n(6,effMin) %>%
+      mutate(top6 = sum(effMin)) %>%
+      top_n(5,effMin) %>%
+      mutate(top5 = sum(effMin)) %>%
+      top_n(4,effMin) %>%
+      mutate(top4 = sum(effMin)) %>%
+      top_n(3,effMin) %>%
+      mutate(top3 = sum(effMin)) %>%
+      top_n(2,effMin) %>%
+      mutate(top2 = sum(effMin)) %>%
+      top_n(1,effMin) %>%
+      mutate(top1 = sum(effMin)) %>%
+      distinct(Season, Tm, .keep_all=TRUE) %>%
+      ungroup() %>%
+      select(-c(Player,effMin)) %>%
+      as.data.frame()
+    
+    return(data_team2)
+}
 
 
 
