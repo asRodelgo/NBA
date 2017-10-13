@@ -24,8 +24,14 @@ for (f in files) source(f, local = TRUE)
 # load the data
 source("data/read_data.R")
 
-global_mean <- mean(team_stats$PTS)
-sigma <- 8 # constant std dev for all teams. ADJUST LATER ON!!
+gameScores <- read.csv("data/gameScores.csv", stringsAsFactors = FALSE) # write_scoreDifferentials.R 
+#sigmaHome <- sd(as.numeric(gameScores$pts_home), na.rm = TRUE)
+#sigmaAway <- sd(as.numeric(gameScores$pts_away), na.rm = TRUE)
+sigma <- sd(c(as.numeric(gameScores$pts_home),as.numeric(gameScores$pts_away)), na.rm = TRUE)
+avgHome <- mean(as.numeric(gameScores$pts_home), na.rm = TRUE)
+avgAway <- mean(as.numeric(gameScores$pts_away), na.rm = TRUE)
+global_mean <- mean(c(as.numeric(gameScores$pts_home),as.numeric(gameScores$pts_away)), na.rm = TRUE)
+home_away_factor <- avgHome - avgAway # how many extra points does a team score on average when playing home
 
 # load teams powers (means for the Normal distributions)
 # Season schedule for the upcoming season -------------------------------

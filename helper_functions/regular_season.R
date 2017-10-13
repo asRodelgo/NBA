@@ -11,7 +11,7 @@
   teamH <- filter(teamsPredicted, TeamCode == team_home)
   teamA <- filter(teamsPredicted, TeamCode == team_away)
   
-  # Define both Normal distributions. Empirical home-away difference is 6 points (+3, -3)
+  # Define both Normal distributions. Empirical home-away difference is approx (2*home_away_factor) 6 points (+3, -3)
   muH <- teamH$TEAM_PTS + home_away_factor + teamA$TEAM_PTSAG - global_mean
   muA <- teamA$TEAM_PTS - home_away_factor + teamH$TEAM_PTSAG - global_mean
   
@@ -29,6 +29,24 @@
   #print(paste0(team_home,": ",pointsH," vs. ",team_away,": ",pointsA))
   return(c(pointsH,pointsA,numOT))
 }
+
+.calculateWinProbability <- function(team_home,team_away){
+  
+  # teamsPredicted contain predicted avg PTS and avg PTS Against per team for a new season
+  teamH <- filter(teamsPredicted, TeamCode == team_home)
+  teamA <- filter(teamsPredicted, TeamCode == team_away)
+  
+  # Define both Normal distributions. Empirical home-away difference is approx (2*home_away_factor) 6 points (+3, -3)
+  muH <- teamH$TEAM_PTS + home_away_factor + teamA$TEAM_PTSAG - global_mean
+  muA <- teamA$TEAM_PTS - home_away_factor + teamH$TEAM_PTSAG - global_mean
+  
+  prob_HvsA <- 1-pnorm(0,muH-muA,sqrt(2*sigma))
+  # equivalent simulated probability (to double check analytical probability)
+  # prob_HvsA_sim <- length(which(rnorm(100000,muH-muA,sqrt(2*sigma))>0))/100000
+  
+  return(prob_HvsA)
+}
+
 
 .computeScores <- function(real=FALSE){
   
@@ -156,30 +174,4 @@
   
   return(confPredGames)
 }
-
-
-
-#.getConferenceStandings("W")
-# 
-# homeWins <- season %>%
-#   group_by(home_team) %>%
-#   mutate(home_wins = sum(home_points-away_points>0))
-# 
-# awayWins <- homeWins %>%
-#   group_by(away_team) %>%
-#   mutate(away_wins = sum(away_points-home_points>0))
-# 
-# homeWins <- distinct(homeWins,home_team,.keep_all = TRUE)
-# homeWins <- select(homeWins, home_team,home_wins)
-# homeWins <- as.data.frame(homeWins)
-# 
-# awayWins <- distinct(awayWins,away_team,.keep_all = TRUE)
-# awayWins <- select(awayWins, away_team,away_wins)
-# awayWins <- as.data.frame(awayWins)
-# 
-# totalWins <- merge(homeWins,awayWins, by.x="home_team",by.y="away_team")
-# totalWins <- mutate(totalWins, win = home_wins + away_wins, lose = 82-win)
-# totalWins <- arrange(totalWins,desc(win))
-# 
-# 
 

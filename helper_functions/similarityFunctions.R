@@ -341,8 +341,6 @@
 
 }
 
-
-
 # Calculate centroid and other measures for selected cluster of points from tSNE
 .clusterMath <- function(colTeam,colSeason,colPlayer,colAge,colSkill){
   
