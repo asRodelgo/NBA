@@ -12,8 +12,8 @@
   teamA <- filter(teamsPredicted, TeamCode == team_away)
   
   # Define both Normal distributions. Empirical home-away difference is 6 points (+3, -3)
-  muH <- teamH$TEAM_PTS + 3 + teamA$TEAM_PTSAG - global_mean
-  muA <- teamA$TEAM_PTS - 3 + teamH$TEAM_PTSAG - global_mean
+  muH <- teamH$TEAM_PTS + home_away_factor + teamA$TEAM_PTSAG - global_mean
+  muA <- teamA$TEAM_PTS - home_away_factor + teamH$TEAM_PTSAG - global_mean
   
   pointsH <- round(rnorm(1,muH,sigma),0)
   pointsA <- round(rnorm(1,muA,sigma),0)

@@ -55,15 +55,16 @@ nn_Defense <- model$finalModel
 realSeasonSchedule <- read.csv("data/realSeasonSchedule.csv",stringsAsFactors = FALSE) # from write_seasonSchedule.R
 datesRange <- unique(realSeasonSchedule$Date)
 
-# Global hyperparameters for Normal distributions
-global_mean <- mean(team_stats$PTS)
-sigma <- 8 # constant std dev for all teams. ADJUST LATER ON!!
-# get game scores from last 7 seasons
+### Global hyperparameters for Normal distributions
+# get game scores from past 7 seasons (since 2010)
 gameScores <- read.csv("data/gameScores.csv", stringsAsFactors = FALSE) # write_scoreDifferentials.R 
-sigmaHome <- sd(as.numeric(gameScores$pts_home), na.rm = TRUE)
-sigmaAway <- sd(as.numeric(gameScores$pts_away), na.rm = TRUE)
+#sigmaHome <- sd(as.numeric(gameScores$pts_home), na.rm = TRUE)
+#sigmaAway <- sd(as.numeric(gameScores$pts_away), na.rm = TRUE)
+sigma <- sd(c(as.numeric(gameScores$pts_home),as.numeric(gameScores$pts_away)), na.rm = TRUE)
 avgHome <- mean(as.numeric(gameScores$pts_home), na.rm = TRUE)
 avgAway <- mean(as.numeric(gameScores$pts_away), na.rm = TRUE)
+global_mean <- mean(c(as.numeric(gameScores$pts_home),as.numeric(gameScores$pts_away)), na.rm = TRUE)
+home_away_factor <- avgHome - avgAway # how many extra points does a team score on average when playing home
 
 playersHist <- read.csv("data/playersHist.csv", stringsAsFactors = FALSE) # read historical players from write_playersHist.R
 playersHist <- .rename_PlayerDuplicates(playersHist) # differentiate different players with the same name
