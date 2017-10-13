@@ -44,8 +44,12 @@ team_stats <- merge(team_stats,franchises,by.x="Team",by.y="Franchise",all.x=TRU
 conferences <- read.csv("data/nba_conferences.csv", stringsAsFactors = FALSE) # Same as franchises 
 
 # Read pre-calculated nnetwork models -------------------------
-nn_Offense <- list.load("data/nn_Offense.rds")
-nn_Defense <- list.load("data/nn_Defense.rds")
+#nn_Offense <- list.load("data/nn_Offense.rds")
+#nn_Defense <- list.load("data/nn_Defense.rds")
+load("data/modelNeuralnet_PTS.Rdata")
+nn_Offense <- model$finalModel
+load("data/modelNeuralnet_PTSA.Rdata")
+nn_Defense <- model$finalModel
 
 # Actual Season schedule
 realSeasonSchedule <- read.csv("data/realSeasonSchedule.csv",stringsAsFactors = FALSE) # from write_seasonSchedule.R
@@ -177,20 +181,25 @@ playersNewPredicted_Current_All <- filter(playersNewPredicted_Current_All, !is.n
 playersNewPredicted_Final <- rbind(playersNewPredicted_Current_All,playersNewLeftover3)
 write.csv(playersNewPredicted_Final, "data/playersNewPredicted_Final.csv",row.names = FALSE)
 
-# adjust players minutes. Reduce new players effMin (rookies + others) by 30%
+# load pre-calculated final players predictions. effMin are not adjusted, i.e., rookies will have higher
+# effMin than it would be expected.
+playersNewPredicted_Final <- read.csv("data/playersNewPredicted_Final.csv",stringsAsFactors = FALSE)
+# adjust players minutes. Reduce new players effMin (rookies, international, returning) by 30%
 playersNewPredicted_Final_adjMin <- mutate(playersNewPredicted_Final,
                                            effMin = ifelse(is.na(Age),effMin*.7,effMin))
-# adjust percent of play time
+# adjust percent of play time (change this to use empirical data from past seasons)
 playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin,topHeavy = 9, topMinShare = .7)
 
 # make sure Season column shows the new season to come
-playersNewPredicted_Final_adjMin2 <- mutate(playersNewPredicted_Final_adjMin2, Season = paste0(thisSeason-1,"-",thisSeason))
-# compute team powers
+playersNewPredicted_Final_adjMin2 <- mutate(playersNewPredicted_Final_adjMin2, Season = paste0(thisYear,"-",as.numeric(thisYear)+1))
+
+# compute team powers. See teams_power.R for details
 effMinutes <- NULL # approx the average of all 
-teamPowers_newSeason <- merge(.computePower(playersNewPredicted_Final_adjMin2,"PTS","All",effMinutes,actualOrPredicted = "predicted"),.computePower(playersNewPredicted_Final_adjMin2,"PTSA","All",effMinutes,actualOrPredicted = "predicted"),by="team_season")
+#teamPowers_newSeason <- merge(.computePower(playersNewPredicted_Final_adjMin2,"PTS","All",effMinutes,actualOrPredicted = "predicted"),.computePower(playersNewPredicted_Final_adjMin2,"PTSA","All",effMinutes,actualOrPredicted = "predicted"),by="team_season")
 teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMin2,actualOrPred="predicted")
 # First analysis: OKC and BOS defenses are awful. Looks like they have great starting lineups but crappy benches
 # The rest of the teams get more or less expected predictions
+# Solution: Improve NNet model. I had previously used an ad-hoc selection of layers. 
 
 # Simulate a few seasons
 regSeasonOutcome <- .standings(real = TRUE)

@@ -24,7 +24,8 @@ library(neuralnet) # neural network for regression
     filter(!(Tm == "TOT")) %>% # Those who played for more than 1 team have a Total team
     mutate(Wt = effMin/5) %>%
     group_by(Tm,Season) %>%
-    summarise_if(is.numeric, funs(sum(.*Wt, na.rm=TRUE))) %>%
+    #summarise_if(is.numeric, funs(sum(.*Wt, na.rm=TRUE))) %>%
+    summarise_if(is.numeric, funs(weighted.mean(.,Wt, na.rm=TRUE))) %>%
     dplyr::select(-Wt) %>%
     distinct(.keep_all=TRUE)
   
@@ -65,7 +66,8 @@ library(neuralnet) # neural network for regression
     filter(!(Tm == "TOT")) %>% # Those who played for more than 1 team have a Total team
     mutate(Wt = effMin/5) %>%
     group_by(Tm,Season) %>%
-    summarise_if(is.numeric, funs(sum(.*Wt, na.rm=TRUE))) %>%
+    #summarise_if(is.numeric, funs(sum(.*Wt, na.rm=TRUE))) %>%
+    summarise_if(is.numeric, funs(weighted.mean(.,Wt, na.rm=TRUE))) %>%
     dplyr::select(-Wt) %>%
     distinct(.keep_all=TRUE)
   
@@ -101,7 +103,8 @@ library(neuralnet) # neural network for regression
     filter(!(Tm == "TOT")) %>% # Those who played for more than 1 team have a Total team
     mutate(Wt = effMin) %>%
     group_by(Tm,Season) %>%
-    summarise_if(is.numeric, funs(sum(.*Wt, na.rm=TRUE))) %>%
+    #summarise_if(is.numeric, funs(sum(.*Wt, na.rm=TRUE))) %>%
+    summarise_if(is.numeric, funs(weighted.mean(.,Wt, na.rm=TRUE))) %>%
     dplyr::select(-Wt) %>%
     distinct(.keep_all=TRUE)
   
@@ -316,8 +319,8 @@ library(neuralnet) # neural network for regression
     ## repeated ten times
     repeats = 10)
   
-  nnetGrid <-  expand.grid(layer1 = c(4,6,8), 
-                           layer2 = c(2,3,4,5), 
+  nnetGrid <-  expand.grid(layer1 = c(4,5,6,7), 
+                           layer2 = c(2,3,4), 
                            layer3 = c(1,2,3)
   )
   
