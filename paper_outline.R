@@ -58,6 +58,12 @@ datesRange <- unique(realSeasonSchedule$Date)
 # Global hyperparameters for Normal distributions
 global_mean <- mean(team_stats$PTS)
 sigma <- 8 # constant std dev for all teams. ADJUST LATER ON!!
+# get game scores from last 7 seasons
+gameScores <- read.csv("data/gameScores.csv", stringsAsFactors = FALSE) # write_scoreDifferentials.R 
+sigmaHome <- sd(as.numeric(gameScores$pts_home), na.rm = TRUE)
+sigmaAway <- sd(as.numeric(gameScores$pts_away), na.rm = TRUE)
+avgHome <- mean(as.numeric(gameScores$pts_home), na.rm = TRUE)
+avgAway <- mean(as.numeric(gameScores$pts_away), na.rm = TRUE)
 
 playersHist <- read.csv("data/playersHist.csv", stringsAsFactors = FALSE) # read historical players from write_playersHist.R
 playersHist <- .rename_PlayerDuplicates(playersHist) # differentiate different players with the same name
