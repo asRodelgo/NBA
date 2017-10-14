@@ -177,7 +177,7 @@ unmatched_Players_Leftover <- filter(unmatched_Players, !(Player %in% playersNew
 playersNewLeftover2 <- merge(select(playersNewLeftover, -Tm),
                             select(unmatched_Players, Player, Tm = Tm.x),
                             by = "Player", all.y = TRUE)
-playersNewLeftover2 <- mutate(playersNewLeftover2, Season = paste0(as.numeric(thisSeason)-1,"-",thisSeason),
+playersNewLeftover2 <- mutate(playersNewLeftover2, Season = paste0(as.numeric(thisYear),"-",as.numeric(thisYear)+1),
                               Age = ifelse(is.na(Age),25,Age)) # arbitrarily assign Age = 25 for those missing Age
 # calculate predicted stats for these leftovers
 playersNewLeftover3 <- .computePredictedPlayerStats_Leftovers(playersNewLeftover2)
@@ -185,7 +185,9 @@ playersNewLeftover3 <- .computePredictedPlayerStats_Leftovers(playersNewLeftover
 playersNewPredicted_Current_All <- filter(playersNewPredicted_Current_All, !is.na(effPTS)) %>%
   mutate(Tm = Tm.x) %>%
   select(-Tm.x,-Tm.y,-Exp,-historical_name)
-playersNewPredicted_Final <- rbind(playersNewPredicted_Current_All,playersNewLeftover3)
+playersNewPredicted_Final <- rbind(playersNewPredicted_Current_All,playersNewLeftover3) %>%
+  mutate(Season = paste0(as.numeric(thisYear),"-",as.numeric(thisYear)+1)) %>%
+  distinct(Player,Tm, .keep_all=TRUE)
 write.csv(playersNewPredicted_Final, "data/playersNewPredicted_Final.csv",row.names = FALSE)
 
 # load pre-calculated final players predictions. effMin are not adjusted, i.e., rookies will have higher
@@ -205,8 +207,8 @@ incrementShare <- gather(averageShare,top_n,percent)
 plot(seq(13,1,-1),incrementShare$percent)
 # top7 seems to be the turning point at 60%, after it, the scale of time every new player adds goes down (slope). 
 # I will use this as estimate. Although the trend is going down, in last 5 seasons, % is 59%
-# because rosters are getting bigger thus utilize more players. 
-playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin,topHeavy = 7, topMinShare = .6)
+# because rosters are getting bigger thus utilize more players. Usually top 1 % revolves around 10% 
+playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin, topHeavy = 7, topMinShare = .6, min_share_top1 = .1)
 # make sure Season column shows the new season to come
 playersNewPredicted_Final_adjMin2 <- mutate(playersNewPredicted_Final_adjMin2, Season = paste0(thisYear,"-",as.numeric(thisYear)+1))
 
@@ -228,7 +230,7 @@ regSeasonAvg2 <- data.frame(
   sd = 0,
   probChamp = 0)
 
-num_seasons <- 10
+num_seasons <- 100
 
 for (i in 1:num_seasons){
   

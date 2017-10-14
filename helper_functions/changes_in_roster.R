@@ -50,23 +50,89 @@
   return(data)
 }
 
-.redistributeMinutes <- function(data,topHeavy = 5,topMinShare = .5){
+.redistributeMinutes <- function(data,topHeavy = 7,topMinShare = .6, min_share_top1 = .1){
   # Usually a few players amasse a great amount of the minutes. 
-  # Heuristically, top 5 players play 50% of total time
+  # Heuristically, top 7 players play 60% of total time
   playersAdj <- data.frame()  
   for (team in unique(data$Tm)) {
-    atl <- filter(data, Tm == team) %>% arrange(desc(effMin))
+    # introduce jitter as some players have the same effMin (they were averaged out at the prediction phase)
+    jitter <- runif(nrow(filter(data, Tm == team)))/100000
+    atl <- filter(data, Tm == team) %>% arrange(desc(effMin)) %>%
+      mutate(effMin = effMin + jitter) 
+    bottomHeavy <- nrow(atl)-topHeavy
     total_min <- sum(atl$effMin)
-    topHeavy_min <- sum(atl$effMin[1:(topHeavy+1)])
-    leftout_min <- sum(atl$effMin[(topHeavy+1):nrow(atl)])
-    delta_min <- topMinShare - topHeavy_min/total_min
-    atl$effMin[1:topHeavy] <- ifelse(atl$effMin[1:topHeavy]*(1+delta_min)>.01165,.01165,atl$effMin[1:topHeavy]*(1+delta_min))
-    # adjust the rest to sum up to total_min
-    increm_min <- sum(atl$effMin[1:topHeavy])
-    leftout_coef <- (total_min-increm_min)/leftout_min
-    atl$effMin[(topHeavy+1):nrow(atl)] <- leftout_coef*atl$effMin[(topHeavy+1):nrow(atl)]
+    topHeavy_min <- sum(atl$effMin[1:(topHeavy)])
+    topHeavy_min_target <- total_min*topMinShare
+    delta_min <- topHeavy_min_target - topHeavy_min
+    # # adjust the rest to sum up to total_min
+    atl_top <- top_n(atl, topHeavy, effMin) %>%
+      mutate(effMin = effMin + delta_min/topHeavy)
+    atl_bottom <- top_n(atl, bottomHeavy, -effMin) %>%
+      mutate(effMin = effMin - delta_min/bottomHeavy)
+    atl <- rbind(atl_top, atl_bottom)
+    # check results
+    #sum(atl$effMin[1:(topHeavy)])/total_min
+    #sum(atl$effMin[(topHeavy+1):nrow(atl)])/total_min
+    
+    # double check cases in which after adjustment a player's minutes go beyond the realistic (limit_time_player)
+    # No player can have more than 10% (or other value provided as parameter) of total team play time (empirically per .minutesDensity())
+    player_time_limit <- total_min*min_share_top1
+    overplay <- 0
+    atl$overplay <- 0
+    for (i in 1:topHeavy) {
+      if (atl$effMin[i] > player_time_limit) {
+        overplay <- overplay + atl$effMin[i] - player_time_limit
+        atl$effMin[i] <- player_time_limit
+        atl$overplay[i] <- 1 # this player surpassed minutes allowed
+      }
+    }
+    # distribute the extra minutes among all players (except those exceeding)
+    overplay_share <- overplay/nrow(filter(atl, overplay == 0))
+    atl <- mutate(atl, effMin = ifelse(overplay == 0, effMin+overplay_share,effMin)) %>% 
+      select(-overplay)
+    # check results
+    #sum(atl$effMin[1:(topHeavy)])/total_min
+    #sum(atl$effMin[(topHeavy+1):nrow(atl)])/total_min
+    
+    # run the adjustment again until settled
+    iter <- 1 # avoid infinite loops
+    while (abs(delta_min) > .0001 & iter <= 10) {
+      
+      total_min <- sum(atl$effMin)
+      topHeavy_min <- sum(atl$effMin[1:(topHeavy)])
+      topHeavy_min_target <- total_min*topMinShare
+      delta_min <- topHeavy_min_target - topHeavy_min
+      # # adjust the rest to sum up to total_min
+      atl_top <- top_n(atl, topHeavy, effMin) %>%
+        mutate(effMin = effMin + delta_min/topHeavy)
+      atl_bottom <- top_n(atl, bottomHeavy, -effMin) %>%
+        mutate(effMin = effMin - delta_min/bottomHeavy)
+      atl <- rbind(atl_top, atl_bottom)
+      #
+      player_time_limit <- total_min*min_share_top1
+      overplay <- 0
+      atl$overplay <- 0
+      for (i in 1:topHeavy) {
+        if (atl$effMin[i] > player_time_limit) {
+          overplay <- overplay + atl$effMin[i] - player_time_limit
+          atl$effMin[i] <- player_time_limit
+          atl$overplay[i] <- 1 # this player surpassed minutes allowed
+        }
+      }
+      # distribute the extra minutes among all players (except those exceeding)
+      overplay_share <- overplay/nrow(filter(atl, overplay == 0))
+      atl <- mutate(atl, effMin = ifelse(overplay == 0, effMin+overplay_share,effMin)) %>% 
+        select(-overplay)
+      
+      iter <- iter + 1
+    }
+    
     if (nrow(playersAdj)>0) playersAdj <- bind_rows(playersAdj,atl) else playersAdj <- atl
   }
+  # add jitter to the final effMin to avoid duplicated effMin
+  jitter <- runif(nrow(playersAdj))/100000
+  playersAdj <- mutate(playersAdj, effMin = effMin + jitter)
+  
   return(playersAdj)
 }
 # Trade players
