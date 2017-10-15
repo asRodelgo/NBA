@@ -160,6 +160,15 @@
   
 }
 
+# injured player
+.disabled_list <- function(data,player_list) {
+  
+  data <- mutate(data, effMin = ifelse(Player %in% player_list, 0, effMin))
+  
+  return(data)
+  
+}
+
 # Calculate the average player
 .calculate_AvgPlayer <- function(data, age=NULL) {
   thisSeason <- data$Season[1]

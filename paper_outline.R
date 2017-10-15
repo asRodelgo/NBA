@@ -198,7 +198,7 @@ playersNewPredicted_Final_adjMin <- mutate(playersNewPredicted_Final,
                                            effMin = ifelse(is.na(Age),effMin*.7,effMin))
 # adjust percent of play time (change this to use empirical data from past seasons)
 # Empirically:
-topMinShare <- .minutes_density(playersHist,10)
+topMinShare <- .minutes_density(playersHist,5)
 averageShare <- group_by(topMinShare,Season) %>%
   summarise_if(is.numeric, mean) %>%
   ungroup() %>%
@@ -216,40 +216,21 @@ playersNewPredicted_Final_adjMin2 <- mutate(playersNewPredicted_Final_adjMin2, S
 #effMinutes <- NULL # approx the average of all 
 #teamPowers_newSeason <- merge(.computePower(playersNewPredicted_Final_adjMin2,"PTS","All",effMinutes,actualOrPredicted = "predicted"),.computePower(playersNewPredicted_Final_adjMin2,"PTSA","All",effMinutes,actualOrPredicted = "predicted"),by="team_season")
 teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMin2,actualOrPred="predicted")
+# teamsPredicted <- mutate(teamsPredicted, basketAverage = TEAM_PTS - TEAM_PTSAG)
+# simulate a few seasons:
+win_predictions <- simulate_n_seasons(100)
 
-# Simulate a few seasons
-regSeasonOutcome <- .standings(real = TRUE)
-# Initialize parameters
-regSeasonAvg2 <- data.frame(
-  team = regSeasonOutcome[[1]][[168]]$team,
-  teamCode = regSeasonOutcome[[1]][[168]]$teamCode,
-  conference = regSeasonOutcome[[1]][[168]]$conference,
-  win = 0,
-  lose = 0,
-  win2 = 0,
-  sd = 0,
-  probChamp = 0)
+# create a status column to adjust for players injuries. Example: 
+# Isaiah Thomas will most likely miss 1/3 of the regular season. Then his status becomes: .66
+# I then adjust effMin = effMin*status
+player_injury_status <- data.frame(Player = c("Isaiah Thomas","Nicolas Batum"),
+                                   status = c(.66,.66))
+# adjust rosters per injuries
+player_predictions <- merge(playersNewPredicted_Final_adjMin2,player_injury_status, by="Player", all.x = TRUE) %>%
+  mutate(status = ifelse(is.na(status),1,status)) %>%
+  mutate(effMin = effMin*status)
+# recalculate teamsPredicted. First reassign minutes and then predict
+player_predictions_DL_adj <- .redistributeMinutes(player_predictions, topHeavy = 7, topMinShare = .6, min_share_top1 = .1)
+teamsPredicted <- .teamsPredictedPower(data = select(player_predictions_DL_adj,-status),actualOrPred="predicted")
 
-num_seasons <- 100
-
-for (i in 1:num_seasons){
-  
-  final_standings <- regSeasonOutcome[[1]][[168]]
-  #playoffs <- .getPlayoffResults(final_standings) %>% mutate(round = ifelse(round == 0,1,0)) %>%
-  #  group_by(teamCode) %>% summarise(round = sum(round)) %>% ungroup()
-  regSeasonAvg2$win <- regSeasonAvg2$win + final_standings$win
-  regSeasonAvg2$win2 <- regSeasonAvg2$win2 + (final_standings$win)^2
-  #probChamp <- merge(final_standings, playoffs[,c("teamCode","round")],by="teamCode",all.x=TRUE) %>%
-  #  mutate(round = ifelse(is.na(round),0,round))
-  #regSeasonAvg2$probChamp <- regSeasonAvg2$probChamp + probChamp$round
-  # generate a new season outcome
-  regSeasonOutcome <- .standings(real = TRUE)
-  # keep count
-  print(paste0("iteration: ",i))
-}
-
-regSeasonAvg2$win <- regSeasonAvg2$win/num_seasons
-regSeasonAvg2$lose <- 82 - regSeasonAvg2$win
-regSeasonAvg2$win2 <- regSeasonAvg2$win2/num_seasons
-regSeasonAvg2$sd <- sqrt(regSeasonAvg2$win2 - (regSeasonAvg2$win)^2)
 
