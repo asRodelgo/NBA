@@ -213,12 +213,19 @@ playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Fi
 playersNewPredicted_Final_adjMin2 <- mutate(playersNewPredicted_Final_adjMin2, Season = paste0(thisYear,"-",as.numeric(thisYear)+1))
 
 # compute team powers. See teams_power.R for details
+# see if actual effMin matter (double check weighted means)
+# playersNewPredicted_pumped <- mutate(playersNewPredicted_Final_adjMin2, effMin = ifelse(Tm == "UTA",effMin - .002,effMin))
+# teamsPredicted_pumped <- .teamsPredictedPower(data = playersNewPredicted_pumped,actualOrPred="predicted")
+# confrmed: effMin volume matters, I will transform in percentages
+playersNewPredicted_Final_adjMinPer <- group_by(playersNewPredicted_Final_adjMin2, Tm) %>%
+  mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>%
+  as.data.frame()
 #effMinutes <- NULL # approx the average of all 
 #teamPowers_newSeason <- merge(.computePower(playersNewPredicted_Final_adjMin2,"PTS","All",effMinutes,actualOrPredicted = "predicted"),.computePower(playersNewPredicted_Final_adjMin2,"PTSA","All",effMinutes,actualOrPredicted = "predicted"),by="team_season")
-teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMin2,actualOrPred="predicted")
+teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer,actualOrPred="predicted")
 # teamsPredicted <- mutate(teamsPredicted, basketAverage = TEAM_PTS - TEAM_PTSAG)
 # simulate a few seasons:
-win_predictions <- simulate_n_seasons(100)
+win_predictions <- simulate_n_seasons(1000)
 
 # create a status column to adjust for players injuries. Example: 
 # Isaiah Thomas will most likely miss 1/3 of the regular season. Then his status becomes: .66
