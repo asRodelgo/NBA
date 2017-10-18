@@ -319,9 +319,9 @@ library(neuralnet) # neural network for regression
     ## repeated ten times
     repeats = 10)
   
-  nnetGrid <-  expand.grid(layer1 = c(4,5,6,7), 
-                           layer2 = c(2,3,4), 
-                           layer3 = c(1,2,3)
+  nnetGrid <-  expand.grid(layer1 = c(6), 
+                           layer2 = c(4), 
+                           layer3 = c(2)
   )
   
   library(neuralnet)
@@ -344,7 +344,7 @@ library(neuralnet) # neural network for regression
   #save(model, file = paste0("data/model_","nnetFit","_",Sys.Date(),".Rdata"))
   predict_data <- training
   predicted <- predict(model, newdata = predict_data)
-  save(model, file = paste0("data/modelNeuralnet2_",Off_or_Def,".Rdata"))
+  save(model, file = paste0("data/modelNeuralnet4_",Off_or_Def,".Rdata"))
   predictions <- data.frame(actual_PTS = predict_data$PTS, predicted_PTS = predicted)
   plot(predictions)
 }

@@ -30,7 +30,7 @@
   return(c(pointsH,pointsA,numOT))
 }
 
-.calculateWinProbability <- function(team_home,team_away){
+.calculateWinProbability <- function(team_home,team_away,home_away_factor){
   
   # teamsPredicted contain predicted avg PTS and avg PTS Against per team for a new season
   teamH <- filter(teamsPredicted, TeamCode == team_home)

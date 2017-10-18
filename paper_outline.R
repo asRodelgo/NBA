@@ -46,8 +46,10 @@ conferences <- read.csv("data/nba_conferences.csv", stringsAsFactors = FALSE) # 
 # Read pre-calculated nnetwork models -------------------------
 #nn_Offense <- list.load("data/nn_Offense.rds")
 #nn_Defense <- list.load("data/nn_Defense.rds")
+#load("data/modelNeuralnet2_PTS.Rdata")
 load("data/modelNeuralnet2_PTS.Rdata")
 nn_Offense <- model$finalModel
+#load("data/modelNeuralnet2_PTSA.Rdata")
 load("data/modelNeuralnet2_PTSA.Rdata")
 nn_Defense <- model$finalModel
 
@@ -225,7 +227,20 @@ playersNewPredicted_Final_adjMinPer <- group_by(playersNewPredicted_Final_adjMin
 teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer,actualOrPred="predicted")
 # teamsPredicted <- mutate(teamsPredicted, basketAverage = TEAM_PTS - TEAM_PTSAG)
 # simulate a few seasons:
-win_predictions <- simulate_n_seasons(1000)
+win_predictions <- simulate_n_seasons(10)
+# models selected modelNeuralnet2_PTS.Rdata from:  
+# nnetGrid <-  expand.grid(layer1 = c(4,5,6,7), 
+# layer2 = c(2,3,4), 
+# layer3 = c(1,2,3))
+# are way too conservative, they regress too much to the mean. THey don't simulate well a real season
+# where tail teams tend to separate themselves from the pack.
+# Try bigger nets in layer 1: modelNeuralnet3_PTS.Rdata
+teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer,actualOrPred="predicted")
+# this is more realistic but still I don't think Charlotte is the best team in NBA. Let's try one more
+# 6-4-2
+# I think the key is to edit the minute distribution. Let's stick to the best models according to R2 and error
+# This corresponds to modelNeuralnet2_PTS.Rdata
+
 
 # create a status column to adjust for players injuries. Example: 
 # Isaiah Thomas will most likely miss 1/3 of the regular season. Then his status becomes: .66
@@ -233,7 +248,7 @@ win_predictions <- simulate_n_seasons(1000)
 player_injury_status <- data.frame(Player = c("Isaiah Thomas","Nicolas Batum"),
                                    status = c(.66,.66))
 # adjust rosters per injuries
-player_predictions <- merge(playersNewPredicted_Final_adjMin2,player_injury_status, by="Player", all.x = TRUE) %>%
+player_predictions <- merge(playersNewPredicted_Final_adjMinPer,player_injury_status, by="Player", all.x = TRUE) %>%
   mutate(status = ifelse(is.na(status),1,status)) %>%
   mutate(effMin = effMin*status)
 # recalculate teamsPredicted. First reassign minutes and then predict
