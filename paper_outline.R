@@ -197,12 +197,37 @@ write.csv(playersNewPredicted_Final, "data/playersNewPredicted_Final.csv",row.na
 ## NOTE: THIS LOCKS ROSTERS AS OF OCTOBER 10 2017. FURTHER CHANGES IN ROSTERS I WILL MAKE VIA MANUAL 
 ## TRANSFERS UNTIL OCTOBER 17 WHEN THE SEASON STARTS
 playersNewPredicted_Final <- read.csv("data/playersNewPredicted_Final.csv",stringsAsFactors = FALSE)
-# adjust players minutes. Reduce new players effMin (rookies, international, returning) by 30%
+# adjust players minutes. Reduce new players effMin (rookies, international, returning) by x%
+# estimate empirically the % reduction in effMin
+collegePlayersHist <- read.csv("data/collegePlayersHist.csv", stringsAsFactors = FALSE)
+# compute % minutes played per player:
+collegeMinutes <- select(collegePlayersHist,Rk,Player,Season,School,G,MP) %>%
+  mutate(perMin = MP/(G*40)) %>%
+  group_by(Player) %>%
+  mutate(perMin = mean(perMin, na.rm=TRUE)) %>% # average minutes played per game in ther college years
+  distinct(Player, .keep_all=TRUE) %>%
+  filter(!is.na(perMin))
+# now do the same for NBA players by experience year
+nbaMinutes <- select(playersHist, Player,Season,Age,Tm,G,MP) %>%
+  filter(!(Tm == "TOT")) %>%
+  group_by(Player) %>%
+  filter(Age == min(Age)) %>% # keep players when they were younger (rookie year)
+  group_by(Player,Season) %>%
+  filter(G >= 30) %>% # played at least 30 games
+  mutate(perMin = mean(MP, na.rm=TRUE)/48) %>%
+  distinct(Player, .keep_all=TRUE)
+# put them together
+college2nbaMinutes <- merge(nbaMinutes,collegeMinutes, by = "Player", all.x = TRUE) %>%
+  mutate(minDiff = perMin.y-perMin.x) %>%
+  filter(!is.na(minDiff))
+# estimate difference in minutes played:
+col2nbaMinDiff <- mean(college2nbaMinutes$minDiff)
 playersNewPredicted_Final_adjMin <- mutate(playersNewPredicted_Final,
-                                           effMin = ifelse(is.na(Age),effMin*.7,effMin))
+                                           effMin = ifelse(is.na(Age),effMin*(1-col2nbaMinDiff),effMin))
+
 # adjust percent of play time
 # Based on historical data for the last 5 seasons:
-topMinShare <- .minutes_density(playersHist,10)
+topMinShare <- .minutes_density(playersHist,5)
 averageShare <- group_by(topMinShare,Season) %>%
   summarise_if(is.numeric, mean) %>%
   ungroup() %>%
@@ -212,7 +237,11 @@ plot(seq(18,1,-1),incrementShare$percent)
 # top7 seems to be the turning point at 60%, after it, the scale of time every new player adds goes down (slope). 
 # I will use this as estimate. Although the trend is going down, in last 5 seasons, % is 59%
 # because rosters are getting bigger thus utilize more players. Usually top 1 % revolves around 10% 
-playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin, topHeavy = 7, topMinShare = .6, min_share_top1 = .1)
+#playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin, topHeavy = 11, topMinShare = .8, min_share_top1 = .11)
+playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin, topHeavy = 3, topMinShare = .3, min_share_top1 = .11)
+playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin2, topHeavy = 7, topMinShare = .6, min_share_top1 = .11)
+# The reason to go top_1 = 1.1 is to give more prominence to star players which adjust better when simulating
+# wins in the regular season
 # make sure Season column shows the new season to come
 playersNewPredicted_Final_adjMin2 <- mutate(playersNewPredicted_Final_adjMin2, Season = paste0(thisYear,"-",as.numeric(thisYear)+1))
 
@@ -225,16 +254,16 @@ playersNewPredicted_Final_adjMinPer <- group_by(playersNewPredicted_Final_adjMin
   mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>%
   as.data.frame()
 # Check percentage of minutes distribution matches the actuals from incrementShare
-topMin <- 13
+topMin <- 4
 topX <- arrange(playersNewPredicted_Final_adjMinPer, desc(effMin)) %>%
   group_by(Tm) %>%
   top_n(topMin,effMin) %>%
   summarise(sum(effMin))
-topMinY <- 7                
-topY <- arrange(playersNewPredicted_Final_adjMinPer, desc(effMin)) %>%
-  group_by(Tm) %>%
-  top_n(topMinY,effMin) %>%
-  summarise(sum(effMin))
+# topMinY <- 7                
+# topY <- arrange(playersNewPredicted_Final_adjMinPer, desc(effMin)) %>%
+#   group_by(Tm) %>%
+#   top_n(topMinY,effMin) %>%
+#   summarise(sum(effMin))
 # there's some disparity that will affect the model. I'd rather have all teams's minutes
 # equally distributed. ToDo: Fix effMin total = 30% for topHeavy in [8,13] range
 
@@ -245,7 +274,7 @@ topY <- arrange(playersNewPredicted_Final_adjMinPer, desc(effMin)) %>%
 
 # Use 6-4-2 nnets (modelNeuralnet4_PTS.Rdata)
 teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer,actualOrPred="predicted")
-# make sure total PTS scored = total PTS against
+# make sure total PTS scored = total PTS against, although this won't change anything in win/loss predictions
 teamsPredicted <- mutate(teamsPredicted, TEAM_PTSAG = TEAM_PTSAG + (sum(TEAM_PTS)-sum(TEAM_PTSAG))/nrow(teamsPredicted))
 # teamsPredicted <- mutate(teamsPredicted, basketAverage = TEAM_PTS - TEAM_PTSAG)
 # simulate a few seasons:
@@ -259,8 +288,8 @@ win_predictions <- simulate_n_seasons(10)
 # create a status column to adjust for players injuries. Example: 
 # Isaiah Thomas will most likely miss 1/3 of the regular season. Then his status becomes: .66
 # I then adjust effMin = effMin*status
-player_injury_status <- data.frame(Player = c("Isaiah Thomas","Nicolas Batum"),
-                                   status = c(.66,.66))
+player_injury_status <- data.frame(Player = c("Isaiah Thomas","Nicolas Batum","Gordon Hayward","Jeremy Lin"),
+                                   status = c(.66,.66,.0,.0))
 # adjust rosters per injuries
 player_predictions <- merge(playersNewPredicted_Final_adjMinPer,player_injury_status, by="Player", all.x = TRUE) %>%
   mutate(status = ifelse(is.na(status),1,status)) %>%
