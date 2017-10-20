@@ -47,10 +47,10 @@ conferences <- read.csv("data/nba_conferences.csv", stringsAsFactors = FALSE) # 
 #nn_Offense <- list.load("data/nn_Offense.rds")
 #nn_Defense <- list.load("data/nn_Defense.rds")
 #load("data/modelNeuralnet2_PTS.Rdata")
-load("data/modelNeuralnet2_PTS.Rdata")
+load("data/modelNeuralnet4_PTS.Rdata")
 nn_Offense <- model$finalModel
 #load("data/modelNeuralnet2_PTSA.Rdata")
-load("data/modelNeuralnet2_PTSA.Rdata")
+load("data/modelNeuralnet4_PTSA.Rdata")
 nn_Defense <- model$finalModel
 
 # Actual Season schedule
@@ -194,19 +194,21 @@ write.csv(playersNewPredicted_Final, "data/playersNewPredicted_Final.csv",row.na
 
 # load pre-calculated final players predictions. effMin are not adjusted, i.e., rookies will have higher
 # effMin than it would be expected.
+## NOTE: THIS LOCKS ROSTERS AS OF OCTOBER 10 2017. FURTHER CHANGES IN ROSTERS I WILL MAKE VIA MANUAL 
+## TRANSFERS UNTIL OCTOBER 17 WHEN THE SEASON STARTS
 playersNewPredicted_Final <- read.csv("data/playersNewPredicted_Final.csv",stringsAsFactors = FALSE)
 # adjust players minutes. Reduce new players effMin (rookies, international, returning) by 30%
 playersNewPredicted_Final_adjMin <- mutate(playersNewPredicted_Final,
                                            effMin = ifelse(is.na(Age),effMin*.7,effMin))
-# adjust percent of play time (change this to use empirical data from past seasons)
-# Empirically:
-topMinShare <- .minutes_density(playersHist,5)
+# adjust percent of play time
+# Based on historical data for the last 5 seasons:
+topMinShare <- .minutes_density(playersHist,10)
 averageShare <- group_by(topMinShare,Season) %>%
   summarise_if(is.numeric, mean) %>%
   ungroup() %>%
   summarise_if(is.numeric, mean)
 incrementShare <- gather(averageShare,top_n,percent)
-plot(seq(13,1,-1),incrementShare$percent)
+plot(seq(18,1,-1),incrementShare$percent)
 # top7 seems to be the turning point at 60%, after it, the scale of time every new player adds goes down (slope). 
 # I will use this as estimate. Although the trend is going down, in last 5 seasons, % is 59%
 # because rosters are getting bigger thus utilize more players. Usually top 1 % revolves around 10% 
@@ -222,25 +224,37 @@ playersNewPredicted_Final_adjMin2 <- mutate(playersNewPredicted_Final_adjMin2, S
 playersNewPredicted_Final_adjMinPer <- group_by(playersNewPredicted_Final_adjMin2, Tm) %>%
   mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>%
   as.data.frame()
+# Check percentage of minutes distribution matches the actuals from incrementShare
+topMin <- 13
+topX <- arrange(playersNewPredicted_Final_adjMinPer, desc(effMin)) %>%
+  group_by(Tm) %>%
+  top_n(topMin,effMin) %>%
+  summarise(sum(effMin))
+topMinY <- 7                
+topY <- arrange(playersNewPredicted_Final_adjMinPer, desc(effMin)) %>%
+  group_by(Tm) %>%
+  top_n(topMinY,effMin) %>%
+  summarise(sum(effMin))
+# there's some disparity that will affect the model. I'd rather have all teams's minutes
+# equally distributed. ToDo: Fix effMin total = 30% for topHeavy in [8,13] range
+
+
+
 #effMinutes <- NULL # approx the average of all 
 #teamPowers_newSeason <- merge(.computePower(playersNewPredicted_Final_adjMin2,"PTS","All",effMinutes,actualOrPredicted = "predicted"),.computePower(playersNewPredicted_Final_adjMin2,"PTSA","All",effMinutes,actualOrPredicted = "predicted"),by="team_season")
+
+# Use 6-4-2 nnets (modelNeuralnet4_PTS.Rdata)
 teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer,actualOrPred="predicted")
+# make sure total PTS scored = total PTS against
+teamsPredicted <- mutate(teamsPredicted, TEAM_PTSAG = TEAM_PTSAG + (sum(TEAM_PTS)-sum(TEAM_PTSAG))/nrow(teamsPredicted))
 # teamsPredicted <- mutate(teamsPredicted, basketAverage = TEAM_PTS - TEAM_PTSAG)
 # simulate a few seasons:
 win_predictions <- simulate_n_seasons(10)
-# models selected modelNeuralnet2_PTS.Rdata from:  
-# nnetGrid <-  expand.grid(layer1 = c(4,5,6,7), 
-# layer2 = c(2,3,4), 
-# layer3 = c(1,2,3))
-# are way too conservative, they regress too much to the mean. THey don't simulate well a real season
-# where tail teams tend to separate themselves from the pack.
-# Try bigger nets in layer 1: modelNeuralnet3_PTS.Rdata
-teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer,actualOrPred="predicted")
-# this is more realistic but still I don't think Charlotte is the best team in NBA. Let's try one more
-# 6-4-2
-# I think the key is to edit the minute distribution. Let's stick to the best models according to R2 and error
-# This corresponds to modelNeuralnet2_PTS.Rdata
-
+# Some unexpected results. Things to consider:
+# rookies stat prediction transition from college/international
+# the way I average players when not sufficient data on them
+# make sure there are not outliers, or similar
+# The way game scores are computed. Home/Away advantage. Factor in the distance between cities or conferences
 
 # create a status column to adjust for players injuries. Example: 
 # Isaiah Thomas will most likely miss 1/3 of the regular season. Then his status becomes: .66

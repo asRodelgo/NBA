@@ -201,6 +201,16 @@
       group_by(Tm,Season) %>%
       mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>%
       arrange(Season,Tm,desc(effMin)) %>%
+      top_n(18,effMin) %>%
+      mutate(top18 = sum(effMin)) %>%
+      top_n(17,effMin) %>%
+      mutate(top17 = sum(effMin)) %>%
+      top_n(16,effMin) %>%
+      mutate(top16 = sum(effMin)) %>%
+      top_n(15,effMin) %>%
+      mutate(top15 = sum(effMin)) %>%
+      top_n(14,effMin) %>%
+      mutate(top14 = sum(effMin)) %>%
       top_n(13,effMin) %>%
       mutate(top13 = sum(effMin)) %>%
       top_n(12,effMin) %>%
