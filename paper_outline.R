@@ -102,6 +102,7 @@ playersNewPredicted_Current <- bind_rows(playersNewPredicted_Current,playersManu
 playersNewPredicted_Current <- select(playersNewPredicted_Current, -c(Exp,College))
 
 # 4. Add rookieStats to complete rosters for new season
+rookieEffStats <- read.csv("data/rookieEfficientStats.csv", stringsAsFactors = FALSE)
 playersNewPredicted_Current_All <- bind_rows(playersNewPredicted_Current,rookieEffStats) %>%
   mutate(historical_name = Player)
     # avoid inconsistencies with rookie players vs veterans
@@ -191,6 +192,16 @@ playersNewPredicted_Final <- rbind(playersNewPredicted_Current_All,playersNewLef
   mutate(Season = paste0(as.numeric(thisYear),"-",as.numeric(thisYear)+1)) %>%
   distinct(Player,Tm, .keep_all=TRUE)
 write.csv(playersNewPredicted_Final, "data/playersNewPredicted_Final.csv",row.names = FALSE)
+
+# ## Transfer and late changes in rosters (From Oct 10 to Oct 20)
+# # Transfers
+# playersNewPredicted_Final <- .trade_Players(playersNewPredicted_Final, "Isaiah Taylor","HOU",NULL,"ATL")
+# 
+# # New college players
+# collegePlayers <- read.csv("data/collegePlayers.csv", stringsAsFactors = FALSE) %>% # from write_CollegePlayers
+#   group_by(Player) %>%
+#   summarise_if(is.numeric, mean)
+
 
 # load pre-calculated final players predictions. effMin are not adjusted, i.e., rookies will have higher
 # effMin than it would be expected.

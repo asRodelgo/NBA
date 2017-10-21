@@ -13,6 +13,9 @@
   thisSeason <- as.numeric(thisSeason) + 1
   
   current_rosters <- data.frame()
+  playersNew <- playersHist %>% # keep only players last season
+    filter(Season == max(as.character(Season))) %>%
+    mutate(Season = as.factor(paste0(as.numeric(substr(Season,1,4))+1,"-",as.numeric(substr(Season,1,4))+2)))
   playersNew <- filter(playersNew,!(Tm == "TOT"))
   for (thisTeam in unique(playersNew$Tm)){
     
@@ -156,6 +159,7 @@
 
 .mergePredictedWithCurrent <- function(){
   
+  current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE)
   playersNewPredicted <- read.csv("data/playersNewPredicted.csv", stringsAsFactors = FALSE)
   
   playersNewPredicted_Current <- merge(playersNewPredicted, current_rosters[,c("Player","Tm","Exp","College")], by=c("Player","Tm"), all.x=TRUE)

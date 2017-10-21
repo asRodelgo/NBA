@@ -52,7 +52,7 @@
 
 .redistributeMinutes <- function(data,topHeavy = 7,topMinShare = .6, min_share_top1 = .1){
   # Usually a few players amasse a great amount of the minutes. 
-  # Heuristically, top 7 players play 60% of total time
+  # Ex: Heuristically, top 7 players play 60% of total time
   playersAdj <- data.frame()  
   for (team in unique(data$Tm)) {
     # introduce jitter as some players have the same effMin (they were averaged out at the prediction phase)
@@ -75,7 +75,7 @@
     #sum(atl$effMin[(topHeavy+1):nrow(atl)])/total_min
     
     # double check cases in which after adjustment a player's minutes go beyond the realistic (limit_time_player)
-    # No player can have more than 10% (or other value provided as parameter) of total team play time (empirically per .minutesDensity())
+    # No player can have more than 10.5% (or other value provided as parameter) of total team play time (empirically per .minutesDensity())
     player_time_limit <- total_min*min_share_top1
     overplay <- 0
     atl$overplay <- 0
@@ -143,17 +143,24 @@
 # tmB <- "CLE"
 .trade_Players <- function(data,playA,tmA,playB=NULL,tmB=NULL){
   
-  if (is.null(playB) | is.null(tmB)) { # player is traded out of NBA or retires
+  if (is.null(tmB)) { # player is traded out of NBA or retires
     
     #playerA_row <- filter(data, Player %in% playA, Tm == tmA)
     data <- filter(data, !(Player %in% playA))
     
-  } else {  # trade between 2 NBA teams
+  } else if (is.null(playB)) {  # playerA is traded to teamB
+    
+    playerA_row <- filter(data, Player %in% playA, Tm == tmA) %>% mutate(Tm = tmB)
+    data <- filter(data, !(Player %in% c(playA))) %>% 
+      bind_rows(playerA_row)
+    
+  } else { # trade between 2 NBA teams
     
     playerA_row <- filter(data, Player %in% playA, Tm == tmA) %>% mutate(Tm = tmB)
     playerB_row <- filter(data, Player %in% playB, Tm == tmB) %>% mutate(Tm = tmA)
     data <- filter(data, !(Player %in% c(playA, playB))) %>% 
-      bind_rows(playerA_row) %>% bind_rows(playerB_row)
+      bind_rows(playerA_row) %>% bind_rows(playerB_row)  
+  
   }
     
   return(data)

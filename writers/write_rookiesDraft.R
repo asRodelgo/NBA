@@ -135,13 +135,14 @@ write_RookieStats <- function(){
     group_by(Player) %>% summarise_if(is.numeric,funs(mean(.,na.rm=TRUE))) %>% 
     left_join(rookies, c("Player"="Player"))
   
+  lastDraft <- as.numeric(substr(max(as.character(playersHist$Season)),1,4)) + 1
+  
   rookieReady <- filter(rookieStats, !is.nan(G)) %>% select(one_of(names(playersHist)),College) %>%
     mutate(Season = lastDraft)
   rookieLeftout <- filter(rookieStats, is.nan(G)) %>% select(Player,College,Tm)
   
   # Find stats from european players drafted
   europePlayers <- data.frame()
-  lastDraft <- as.numeric(substr(max(as.character(playersHist$Season)),1,4)) + 1
   
   require(httr)
   for (i in 1:nrow(rookieLeftout)){
