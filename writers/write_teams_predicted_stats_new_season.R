@@ -6,7 +6,7 @@
 # 2.3. Leftovers, average out from rookie players of similar age in history
 
 # 1
-.getLatestRosters <- function(thisSeason = substr(Sys.Date(),1,4)){
+.getLatestRosters <- function(thisSeason = substr(Sys.Date(),1,4), previousSeason = FALSE){
   
   library(httr)
   new_rosters <- data.frame()
@@ -42,8 +42,11 @@
                             Season = paste0(thisSeason-1,"-",thisSeason))
   
   # write current_rosters or rostersLastSeason depending on value of thisSeason
-  write.csv(current_rosters, "data/rostersLastSeason.csv",row.names = FALSE)
-  write.csv(current_rosters, "data/currentRosters.csv",row.names = FALSE)
+  if (previousSeason) {
+    write.csv(current_rosters, "data/rostersLastSeason.csv",row.names = FALSE)
+  } else {
+    write.csv(current_rosters, "data/currentRosters.csv",row.names = FALSE)
+  }
 
 }
 #############################################################

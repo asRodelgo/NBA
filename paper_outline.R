@@ -78,15 +78,16 @@ playersHist <- .rename_PlayerDuplicates(playersHist) # differentiate different p
 playersNew <- playersHist %>% # keep only players last season
   filter(Season == max(as.character(Season))) %>%
   mutate(Season = as.factor(paste0(as.numeric(substr(Season,1,4))+1,"-",as.numeric(substr(Season,1,4))+2)))
-
+# load players predicted stats for upcoming season (only includes players who played in NBA last season)
 playersNewPredicted <- read.csv("data/playersNewPredicted.csv", stringsAsFactors = FALSE) # from .computePredictedPlayerStats() in write_teams_predicted_stats_new_season.R
 
 # 2. Merge with current_rosters into playersNewPredicted_Current
-playersNewPredicted_Current <- .mergePredictedWithCurrent() # from write_teams_predicted_stats_new_season.R
+current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE) # from .getLatestRosters(thisSeason="2017",previousSeason = FALSE)
+playersNewPredicted_Current <- merge(playersNewPredicted, current_rosters[,c("Player","Tm","Exp","College")], by=c("Player","Tm"), all.x=TRUE)
 
 # 3. Complete playersNewPredicted with names not matching in current_rosters. Ex: Tim Hardaway vs. Tim Hardaway 2
-current_rosters <- read.csv("data/rostersLastSeason.csv", stringsAsFactors = FALSE) # .getLatestRosters from write_teams_predicted_stats_new_season.R
-playersMatch <- merge(current_rosters,playersNewPredicted, by = "Player", all.x = TRUE) %>%
+lastSeason_rosters <- read.csv("data/rostersLastSeason.csv", stringsAsFactors = FALSE) # from .getLatestRosters(thisSeason="2016",previousSeason = TRUE)
+playersMatch <- merge(lastSeason_rosters,playersNewPredicted, by = "Player", all.x = TRUE) %>%
   distinct(Player)
 
 playersNonMatch <- filter(playersNewPredicted_Current, !(Player %in% playersMatch$Player))
@@ -107,8 +108,8 @@ playersNewPredicted_Current_All <- bind_rows(playersNewPredicted_Current,rookieE
   mutate(historical_name = Player)
     # avoid inconsistencies with rookie players vs veterans
     # compare_players <- filter(playersNewPredicted_Current_All, Player %in% c("Lonzo Ball","Milos Teodosic","Kyrie Irving","Ricky Rubio","John Wall"))
-# now update rosters to reflect current. 
-current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE)
+# now use current rosters 
+#current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE)
 playersNonMatch <- merge(playersNewPredicted_Current_All, by = "Player", 
                          select(current_rosters,Player,Tm,Exp), all.x = TRUE) %>% 
   filter(is.na(Exp))
@@ -182,7 +183,7 @@ playersNewLeftover2 <- merge(select(playersNewLeftover, -Tm),
                             by = "Player", all.y = TRUE)
 playersNewLeftover2 <- mutate(playersNewLeftover2, Season = paste0(as.numeric(thisYear),"-",as.numeric(thisYear)+1),
                               Age = ifelse(is.na(Age),25,Age)) # arbitrarily assign Age = 25 for those missing Age
-# calculate predicted stats for these leftovers
+# calculate predicted stats for these leftovers from write_teams_predicted_stats_new_season.R
 playersNewLeftover3 <- .computePredictedPlayerStats_Leftovers(playersNewLeftover2)
 # Merge with the rest of predicted players to complete rosters
 playersNewPredicted_Current_All <- filter(playersNewPredicted_Current_All, !is.na(effPTS)) %>%
@@ -191,7 +192,8 @@ playersNewPredicted_Current_All <- filter(playersNewPredicted_Current_All, !is.n
 playersNewPredicted_Final <- rbind(playersNewPredicted_Current_All,playersNewLeftover3) %>%
   mutate(Season = paste0(as.numeric(thisYear),"-",as.numeric(thisYear)+1)) %>%
   distinct(Player,Tm, .keep_all=TRUE)
-write.csv(playersNewPredicted_Final, "data/playersNewPredicted_Final.csv",row.names = FALSE)
+#
+write.csv(playersNewPredicted_Final, "data/playersNewPredicted_Final_Oct20.csv",row.names = FALSE)
 
 # ## Transfer and late changes in rosters (From Oct 10 to Oct 20)
 # # Transfers
@@ -207,7 +209,7 @@ write.csv(playersNewPredicted_Final, "data/playersNewPredicted_Final.csv",row.na
 # effMin than it would be expected.
 ## NOTE: THIS LOCKS ROSTERS AS OF OCTOBER 10 2017. FURTHER CHANGES IN ROSTERS I WILL MAKE VIA MANUAL 
 ## TRANSFERS UNTIL OCTOBER 17 WHEN THE SEASON STARTS
-playersNewPredicted_Final <- read.csv("data/playersNewPredicted_Final.csv",stringsAsFactors = FALSE)
+playersNewPredicted_Final <- read.csv("data/playersNewPredicted_Final_Oct20.csv",stringsAsFactors = FALSE)
 # adjust players minutes. Reduce new players effMin (rookies, international, returning) by x%
 # estimate empirically the % reduction in effMin
 collegePlayersHist <- read.csv("data/collegePlayersHist.csv", stringsAsFactors = FALSE)
@@ -249,8 +251,8 @@ plot(seq(18,1,-1),incrementShare$percent)
 # I will use this as estimate. Although the trend is going down, in last 5 seasons, % is 59%
 # because rosters are getting bigger thus utilize more players. Usually top 1 % revolves around 10% 
 #playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin, topHeavy = 11, topMinShare = .8, min_share_top1 = .11)
-playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin, topHeavy = 3, topMinShare = .3, min_share_top1 = .11)
-playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin2, topHeavy = 7, topMinShare = .6, min_share_top1 = .11)
+#playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin, topHeavy = 3, topMinShare = .3, min_share_top1 = .11)
+playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin, topHeavy = 12, topMinShare = .85, min_share_top1 = .105)
 # The reason to go top_1 = 1.1 is to give more prominence to star players which adjust better when simulating
 # wins in the regular season
 # make sure Season column shows the new season to come
@@ -265,7 +267,7 @@ playersNewPredicted_Final_adjMinPer <- group_by(playersNewPredicted_Final_adjMin
   mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>%
   as.data.frame()
 # Check percentage of minutes distribution matches the actuals from incrementShare
-topMin <- 4
+topMin <- 12
 topX <- arrange(playersNewPredicted_Final_adjMinPer, desc(effMin)) %>%
   group_by(Tm) %>%
   top_n(topMin,effMin) %>%
