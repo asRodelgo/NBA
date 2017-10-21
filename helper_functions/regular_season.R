@@ -6,14 +6,14 @@
   #team_home <- "PHI"
   #team_away <- "BOS"
   # ---------------------------------------
-  
+  mean_predicted <- mean(c(teamsPredicted$TEAM_PTS,teamsPredicted$TEAM_PTSAG))
   # teamsPredicted contain predicted avg PTS and avg PTS Against per team for a new season
   teamH <- filter(teamsPredicted, TeamCode == team_home)
   teamA <- filter(teamsPredicted, TeamCode == team_away)
   
   # Define both Normal distributions. Empirical home-away difference is approx (2*home_away_factor) 6 points (+3, -3)
-  muH <- teamH$TEAM_PTS + home_away_factor/2 + teamA$TEAM_PTSAG - global_mean
-  muA <- teamA$TEAM_PTS - home_away_factor/2 + teamH$TEAM_PTSAG - global_mean
+  muH <- teamH$TEAM_PTS + home_away_factor/2 + teamA$TEAM_PTSAG - mean_predicted
+  muA <- teamA$TEAM_PTS - home_away_factor/2 + teamH$TEAM_PTSAG - mean_predicted
   
   pointsH <- round(rnorm(1,muH,sigma),0)
   pointsA <- round(rnorm(1,muA,sigma),0)
@@ -32,17 +32,20 @@
 
 .calculateWinProbability <- function(team_home,team_away,home_away_f = home_away_factor){
   
+  mean_predicted <- mean(c(teamsPredicted$TEAM_PTS,teamsPredicted$TEAM_PTSAG))
   # teamsPredicted contain predicted avg PTS and avg PTS Against per team for a new season
   teamH <- filter(teamsPredicted, TeamCode == team_home)
   teamA <- filter(teamsPredicted, TeamCode == team_away)
   
   # Define both Normal distributions. Empirical home-away difference is approx (2*home_away_factor) 6 points (+3, -3)
-  muH <- teamH$TEAM_PTS + home_away_f/2 + teamA$TEAM_PTSAG - global_mean
-  muA <- teamA$TEAM_PTS - home_away_f/2 + teamH$TEAM_PTSAG - global_mean
+  #muH <- teamH$TEAM_PTS + home_away_f/2 + teamA$TEAM_PTSAG - global_mean
+  #muA <- teamA$TEAM_PTS - home_away_f/2 + teamH$TEAM_PTSAG - global_mean
+  muH <- teamH$TEAM_PTS + home_away_f/2 + teamA$TEAM_PTSAG - mean_predicted
+  muA <- teamA$TEAM_PTS - home_away_f/2 + teamH$TEAM_PTSAG - mean_predicted
   
-  prob_HvsA <- 1-pnorm(0,muH-muA,sqrt(2*sigma))
+  prob_HvsA <- 1-pnorm(0,muH-muA,sqrt(2)*sigma)
   # equivalent simulated probability (to double check analytical probability)
-  # prob_HvsA_sim <- length(which(rnorm(100000,muH-muA,sqrt(2*sigma))>0))/100000
+  # prob_HvsA_sim <- length(which(rnorm(100000,muH-muA,sqrt(2)*sigma)>0))/100000
   
   return(prob_HvsA)
 }
