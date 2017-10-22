@@ -45,7 +45,9 @@ writeAllRookies <- function(){
     thisSeasonRookies <- thisSeasonRookies[[1]]
     thisSeasonRookies <- thisSeasonRookies[,names(thisSeasonRookies)[which(nchar(names(thisSeasonRookies))>0)]]
     thisRookies <- filter(thisSeasonRookies, Exp == "R")
-    thisRookies <- dplyr::select(thisRookies, Player, College) %>%
+    thisRookies <- mutate(thisRookies, 
+                          Age = newSeason - as.numeric(substr(`Birth Date`,nchar(`Birth Date`)-4,nchar(`Birth Date`))))
+    thisRookies <- dplyr::select(thisRookies, Player, Age, College) %>%
       mutate(Tm = team)
     
     if (nrow(rookies)>0) {
@@ -132,14 +134,16 @@ write_RookieStats <- function(){
   #ollegePlayers[grepl("Leaf",collegePlayers$Player),]$Player <- "TJ Leaf"
   
   rookieStats <- merge(rookies, collegePlayers, by = "Player",all.x=TRUE) %>% 
+    mutate(Age = as.character(Age)) %>%
     group_by(Player) %>% summarise_if(is.numeric,funs(mean(.,na.rm=TRUE))) %>% 
-    left_join(rookies, c("Player"="Player"))
+    left_join(rookies, c("Player"="Player")) %>%
+    mutate(Age = as.numeric(Age))
   
   lastDraft <- as.numeric(substr(max(as.character(playersHist$Season)),1,4)) + 1
   
   rookieReady <- filter(rookieStats, !is.nan(G)) %>% select(one_of(names(playersHist)),College) %>%
     mutate(Season = lastDraft)
-  rookieLeftout <- filter(rookieStats, is.nan(G)) %>% select(Player,College,Tm)
+  rookieLeftout <- filter(rookieStats, is.nan(G)) %>% select(Player,Age,College,Tm)
   
   # Find stats from european players drafted
   europePlayers <- data.frame()
@@ -169,6 +173,7 @@ write_RookieStats <- function(){
             head(1)
           thisEurope$Tm <- rookieLeftout$Tm[i]
           thisEurope$College <- rookieLeftout$College[i]
+          thisEurope$Age <- rookieLeftout$Age[i]
           europePlayers <- rbind(europePlayers,thisEurope)
         } else { # international or european without stats
           rookieLeftout$College[i] <- "International"
@@ -179,7 +184,7 @@ write_RookieStats <- function(){
     }
   }
   
-  rookieLeftout <- filter(rookieLeftout, !(College == "Europe")) %>% select(Player,College,Tm)
+  rookieLeftout <- filter(rookieLeftout, !(College == "Europe")) %>% select(Player,Age,College,Tm)
   rookieLeftout$Season <- lastDraft
   
   # For international players or non-matched college players use averages of their respective groups for their stats
@@ -212,7 +217,8 @@ write_RookieStats <- function(){
   rookieStatsFinal <- bind_rows(rookieReady,rookieLeftoutStats,europePlayers) %>%
     mutate(FG. = ifelse(FGA == 0,0,FG/FGA), X3P. = ifelse(X3PA == 0,0,X3P/X3PA), 
            X2P. = ifelse(X2PA == 0,0,X2P/X2PA), FT. = ifelse(FTA == 0,0,FT/FTA), 
-           Season = paste0(lastDraft,"-",lastDraft+1))
+           Season = paste0(lastDraft,"-",lastDraft+1)) %>%
+    mutate(Age = as.integer(Age))
     
   write.csv(rookieStatsFinal, "data/rookieStats.csv", row.names = FALSE)
   write.csv(europePlayers, "data/europePlayers.csv", row.names = FALSE)
@@ -237,7 +243,7 @@ write_Rookies_efficientStats <- function() {
            effSTL = STL/(3936*effMin),effBLK = BLK/(3936*effMin),
            effTOV = TOV/(3936*effMin),effPF = PF/(3936*effMin),
            effPTS = PTS/(3936*effMin)) %>%
-    dplyr::select(Player,Season,Tm,FGPer = FG.,FG3Per = X3P., FG2Per = X2P., effFGPer = eFG.,
+    dplyr::select(Player,Age,Season,Tm,FGPer = FG.,FG3Per = X3P., FG2Per = X2P., effFGPer = eFG.,
                   FTPer = FT., starts_with("eff"),
                   -G,-MP,FG,-FGA,-X3P,-X3PA,-X2P,-X2PA,-FG,-FTA,-ORB,-DRB,-TRB,-AST,
                   -BLK,-TOV,-PF,-FT,-STL,-PTS)

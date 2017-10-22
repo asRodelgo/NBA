@@ -103,7 +103,7 @@ playersNewPredicted_Current <- bind_rows(playersNewPredicted_Current,playersManu
 playersNewPredicted_Current <- select(playersNewPredicted_Current, -c(Exp,College))
 
 # 4. Add rookieStats to complete rosters for new season
-rookieEffStats <- read.csv("data/rookieEfficientStats.csv", stringsAsFactors = FALSE)
+rookieEffStats <- read.csv("data/rookieEfficientStats.csv", stringsAsFactors = FALSE) # write_Rookies_efficientStats in write_rookiesDraft.R
 playersNewPredicted_Current_All <- bind_rows(playersNewPredicted_Current,rookieEffStats) %>%
   mutate(historical_name = Player)
     # avoid inconsistencies with rookie players vs veterans
