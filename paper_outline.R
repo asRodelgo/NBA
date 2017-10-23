@@ -46,11 +46,11 @@ conferences <- read.csv("data/nba_conferences.csv", stringsAsFactors = FALSE) # 
 # Read pre-calculated nnetwork models -------------------------
 #nn_Offense <- list.load("data/nn_Offense.rds")
 #nn_Defense <- list.load("data/nn_Defense.rds")
-#load("data/modelNeuralnet2_PTS.Rdata")
-load("data/modelNeuralnet4_PTS.Rdata")
+load("data/modelNeuralnet2_PTS.Rdata")
+#load("data/modelNeuralnet4_PTS.Rdata")
 nn_Offense <- model$finalModel
-#load("data/modelNeuralnet2_PTSA.Rdata")
-load("data/modelNeuralnet4_PTSA.Rdata")
+load("data/modelNeuralnet2_PTSA.Rdata")
+#load("data/modelNeuralnet4_PTSA.Rdata")
 nn_Defense <- model$finalModel
 
 # Actual Season schedule
@@ -233,10 +233,14 @@ nbaMinutes <- select(playersHist, Player,Season,Age,Tm,G,MP) %>%
 college2nbaMinutes <- merge(nbaMinutes,collegeMinutes, by = "Player", all.x = TRUE) %>%
   mutate(minDiff = perMin.y-perMin.x) %>%
   filter(!is.na(minDiff))
+# see if there is correlation between player Rank and effMin of play from college to NBA
+plot(college2nbaMinutes$Rk,college2nbaMinutes$minDiff)
+# no clear pattern so I will use average
+
 # estimate difference in minutes played:
 col2nbaMinDiff <- mean(college2nbaMinutes$minDiff)
 playersNewPredicted_Final_adjMin <- mutate(playersNewPredicted_Final,
-                                           effMin = ifelse(is.na(Age),effMin*(1-col2nbaMinDiff),effMin))
+                                           effMin = ifelse(is.na(Pos),effMin*(1-col2nbaMinDiff),effMin))
 
 # adjust percent of play time
 # Based on historical data for the last 5 seasons:
@@ -252,7 +256,7 @@ plot(seq(18,1,-1),incrementShare$percent)
 # because rosters are getting bigger thus utilize more players. Usually top 1 % revolves around 10% 
 #playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin, topHeavy = 11, topMinShare = .8, min_share_top1 = .11)
 #playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin, topHeavy = 3, topMinShare = .3, min_share_top1 = .11)
-playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin, topHeavy = 12, topMinShare = .85, min_share_top1 = .105)
+playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin, topHeavy = 7, topMinShare = .6, min_share_top1 = .105)
 # The reason to go top_1 = 1.1 is to give more prominence to star players which adjust better when simulating
 # wins in the regular season
 # make sure Season column shows the new season to come
@@ -267,7 +271,7 @@ playersNewPredicted_Final_adjMinPer <- group_by(playersNewPredicted_Final_adjMin
   mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>%
   as.data.frame()
 # Check percentage of minutes distribution matches the actuals from incrementShare
-topMin <- 12
+topMin <- 4
 topX <- arrange(playersNewPredicted_Final_adjMinPer, desc(effMin)) %>%
   group_by(Tm) %>%
   top_n(topMin,effMin) %>%
@@ -290,6 +294,10 @@ teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPe
 # make sure total PTS scored = total PTS against, although this won't change anything in win/loss predictions
 teamsPredicted <- mutate(teamsPredicted, TEAM_PTSAG = TEAM_PTSAG + (sum(TEAM_PTS)-sum(TEAM_PTSAG))/nrow(teamsPredicted))
 # teamsPredicted <- mutate(teamsPredicted, basketAverage = TEAM_PTS - TEAM_PTSAG)
+# compute Offensive and Defensive powers for individual players. The prediction works just as if 
+# each player was a team or if a team was composed of 18 copies of the same player
+playersNewPredicted_OffDef <- mutate(playersNewPredicted_Final_adjMinPer, Tm = Player, effMin = 1)
+playersPredicted <- .teamsPredictedPower(data = playersNewPredicted_OffDef,actualOrPred="predicted")
 # simulate a few seasons:
 win_predictions <- simulate_n_seasons(10)
 # Some unexpected results. Things to consider:
