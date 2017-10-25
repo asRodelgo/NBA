@@ -79,7 +79,7 @@ playersNew <- playersHist %>% # keep only players last season
   filter(Season == max(as.character(Season))) %>%
   mutate(Season = as.factor(paste0(as.numeric(substr(Season,1,4))+1,"-",as.numeric(substr(Season,1,4))+2)))
 # load players predicted stats for upcoming season (only includes players who played in NBA last season)
-playersNewPredicted <- read.csv("data/playersNewPredicted.csv", stringsAsFactors = FALSE) # from .computePredictedPlayerStats() in write_teams_predicted_stats_new_season.R
+playersNewPredicted <- read.csv("data/playersNewPredicted_Oct20.csv", stringsAsFactors = FALSE) # from .computePredictedPlayerStats() in write_teams_predicted_stats_new_season.R
 
 # 2. Merge with current_rosters into playersNewPredicted_Current
 current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE) # from .getLatestRosters(thisSeason="2017",previousSeason = FALSE)

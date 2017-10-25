@@ -144,6 +144,7 @@ write_RookieStats <- function(){
   rookieReady <- filter(rookieStats, !is.nan(G)) %>% select(one_of(names(playersHist)),College) %>%
     mutate(Season = lastDraft)
   rookieLeftout <- filter(rookieStats, is.nan(G)) %>% select(Player,Age,College,Tm)
+  #billy-yakuba-ouattara
   
   # Find stats from european players drafted
   europePlayers <- data.frame()
@@ -156,19 +157,34 @@ write_RookieStats <- function(){
       name_edited <- tolower(thisPlayer)
       name_edited <- gsub(" ","-",name_edited)
       url <- paste0("https://www.basketball-reference.com/euro/players/",name_edited,"-1.html")
-      
+      table_type <- "ALL" # ALL,EUR,CLU
       if (status_code(GET(url))==200){ #european player
         thisEurope <- url %>%
           read_html() %>%
           html_nodes(xpath='//*[@id="per_gameALL0"]') %>%
           html_table(fill = TRUE)
+        if (length(thisEurope)==0){ # try euroleague stats if total are unavailable
+          thisEurope <- url %>%
+            read_html() %>%
+            html_nodes(xpath='//*[@id="per_gameEUR0"]') %>%
+            html_table(fill = TRUE)
+          table_type <- "EUR"
+        }
+        if (length(thisEurope)==0){ # try club stats if total or euroleague are unavailable
+          thisEurope <- url %>%
+            read_html() %>%
+            html_nodes(xpath='//*[@id="per_gameCLU0"]') %>%
+            html_table(fill = TRUE)
+          table_type <- "CLU"
+        }
         if (length(thisEurope)>0){
           rookieLeftout$College[i] <- "Europe"
           thisEurope <- thisEurope[[1]]
           print(paste0("Processing: ",thisPlayer))
-          names(thisEurope)[4] <- "Country"
+          if (table_type == "CLU") names(thisEurope)[4] <- "Country"
           thisEurope <- thisEurope %>%
             filter(G == max(G)) %>%
+            select(-contains("Club"), -contains("Country")) %>%
             mutate(Player = thisPlayer) %>%
             head(1)
           thisEurope$Tm <- rookieLeftout$Tm[i]
@@ -196,7 +212,7 @@ write_RookieStats <- function(){
   names(europePlayers) <- gsub("2","X2",names(europePlayers),fixed = TRUE)
   names(europePlayers) <- gsub("3","X3",names(europePlayers),fixed = TRUE)
   europePlayers <- select(europePlayers, Player, everything(), 
-                          -c(`League(s)`,Country,FG.,X3P.,X2P.,FT.))
+                          -c(`League(s)`,FG.,X3P.,X2P.,FT.))
   
   averageEuropeRookie <- europePlayers %>%
     summarise_if(is.numeric,function(x) mean(x,na.rm = TRUE))
