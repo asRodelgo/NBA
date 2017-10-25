@@ -316,7 +316,9 @@
   }
   names(top10_var) <- namesKeep[c(1,4:length(namesKeep))]
   # Median variations for top 10 most similar players 
-  top10_var <- summarise_each(top10_var, funs(median(.)),-Player)
+  #top10_var <- summarise_each(top10_var, funs(median(.)),-Player)
+  top10_var <- mutate_if(top10_var,is.logical, as.numeric) %>%
+    summarise_if(is.numeric, median)
   # Apply this variation to predict stats for this player for next season  
 ##  ### NOTE: This may fail when player didn't play much at this age. Think about alternatives
   predAgeData <- filter(thisAgeData, Player == playerName)

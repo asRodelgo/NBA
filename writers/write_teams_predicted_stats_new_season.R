@@ -93,6 +93,7 @@
     for (player in thisTeam$Player){
       #if (!(player %in% playersNewPredicted$Player)){ # skip running all. Start over where it failed
         thisPlayer <- filter(thisTeam, Player == player)
+        #thisPlayer <- filter(playersNew, Player == player)
         print(paste0("Team: ", team,": Processing ",thisPlayer$Player))
         #if (thisPlayer$Exp %in% seq(1,25,1)){ # not a rookie
         if (thisPlayer$Age < 20) { # not enough players to compare to at age 19 or younger
@@ -101,7 +102,8 @@
         if (thisPlayer$Age > 39) { # not enough players to compare to at age 41 or older
           thisPlayer$Age <- 39
         }
-        thisPlayerStats <- .predictPlayer(thisPlayer$Player,20,thisPlayer$Age-1,10) %>% 
+        # .predictPlayer from similarityFunctions.R
+        thisPlayerStats <- .predictPlayer(thisPlayer$Player,20,thisPlayer$Age,10) %>% 
           select(Player,Pos,Season,Age,everything())
         
         if (nrow(thisPlayerStats)>0){ # in case thisPlayerStats return an empty data.frame
@@ -109,7 +111,22 @@
             #if (thisPlayer$Exp %in% c(seq(1,25,1),"R")){ # rosters not yet updated so include R (last season rookies)
             print("NBA player: OK!")
             print(thisPlayerStats)
-          } else { # Rookie player
+          } else if (player %in% playersNew$Player) { # NBA player that didn't play enough minutes so I use his numbers from last season as prediction
+            thisPlayerStats <- .team_preparePredict(filter(playersNew, Player == player),team)  %>%
+              mutate(Age = Age + 1) %>%
+              select(Player,Pos,Season,Age,everything())
+        
+            thisMin <- thisTeam %>% mutate(effMin = MP*G/(5*15*3936)) # Use 15 as an approximate roster size to account for effective minutes played for players with low total minutes
+            teamMinutes <- sum(thisMin$effMin)
+            thisMin <- #mutate(thisMin, effMin = effMin) %>%
+              filter(thisMin,Player == player) %>%
+              distinct(effMin) %>%
+              as.numeric()
+            thisPlayerStats <- mutate(thisPlayerStats, effMin = thisMin)
+            
+            print("NBA player: Empty predicted stats!")
+            print(thisPlayerStats)
+          } else { # Rookie player or returns NA stats
             # if (nchar(thisPlayer$College)>0) { # College player
             #   thisPlayerStats <- .predictPlayerCollegeRookie(player)
             #   print("Rookie College player: OK!")
@@ -127,6 +144,12 @@
             print(thisPlayerStats)
             #}
           }
+        } else if (player %in% playersNew$Player) { # NBA player that didn't play enough minutes so I use his numbers from last season as prediction
+          thisPlayerStats <- .team_preparePredict(filter(playersNew, Player == player),team)  %>%
+            mutate(Age = Age + 1) %>%
+            select(Player,Pos,Season,Age,everything())
+          print("NBA player: Short minutes!")
+          print(thisPlayerStats)
         } else {
           thisPlayerStats <- .calculate_AvgPlayer(playersNew, thisPlayer$Age + 1) %>%
             mutate(Player = as.character(thisPlayer$Player), Pos = as.character(thisPlayer$Pos), 
@@ -156,7 +179,10 @@
     
   }
   playersNewPredicted <- distinct(playersNewPredicted, Player, Tm, .keep_all=TRUE)
-  write.csv(playersNewPredicted, "data/playersNewPredicted.csv", row.names = FALSE)
+  limitMinutes <- 2*quantile(playersNewPredicted$effMin,.95) # control for possible outliers
+  defaultMinutes <- quantile(playersNewPredicted$effMin,.1) # assign low minutes to outliers as they most likely belong to players with very little playing time
+  playersNewPredicted2 <- mutate(playersNewPredicted,effMin = ifelse(effMin > limitMinutes, defaultMinutes,effMin))
+  write.csv(playersNewPredicted2, "data/playersNewPredicted_Oct20.csv", row.names = FALSE)
   
 }  
 
