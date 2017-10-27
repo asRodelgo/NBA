@@ -83,7 +83,8 @@ playersNewPredicted <- read.csv("data/playersNewPredicted_Oct20.csv", stringsAsF
   distinct(Player, .keep_all=TRUE) %>% select(-c(Pos,Season,Age))
 # 2. Get current rosters -------------------------
 # current_rosters contains players and teams as of Otober 20 2017, that is right at the start of the new season
-current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE) # from .getLatestRosters(thisSeason="2017",previousSeason = FALSE)
+current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE) %>% 
+  distinct(Player, .keep_all=TRUE) # from .getLatestRosters(thisSeason="2017",previousSeason = FALSE)
 
 # 3. Get rookies -------------------------
 # Third piece of the puzzle are the new players, either from college or international
@@ -127,138 +128,144 @@ current_rosters[which(current_rosters$Player == "Sheldon Mac"),]$Player <- "Shel
 playerSet_a <- merge(playersNewPredicted,current_rosters, by = "Player") %>% distinct(Player,.keep_all=TRUE)
 playerSet_c <- merge(rookieEffStats,current_rosters, by = "Player") %>% distinct(Player,.keep_all=TRUE)
 playerSet_a_c <- merge(playerSet_a,playerSet_c, by = "Player") # this should be empty
-playerSet_aPlusc <- bind_rows(playerSet_a,playerSet_c)  %>% distinct(Player,.keep_all=TRUE)
+playerSet_aPlusc <- bind_rows(playerSet_a,playerSet_c)  %>% distinct(Player,.keep_all=TRUE) %>%
+  select(Player,Pos,Season, Age,Tm=Tm.y,contains("Per"),contains("eff"))
 # players whose names didn't match come from merging playerSetaPlusc and current_rosters
 playerSet_b <- merge(current_rosters, playerSet_aPlusc, by = "Player", all.x = TRUE)  %>% distinct(Player,.keep_all=TRUE) %>%
-  filter(is.na(Tm.y)) %>% select(Player, Tm, Age = Age.x, Pos = Pos.x)
+  filter(is.na(Tm.y)) %>% select(Player, Pos = Pos.x, Age = Age.x, Tm)
 # now this final set of non matched players correspond to those with a history in the NBA but didn't play in last season
 # Next step is to calculate their predicted stats and add them to the final set
+# NOTE: This takes approx 10 minutes to run
 playerSet_Leftover <- .computePredictedPlayerStats_Leftovers(playerSet_b) # from compute_PredictedLeftovers.R
 playerSet_Leftover <- mutate(playerSet_Leftover, Season = current_rosters$Season[1])
 # Now append together playerSetaPlusc and playerSet_Leftover for the final players stats predicted for new season
+playersNewPredicted_Final <- bind_rows(playerSet_aPlusc,playerSet_Leftover)
+# check this file has same rows as current_rosters
+#checkFinalRosters <- merge(playersNewPredicted_Final,current_rosters, by="Player", all.x = TRUE)
+# write file to avoid running this script again and again:
+write.csv(playersNewPredicted_Final, "data/playersNewPredicted_Final_Oct20.csv",row.names = FALSE)
 
+#### OLD CODE: DELETE ############
 
-
-
-# playersNew <- playersHist %>% # keep only players last season
-#   filter(Season == max(as.character(Season))) %>%
-#   mutate(Season = as.factor(paste0(as.numeric(substr(Season,1,4))+1,"-",as.numeric(substr(Season,1,4))+2)))
-# load players predicted stats for upcoming season (only includes players who played in NBA last season).
-# These players will feature their team from last season.
-
-
-# 2. Merge with current_rosters into playersNewPredicted_Current
-current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE) # from .getLatestRosters(thisSeason="2017",previousSeason = FALSE)
-playersNewPredicted_Current <- merge(playersNewPredicted, current_rosters[,c("Player","Tm","Exp","College")], by=c("Player"), all.x=TRUE)
-# Tm.x is teams for last season. Tm.y is teams new season
-
-# 3. Complete playersNewPredicted with names not matching in current_rosters. Ex: Tim Hardaway vs. Tim Hardaway 2
-lastSeason_rosters <- read.csv("data/rostersLastSeason.csv", stringsAsFactors = FALSE) # from .getLatestRosters(thisSeason="2016",previousSeason = TRUE)
-playersMatch <- merge(lastSeason_rosters,playersNewPredicted, by = "Player", all.x = TRUE) %>%
-  distinct(Player)
-
-playersNonMatch <- filter(playersNewPredicted_Current, !(Player %in% playersMatch$Player))
-
-playersManuallyChanged <- filter(playersNonMatch, Player %in% c(
-  "Mike Dunleavy 2","Taurean Waller-Prince","Tim Hardaway 2","Nene Hilario","Glenn Robinson 2",
-  "Gary Payton 2","Gerald Henderson 2","Kelly Oubre"
-))
-
-playersManuallyChanged <- filter(playersManuallyChanged, !(grepl("Dunleavy",Player) & !(Tm.x =="ATL") )) # now remove those with several teams:
-playersNewPredicted_Current <- filter(playersNewPredicted_Current, !is.na(Exp)) # now remove those non-matching from playersNewPredicted
-playersNewPredicted_Current <- bind_rows(playersNewPredicted_Current,playersManuallyChanged) # and add the manually changed to match non-matching players
-playersNewPredicted_Current <- select(playersNewPredicted_Current, -c(Exp,College))
-
-# 4. Add rookieStats to complete rosters for new season
-rookieEffStats <- read.csv("data/rookieEfficientStats.csv", stringsAsFactors = FALSE) # write_Rookies_efficientStats in write_rookiesDraft.R
-playersNewPredicted_Current_All <- bind_rows(playersNewPredicted_Current,rookieEffStats) %>%
-  mutate(historical_name = Player)
-    # avoid inconsistencies with rookie players vs veterans
-    # compare_players <- filter(playersNewPredicted_Current_All, Player %in% c("Lonzo Ball","Milos Teodosic","Kyrie Irving","Ricky Rubio","John Wall"))
-# now use current rosters 
-#current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE)
-playersNonMatch <- merge(playersNewPredicted_Current_All,select(current_rosters,Player,Tm.z = Tm,Exp), 
-                         by = "Player", all.x = TRUE) %>% 
-  filter(is.na(Exp))
-# some players will not be matched: Different Player name spelling or Players returning to NBA who didn't play last season (that is their Exp != "R")
-playersNonMatch <- playersNonMatch$Player
-# historical names
-# [1] "Adreian Payne"         "Alan Anderson"         "Alex Hamilton"         "Alex Poythress"       
-# [5] "Andrew Nicholson"      "Antonius Cleveland"    "Axel Toupane"          "Boris Diaw"           
-# [9] "Brandon Bass"          "Brandon Jennings"      "Brian Roberts"         "C.J. Watson"          
-# [13] "Chasson Randle"        "Christian Wood"        "Dahntay Jones"         "Darrun Hilliard"      
-# [17] "David Lee"             "DeAndre Liggins"       "Demetrius Jackson"     "Deron Williams"       
-# [21] "Derrick Williams"      "Donatas Motiejunas"    "Gary Payton 2"         "Gerald Henderson 2"   
-# [25] "Glenn Robinson 2"      "JaCorey Williams"      "James Jones"           "James Michael McAdoo" 
-# [29] "Jordan Hill"           "Justin Hamilton"       "Kelly Oubre"           "Kevin Seraphin"       
-# [33] "Lavoy Allen"           "Leandro Barbosa"       "Matt Barnes"           "Maurice Ndour"        
-# [37] "Metta World Peace"     "Mike Dunleavy 2"       "Mike Miller"           "Monta Ellis"          
-# [41] "Nene Hilario"          "Norris Cole"           "Patricio Garino"       "Paul Pierce"          
-# [45] "Rakeem Christmas"      "Randy Foye"            "Ronnie Price"          "Roy Hibbert"          
-# [49] "Ryan Kelly"            "Sasha Vujacic"         "Sergio Rodriguez"      "Shawn Long"           
-# [53] "Sheldon McClellan"     "Spencer Hawes"         "Taurean Waller-Prince" "Thomas Robinson"      
-# [57] "Tiago Splitter"        "Tim Hardaway 2"        "Trey Burke"            "Ty Lawson" 
-
-# current names
-#      c("Andrew Bogut"   ,    "Andy Rautins"       ,"Anthony Bennett"  ,  "Bronson Koenig"     ,"Carrick Felix",     
-#       "Chris Johnson"  ,    "Cliff Alexander"    ,"Damien Wilkins"  ,   "Darius Miller"     , "DeQuan Jones" ,     
-#       "Donald Sloan"    ,   "Dwight Howard"      ,"Ekpe Udoh"       ,   "Emeka Okafor"      , "Eric Moreland" ,    
-#       "Gary Payton II"   ,  "Glenn Robinson III" ,"Jarell Eddie"    ,   "Jarrett Jack"      , "Jeremy Evans"   ,   
-#       "John Jenkins"      , "Josh Childress"     ,"Julyan Stone"     ,  "Kalin Lucas"       , "Kelly Oubre Jr.",   
-#       "Kendall Marshall"  , "Kendrick Perkins"   ,"LaDontae Henton" ,   "Larry Drew II"     , "Maalik Wayns"    ,  
-#       "Marco Belinelli"   , "Marcus Williams"    ,"Mario Chalmers"   ,  "Markel Brown"      , "Mike Scott"  ,      
-#       "Miles Plumlee"     , "Nene"               ,"Perry Jones"     ,   "Quincy Pondexter"  , "Shane Larkin",      
-#       "Sheldon Mac"       , "Taurean Prince"     ,"Tim Frazier"     ,   "Tim Hardaway"      , "Vander Blue"),
-# action = c("compute","compute","compute","compute","compute",
-#            "compute","compute","compute","compute","compute",
-#            "compute","compute","compute","compute","compute",
-#            "Gary Payton 2","Glenn Robinson 2","compute","compute","compute",
-#            "compute","compute","compute","compute","Kelly Oubre",
-#            "compute","compute","compute","compute","compute",
-#            "compute","compute","compute","compute","compute",
-#            "compute","Nene Hilario","compute","compute","compute",
-#            "compute","Taurean Waller-Prince","compute","Tim Hardaway 2","compute")
-#    )
-current_rosters[which(current_rosters$Player == "Gary Payton II"),]$Player <- "Gary Payton 2"
-current_rosters[which(current_rosters$Player == "Glenn Robinson III"),]$Player <- "Glenn Robinson 2"
-current_rosters[which(current_rosters$Player == "Kelly Oubre Jr."),]$Player <- "Kelly Oubre"
-current_rosters[which(current_rosters$Player == "Nene"),]$Player <- "Nene Hilario"
-current_rosters[which(current_rosters$Player == "Taurean Prince"),]$Player <- "Taurean Waller-Prince"
-current_rosters[which(current_rosters$Player == "Tim Hardaway"),]$Player <- "Tim Hardaway 2"
-# merge current and already predicted from historical file filtered by last season
-playersNewPredicted_Current_All <- merge(select(current_rosters,Player,Tm.z = Tm,Exp),
-                                         playersNewPredicted_Current_All, by = "Player", all.x = TRUE)
-unmatched_Players <- filter(playersNewPredicted_Current_All, is.na(Tm.y))
-# compute predicted stats for unmatched players (they played in NBA at some point but don't have stats for last season)
-# make sure they're all in playersHist in case manual edits are needed for players names
-# See top of script for how playersHist get read
-playersNewLeftover <- filter(playersHist, Player %in% unmatched_Players$Player) %>% 
-  arrange(Player,desc(Season)) %>%
-  distinct(Player, .keep_all=TRUE)
-unmatched_Players_Leftover <- filter(unmatched_Players, !(Player %in% playersNewLeftover$Player))$Player
-# "Bronson Koenig"  "LaDontae Henton" "Larry Drew II"   "Sheldon Mac"
-unmatched_Players[which(unmatched_Players$Player == "Larry Drew II"),]$Player <- "Larry Drew 2"
-unmatched_Players[which(unmatched_Players$Player == "Sheldon Mac"),]$Player <- "Sheldon McClellan"
-#
-playersNewLeftover <- filter(playersHist, Player %in% unmatched_Players$Player) %>% 
-  arrange(Player,desc(Season)) %>%
-  distinct(Player, .keep_all=TRUE)
-unmatched_Players_Leftover <- filter(unmatched_Players, !(Player %in% playersNewLeftover$Player))
-# "Bronson Koenig"  "LaDontae Henton"    
-playersNewLeftover2 <- merge(select(playersNewLeftover, -Tm),
-                            select(unmatched_Players, Player, Tm = Tm.x),
-                            by = "Player", all.y = TRUE)
-playersNewLeftover2 <- mutate(playersNewLeftover2, Season = paste0(as.numeric(thisYear),"-",as.numeric(thisYear)+1),
-                              Age = ifelse(is.na(Age),25,Age)) # arbitrarily assign Age = 25 for those missing Age
-# calculate predicted stats for these leftovers from write_teams_predicted_stats_new_season.R
-playersNewLeftover3 <- .computePredictedPlayerStats_Leftovers(playersNewLeftover2)
-# Merge with the rest of predicted players to complete rosters
-playersNewPredicted_Current_All <- filter(playersNewPredicted_Current_All, !is.na(effPTS)) %>%
-  mutate(Tm = Tm.x) %>%
-  select(-Tm.x,-Tm.y,-Exp,-historical_name)
-playersNewPredicted_Final <- rbind(playersNewPredicted_Current_All,playersNewLeftover3) %>%
-  mutate(Season = paste0(as.numeric(thisYear),"-",as.numeric(thisYear)+1)) %>%
-  distinct(Player,Tm, .keep_all=TRUE)
+# # playersNew <- playersHist %>% # keep only players last season
+# #   filter(Season == max(as.character(Season))) %>%
+# #   mutate(Season = as.factor(paste0(as.numeric(substr(Season,1,4))+1,"-",as.numeric(substr(Season,1,4))+2)))
+# # load players predicted stats for upcoming season (only includes players who played in NBA last season).
+# # These players will feature their team from last season.
+# 
+# 
+# # 2. Merge with current_rosters into playersNewPredicted_Current
+# current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE) # from .getLatestRosters(thisSeason="2017",previousSeason = FALSE)
+# playersNewPredicted_Current <- merge(playersNewPredicted, current_rosters[,c("Player","Tm","Exp","College")], by=c("Player"), all.x=TRUE)
+# # Tm.x is teams for last season. Tm.y is teams new season
+# 
+# # 3. Complete playersNewPredicted with names not matching in current_rosters. Ex: Tim Hardaway vs. Tim Hardaway 2
+# lastSeason_rosters <- read.csv("data/rostersLastSeason.csv", stringsAsFactors = FALSE) # from .getLatestRosters(thisSeason="2016",previousSeason = TRUE)
+# playersMatch <- merge(lastSeason_rosters,playersNewPredicted, by = "Player", all.x = TRUE) %>%
+#   distinct(Player)
+# 
+# playersNonMatch <- filter(playersNewPredicted_Current, !(Player %in% playersMatch$Player))
+# 
+# playersManuallyChanged <- filter(playersNonMatch, Player %in% c(
+#   "Mike Dunleavy 2","Taurean Waller-Prince","Tim Hardaway 2","Nene Hilario","Glenn Robinson 2",
+#   "Gary Payton 2","Gerald Henderson 2","Kelly Oubre"
+# ))
+# 
+# playersManuallyChanged <- filter(playersManuallyChanged, !(grepl("Dunleavy",Player) & !(Tm.x =="ATL") )) # now remove those with several teams:
+# playersNewPredicted_Current <- filter(playersNewPredicted_Current, !is.na(Exp)) # now remove those non-matching from playersNewPredicted
+# playersNewPredicted_Current <- bind_rows(playersNewPredicted_Current,playersManuallyChanged) # and add the manually changed to match non-matching players
+# playersNewPredicted_Current <- select(playersNewPredicted_Current, -c(Exp,College))
+# 
+# # 4. Add rookieStats to complete rosters for new season
+# rookieEffStats <- read.csv("data/rookieEfficientStats.csv", stringsAsFactors = FALSE) # write_Rookies_efficientStats in write_rookiesDraft.R
+# playersNewPredicted_Current_All <- bind_rows(playersNewPredicted_Current,rookieEffStats) %>%
+#   mutate(historical_name = Player)
+#     # avoid inconsistencies with rookie players vs veterans
+#     # compare_players <- filter(playersNewPredicted_Current_All, Player %in% c("Lonzo Ball","Milos Teodosic","Kyrie Irving","Ricky Rubio","John Wall"))
+# # now use current rosters 
+# #current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE)
+# playersNonMatch <- merge(playersNewPredicted_Current_All,select(current_rosters,Player,Tm.z = Tm,Exp), 
+#                          by = "Player", all.x = TRUE) %>% 
+#   filter(is.na(Exp))
+# # some players will not be matched: Different Player name spelling or Players returning to NBA who didn't play last season (that is their Exp != "R")
+# playersNonMatch <- playersNonMatch$Player
+# # historical names
+# # [1] "Adreian Payne"         "Alan Anderson"         "Alex Hamilton"         "Alex Poythress"       
+# # [5] "Andrew Nicholson"      "Antonius Cleveland"    "Axel Toupane"          "Boris Diaw"           
+# # [9] "Brandon Bass"          "Brandon Jennings"      "Brian Roberts"         "C.J. Watson"          
+# # [13] "Chasson Randle"        "Christian Wood"        "Dahntay Jones"         "Darrun Hilliard"      
+# # [17] "David Lee"             "DeAndre Liggins"       "Demetrius Jackson"     "Deron Williams"       
+# # [21] "Derrick Williams"      "Donatas Motiejunas"    "Gary Payton 2"         "Gerald Henderson 2"   
+# # [25] "Glenn Robinson 2"      "JaCorey Williams"      "James Jones"           "James Michael McAdoo" 
+# # [29] "Jordan Hill"           "Justin Hamilton"       "Kelly Oubre"           "Kevin Seraphin"       
+# # [33] "Lavoy Allen"           "Leandro Barbosa"       "Matt Barnes"           "Maurice Ndour"        
+# # [37] "Metta World Peace"     "Mike Dunleavy 2"       "Mike Miller"           "Monta Ellis"          
+# # [41] "Nene Hilario"          "Norris Cole"           "Patricio Garino"       "Paul Pierce"          
+# # [45] "Rakeem Christmas"      "Randy Foye"            "Ronnie Price"          "Roy Hibbert"          
+# # [49] "Ryan Kelly"            "Sasha Vujacic"         "Sergio Rodriguez"      "Shawn Long"           
+# # [53] "Sheldon McClellan"     "Spencer Hawes"         "Taurean Waller-Prince" "Thomas Robinson"      
+# # [57] "Tiago Splitter"        "Tim Hardaway 2"        "Trey Burke"            "Ty Lawson" 
+# 
+# # current names
+# #      c("Andrew Bogut"   ,    "Andy Rautins"       ,"Anthony Bennett"  ,  "Bronson Koenig"     ,"Carrick Felix",     
+# #       "Chris Johnson"  ,    "Cliff Alexander"    ,"Damien Wilkins"  ,   "Darius Miller"     , "DeQuan Jones" ,     
+# #       "Donald Sloan"    ,   "Dwight Howard"      ,"Ekpe Udoh"       ,   "Emeka Okafor"      , "Eric Moreland" ,    
+# #       "Gary Payton II"   ,  "Glenn Robinson III" ,"Jarell Eddie"    ,   "Jarrett Jack"      , "Jeremy Evans"   ,   
+# #       "John Jenkins"      , "Josh Childress"     ,"Julyan Stone"     ,  "Kalin Lucas"       , "Kelly Oubre Jr.",   
+# #       "Kendall Marshall"  , "Kendrick Perkins"   ,"LaDontae Henton" ,   "Larry Drew II"     , "Maalik Wayns"    ,  
+# #       "Marco Belinelli"   , "Marcus Williams"    ,"Mario Chalmers"   ,  "Markel Brown"      , "Mike Scott"  ,      
+# #       "Miles Plumlee"     , "Nene"               ,"Perry Jones"     ,   "Quincy Pondexter"  , "Shane Larkin",      
+# #       "Sheldon Mac"       , "Taurean Prince"     ,"Tim Frazier"     ,   "Tim Hardaway"      , "Vander Blue"),
+# # action = c("compute","compute","compute","compute","compute",
+# #            "compute","compute","compute","compute","compute",
+# #            "compute","compute","compute","compute","compute",
+# #            "Gary Payton 2","Glenn Robinson 2","compute","compute","compute",
+# #            "compute","compute","compute","compute","Kelly Oubre",
+# #            "compute","compute","compute","compute","compute",
+# #            "compute","compute","compute","compute","compute",
+# #            "compute","Nene Hilario","compute","compute","compute",
+# #            "compute","Taurean Waller-Prince","compute","Tim Hardaway 2","compute")
+# #    )
+# current_rosters[which(current_rosters$Player == "Gary Payton II"),]$Player <- "Gary Payton 2"
+# current_rosters[which(current_rosters$Player == "Glenn Robinson III"),]$Player <- "Glenn Robinson 2"
+# current_rosters[which(current_rosters$Player == "Kelly Oubre Jr."),]$Player <- "Kelly Oubre"
+# current_rosters[which(current_rosters$Player == "Nene"),]$Player <- "Nene Hilario"
+# current_rosters[which(current_rosters$Player == "Taurean Prince"),]$Player <- "Taurean Waller-Prince"
+# current_rosters[which(current_rosters$Player == "Tim Hardaway"),]$Player <- "Tim Hardaway 2"
+# # merge current and already predicted from historical file filtered by last season
+# playersNewPredicted_Current_All <- merge(select(current_rosters,Player,Tm.z = Tm,Exp),
+#                                          playersNewPredicted_Current_All, by = "Player", all.x = TRUE)
+# unmatched_Players <- filter(playersNewPredicted_Current_All, is.na(Tm.y))
+# # compute predicted stats for unmatched players (they played in NBA at some point but don't have stats for last season)
+# # make sure they're all in playersHist in case manual edits are needed for players names
+# # See top of script for how playersHist get read
+# playersNewLeftover <- filter(playersHist, Player %in% unmatched_Players$Player) %>% 
+#   arrange(Player,desc(Season)) %>%
+#   distinct(Player, .keep_all=TRUE)
+# unmatched_Players_Leftover <- filter(unmatched_Players, !(Player %in% playersNewLeftover$Player))$Player
+# # "Bronson Koenig"  "LaDontae Henton" "Larry Drew II"   "Sheldon Mac"
+# unmatched_Players[which(unmatched_Players$Player == "Larry Drew II"),]$Player <- "Larry Drew 2"
+# unmatched_Players[which(unmatched_Players$Player == "Sheldon Mac"),]$Player <- "Sheldon McClellan"
+# #
+# playersNewLeftover <- filter(playersHist, Player %in% unmatched_Players$Player) %>% 
+#   arrange(Player,desc(Season)) %>%
+#   distinct(Player, .keep_all=TRUE)
+# unmatched_Players_Leftover <- filter(unmatched_Players, !(Player %in% playersNewLeftover$Player))
+# # "Bronson Koenig"  "LaDontae Henton"    
+# playersNewLeftover2 <- merge(select(playersNewLeftover, -Tm),
+#                             select(unmatched_Players, Player, Tm = Tm.x),
+#                             by = "Player", all.y = TRUE)
+# playersNewLeftover2 <- mutate(playersNewLeftover2, Season = paste0(as.numeric(thisYear),"-",as.numeric(thisYear)+1),
+#                               Age = ifelse(is.na(Age),25,Age)) # arbitrarily assign Age = 25 for those missing Age
+# # calculate predicted stats for these leftovers from write_teams_predicted_stats_new_season.R
+# playersNewLeftover3 <- .computePredictedPlayerStats_Leftovers(playersNewLeftover2)
+# # Merge with the rest of predicted players to complete rosters
+# playersNewPredicted_Current_All <- filter(playersNewPredicted_Current_All, !is.na(effPTS)) %>%
+#   mutate(Tm = Tm.x) %>%
+#   select(-Tm.x,-Tm.y,-Exp,-historical_name)
+# playersNewPredicted_Final <- rbind(playersNewPredicted_Current_All,playersNewLeftover3) %>%
+#   mutate(Season = paste0(as.numeric(thisYear),"-",as.numeric(thisYear)+1)) %>%
+#   distinct(Player,Tm, .keep_all=TRUE)
 #
 write.csv(playersNewPredicted_Final, "data/playersNewPredicted_Final_Oct20.csv",row.names = FALSE)
 
@@ -271,6 +278,7 @@ write.csv(playersNewPredicted_Final, "data/playersNewPredicted_Final_Oct20.csv",
 #   group_by(Player) %>%
 #   summarise_if(is.numeric, mean)
 
+#### END OF OLD CODE: DELETE ############
 
 # load pre-calculated final players predictions. effMin are not adjusted, i.e., rookies will have higher
 # effMin than it would be expected.
