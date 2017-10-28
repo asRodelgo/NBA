@@ -197,12 +197,29 @@ draftMinutesInNBA <- arrange(college2nbaMinutes, desc(Pick)) %>%
   mutate(Pick = as.numeric(Pick)) %>%
   arrange(Pick)
 barplot(draftMinutesInNBA$`mean(minDiff)`)
+# Summary of effMin lost in % when moving from college to NBA (based on last 20 years of drafts):
+# Pick #1: .065
+# Pick #2: .016
+# Picks #3-5: .02
+# Picks #6-10: .25
+# Picks #11-20: .34
+# Picks #21-50: .4
+# Picks #51-60: .45
 
 # estimate difference in minutes played:
-col2nbaMinDiff <- mean(college2nbaMinutes$minDiff)
-playersNewPredicted_Final_adjMin <- mutate(playersNewPredicted_Final,
-                                           Exp = ifelse(is.na(Exp),"1",Exp)) %>% # in case Exp is NA for instance returning NBA players
-                                           mutate(effMin = ifelse(Exp == "R",effMin*(1-col2nbaMinDiff),effMin))
+# add Pick round to rookie players:
+rookiesDraft <- filter(rookiesDraftHist, Year >= as.numeric(thisYear)-2) # get last 3 drafts to include rookies like Ben Simmons who didn't play any minute last season
+rookiesDraft[grepl("Frank Mason",rookiesDraft$Player),]$Player <- "Frank Mason III"
+rookiesDraft[grepl("Dennis Smith",rookiesDraft$Player),]$Player <- "Dennis Smith Jr."
+playersNewPredicted_Final <- merge(playersNewPredicted_Final, rookiesDraft[,c("Player","Pick")], by="Player",all.x=TRUE)
+# For those not in the draft (international players or non-drafted players), average by the
+# average percentage for the tail of the 2nd round picks (51-60)
+col2nbaMinDiff <- mean(draftMinutesInNBA$`mean(minDiff)`[51:nrow(draftMinutesInNBA)]) 
+playersNewPredicted_Final_adjMin <- mutate(playersNewPredicted_Final,Exp = ifelse(is.na(Exp),"1",Exp),
+                                           Pick = ifelse(is.na(Pick),0,as.numeric(Pick))) %>% # in case Exp is NA for instance returning NBA players
+  group_by(Player) %>%
+  mutate(effMin = ifelse(Pick > 0 & Exp == "R",effMin*(1-draftMinutesInNBA$`mean(minDiff)`[Pick]),
+                         ifelse(Exp == "R",effMin*(1-col2nbaMinDiff),effMin)))
 
 # 3. adjust percent of play time -----------------------------------
 # Based on historical data for the last 5 seasons:
@@ -231,7 +248,7 @@ playersNewPredicted_Final_adjMinPer <- group_by(playersNewPredicted_Final_adjMin
   mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>%
   as.data.frame()
 # Check percentage of minutes distribution matches the actuals from incrementShare
-topMin <- 7
+topMin <- 5
 topX <- arrange(playersNewPredicted_Final_adjMinPer, desc(effMin)) %>%
   group_by(Tm) %>%
   top_n(topMin,effMin) %>%

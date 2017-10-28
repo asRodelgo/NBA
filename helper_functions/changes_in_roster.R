@@ -58,6 +58,7 @@
     # introduce jitter as some players have the same effMin (they were averaged out at the prediction phase)
     jitter <- runif(nrow(filter(data, Tm == team)))/100000
     atl <- filter(data, Tm == team) %>% arrange(desc(effMin)) %>%
+      as.data.frame() %>%
       mutate(effMin = effMin + jitter) 
     bottomHeavy <- nrow(atl)-topHeavy
     total_min <- sum(atl$effMin)
