@@ -165,8 +165,9 @@ playersNewPredicted_Final <- read.csv("data/playersNewPredicted_Final_Oct20.csv"
 # Reduce new players effMin (rookies, international, returning) by x%
 # estimate empirically the % reduction in effMin
 collegePlayersHist <- read.csv("data/collegePlayersHist.csv", stringsAsFactors = FALSE)
+rookiesDraftHist <- read.csv("data/rookiesDraftHist.csv", stringsAsFactors = FALSE)
 # compute % minutes played per player:
-collegeMinutes <- select(collegePlayersHist,Rk,Player,Season,School,G,MP) %>%
+collegeMinutes <- merge(collegePlayersHist,rookiesDraftHist[,c("Player","Pick","Year")], by = "Player") %>%
   mutate(perMin = MP/(G*40)) %>%
   group_by(Player) %>%
   mutate(perMin = mean(perMin, na.rm=TRUE)) %>% # average minutes played per game in ther college years
@@ -186,13 +187,22 @@ college2nbaMinutes <- merge(nbaMinutes,collegeMinutes, by = "Player", all.x = TR
   mutate(minDiff = perMin.y-perMin.x) %>%
   filter(!is.na(minDiff))
 # see if there is correlation between player Rank and effMin of play from college to NBA
-plot(college2nbaMinutes$Rk,college2nbaMinutes$minDiff)
-# no clear pattern so I will use the average for simplification
+plot(college2nbaMinutes$Rk,college2nbaMinutes$minDiff, xlim = c(0,100))
+# no clear pattern so I will use the average for simplification. 
+# Although Rank is different from Draft pick. Let's see this by draft pick for the top 30 picks:
+plot(college2nbaMinutes$Pick,college2nbaMinutes$minDiff)
+draftMinutesInNBA <- arrange(college2nbaMinutes, desc(Pick)) %>%
+  group_by(Pick) %>%
+  summarise(mean(minDiff)) %>%
+  mutate(Pick = as.numeric(Pick)) %>%
+  arrange(Pick)
+barplot(draftMinutesInNBA$`mean(minDiff)`)
 
 # estimate difference in minutes played:
 col2nbaMinDiff <- mean(college2nbaMinutes$minDiff)
 playersNewPredicted_Final_adjMin <- mutate(playersNewPredicted_Final,
-                                           effMin = ifelse(Exp == "R",effMin*(1-col2nbaMinDiff),effMin))
+                                           Exp = ifelse(is.na(Exp),"1",Exp)) %>% # in case Exp is NA for instance returning NBA players
+                                           mutate(effMin = ifelse(Exp == "R",effMin*(1-col2nbaMinDiff),effMin))
 
 # 3. adjust percent of play time -----------------------------------
 # Based on historical data for the last 5 seasons:
@@ -221,7 +231,7 @@ playersNewPredicted_Final_adjMinPer <- group_by(playersNewPredicted_Final_adjMin
   mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>%
   as.data.frame()
 # Check percentage of minutes distribution matches the actuals from incrementShare
-topMin <- 4
+topMin <- 7
 topX <- arrange(playersNewPredicted_Final_adjMinPer, desc(effMin)) %>%
   group_by(Tm) %>%
   top_n(topMin,effMin) %>%

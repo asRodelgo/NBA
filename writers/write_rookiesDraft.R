@@ -23,9 +23,42 @@ writeDraftedRookies <- function(){
   # rookies[grepl("Dami",rookies$Player),]$Player <- "Damian Jones"
   # rookies[grepl("Zimmerm",rookies$Player),]$Player <- "Stephen Zimmerman Jr."
   
-  write.csv(rookies, "data/rookies.csv",row.names = FALSE)
+  write.csv(rookies, "data/rookiesDraft.csv",row.names = FALSE)
 
 }
+
+# write historical drafts
+writeHistoricalDraftedRookies <- function(){
+  
+  rookiesDraftHist <- data.frame()
+  lastDraft <- as.numeric(substr(max(as.character(playersHist$Season)),1,4)) + 1
+  
+  for (d in (lastDraft-20):lastDraft) {
+    
+    url <- paste0("http://www.basketball-reference.com/draft/NBA_",d,".html")
+    
+    thisSeasonDraft <- url %>%
+      read_html() %>%
+      html_nodes(xpath='//*[@id="stats"]') %>%
+      html_table(fill = TRUE)
+    thisSeasonDraft <- thisSeasonDraft[[1]]
+    names(thisSeasonDraft) <- thisSeasonDraft[1,]
+    thisSeasonDraft <- as.data.frame(thisSeasonDraft[-1,])
+    rookies <- thisSeasonDraft[,1:10]
+    rookies <- dplyr::select(rookies, Pick = Pk, Team = Tm, Player, College)
+    rookies <- rookies[which(!(rookies$Pick=="" | rookies$Pick=="Pk")),]
+    rookies <- mutate(rookies, Year = as.character(d))
+    if (nrow(rookiesDraftHist)>0) {
+      rookiesDraftHist <- rbind(rookiesDraftHist,rookies)
+    } else {
+      rookiesDraftHist <- rookies
+    }
+  }
+  
+  write.csv(rookiesDraftHist, "data/rookiesDraftHist.csv",row.names = FALSE)
+  
+}
+
 
 # write all rookies (all draft rounds and non drafted)
 writeAllRookies <- function(){
