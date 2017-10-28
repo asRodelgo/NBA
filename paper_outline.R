@@ -236,8 +236,11 @@ plot(seq(18,1,-1),incrementShare$percent)
 playersNewPredicted_Final_adjMin2 <- .redistributeMinutes(playersNewPredicted_Final_adjMin, topHeavy = 7, topMinShare = .6, min_share_top1 = .105)
 # The reason to go top_1 = 1.1 is to give more prominence to star players which adjust better when simulating
 # wins in the regular season
-# make sure Season column shows the new season to come
-playersNewPredicted_Final_adjMin2 <- mutate(playersNewPredicted_Final_adjMin2, Season = paste0(thisYear,"-",as.numeric(thisYear)+1))
+# make sure Season column shows the new season to come and remove Pick column as i don't need it anymore
+playersNewPredicted_Final_adjMin2 <- mutate(playersNewPredicted_Final_adjMin2, 
+                                            Season = paste0(thisYear,"-",as.numeric(thisYear)+1)) %>%
+  select(-Pick, -Exp) %>%
+  as.data.frame()
 
 # 4. compute team powers ---------------------------
 # See teams_power.R for details. See if actual effMin matter (double check weighted means)
@@ -270,6 +273,13 @@ teamsPredicted <- mutate(teamsPredicted, TEAM_PTSAG = TEAM_PTSAG + (sum(TEAM_PTS
 # The prediction works just as if each player was a team or if a team was composed of 18 copies of the same player
 playersNewPredicted_OffDef <- mutate(playersNewPredicted_Final_adjMinPer, Tm = Player, effMin = 1)
 playersPredicted <- .teamsPredictedPower(data = playersNewPredicted_OffDef,actualOrPred="predicted")
+playersPredicted <- mutate(playersPredicted, Player = substr(team_season,1,regexpr("_",team_season)-1),plusMinus = TEAM_PTS-TEAM_PTSAG) %>%
+  select(Player,Offense = TEAM_PTS, Defense = TEAM_PTSAG, plusMinus) %>%
+  as.data.frame()
+# Add Experience to this data.frame. Rookie players or those with little experience will be statistically
+# all over the place. Law of Big Numbers
+playersPredicted <- merge(playersPredicted, playersNewPredicted_Final_adjMin[,c("Player","Exp","Age","Tm")], by = "Player")
+
 
 # 6. Simulate a few seasons using team estimated Offensive and Defensive powers
 win_predictions <- simulate_n_seasons(10)
