@@ -49,31 +49,6 @@
   }
 
 }
-#############################################################
-
-# 2
-# current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE)
-# # apply rename_Player_Duplicate to avoid errors when different players share same name
-# # create a copy of playersHist as it already contains the modified names
-# myPlayersHist <- filter(playersHist, Season == max(Season)) %>% 
-#   mutate(originalPlayer = ifelse(grepl("[0-9]",substr(Player,nchar(Player),nchar(Player))),
-#                                  substr(Player,1,nchar(Player)-2), Player)) %>%
-#   distinct(originalPlayer,Player) %>% select(originalPlayer,PlayerNew = Player)
-# 
-# current_rosters <- merge(current_rosters,myPlayersHist, by.x="Player", by.y="originalPlayer",all.x=TRUE) %>%
-#   #mutate(changedName = ifelse(Player == PlayerNew,0,1))
-#   select(Player = PlayerNew, everything(), PlayerHist = Player)
-# # RETURN NON_MATCHING PLAYERS TO EDIT THEIR NAMES MANUALLY
-# nonMatching <- filter(current_rosters, is.na(Player))
-# theyShouldBe <- merge(myPlayersHist,current_rosters,by.x="originalPlayer", by.y="Player",all.x=TRUE) %>%
-#   filter(is.na(PlayerHist)) %>% select(Player = originalPlayer, PlayerNew)
-# 
-# # pattern: grepl(nonMatching) assign theyShouldBe$PlayerNew
-# current_rosters[grepl("Oubre",current_rosters$PlayerHist),]$Player <- "Kelly Oubre"
-# current_rosters[grepl("Nene",current_rosters$PlayerHist),]$Player <- "Nene Hilario"
-# current_rosters[grepl("Gary Payton",current_rosters$PlayerHist),]$Player <- "Gary Payton 2"
-# current_rosters[grepl("Glenn Robinson",current_rosters$PlayerHist),]$Player <- "Glenn Robinson 2"
-# current_rosters[grepl("Taurean Prince",current_rosters$PlayerHist),]$Player <- "Taurean Waller-Prince"
 
 .computePredictedPlayerStats <- function() {
   
@@ -86,23 +61,22 @@
   
   playersNewPredicted <- data.frame()
   for (team in unique(playersNew$Tm)){
-  #for (team in c("CLE")){
-    #thisTeam <- filter(current_rosters, Tm == team)
+    
     thisTeam <- filter(playersNew, Tm == team)
     thisTeamStats <- data.frame()
+    counter <- 0 # keep count
     for (player in thisTeam$Player){
+      counter <- counter + 1
       #if (!(player %in% playersNewPredicted$Player)){ # skip running all. Start over where it failed
         thisPlayer <- filter(thisTeam, Player == player)
         #thisPlayer <- filter(playersNew, Player == player)
-        print(paste0("Team: ", team,": Processing ",thisPlayer$Player))
-        #if (thisPlayer$Exp %in% seq(1,25,1)){ # not a rookie
+        print(paste0("Team: ", team,": Processing ",thisPlayer$Player, " (",round(counter*100/nrow(playersNew),1),"%)"))
         if (thisPlayer$Age < 20) { # not enough players to compare to at age 19 or younger
           thisPlayer$Age <- 20
         }
         if (thisPlayer$Age > 39) { # not enough players to compare to at age 41 or older
           thisPlayer$Age <- 39
         }
-        # .predictPlayer from similarityFunctions.R
         thisPlayerStats <- .predictPlayer(thisPlayer$Player,20,thisPlayer$Age,10) %>% 
           select(Player,Pos,Season,Age,everything())
         
@@ -127,19 +101,11 @@
             print("NBA player: Empty predicted stats!")
             print(thisPlayerStats)
           } else { # Rookie player or returns NA stats
-            # if (nchar(thisPlayer$College)>0) { # College player
-            #   thisPlayerStats <- .predictPlayerCollegeRookie(player)
-            #   print("Rookie College player: OK!")
-            # } else if (player %in% europePlayers$Player) { # European player
-            #   thisPlayerStatsEurope <- .predictPlayerNonCollegeRookie(player)
-            #   print("Rookie Europe player: OK!")
-            # } else { # International player
             # compute rookie player average stats for this player
             thisPlayerStats <- .calculate_AvgPlayer(playersNew, thisPlayer$Age + 1) %>%
               mutate(Player = as.character(thisPlayer$Player), Pos = as.character(thisPlayer$Pos), 
                      G = as.numeric(thisPlayer$G), GS = as.numeric(thisPlayer$GS), Tm = team) 
             thisPlayerStats <- .team_preparePredict(data = thisPlayerStats, thisTeam = as.character(thisPlayer$Tm),singlePlayer = TRUE)
-            #MP = as.numeric(thisPlayer$MP))
             print("Average player: OK!")
             print(thisPlayerStats)
             #}
@@ -155,18 +121,15 @@
             mutate(Player = as.character(thisPlayer$Player), Pos = as.character(thisPlayer$Pos), 
                    G = as.numeric(thisPlayer$G), GS = as.numeric(thisPlayer$GS), Tm = team) 
           thisPlayerStats <- .team_preparePredict(data = thisPlayerStats, thisTeam = as.character(thisPlayer$Tm),singlePlayer = TRUE)
-          #MP = as.numeric(thisPlayer$MP))
           print("Average player: OK!")
           print(thisPlayerStats)
         }  
-        
         if (nrow(thisTeamStats)>0){
           thisTeamStats <- bind_rows(thisTeamStats,thisPlayerStats)
         } else{
           thisTeamStats <- thisPlayerStats
         }
       }
-    #}
     if (nrow(thisTeamStats) > 0) {
       thisTeamStats <- mutate(thisTeamStats, Tm = team)
       if (nrow(playersNewPredicted)>0){
@@ -175,8 +138,6 @@
         playersNewPredicted <- thisTeamStats
       }
     }
-    
-    
   }
   playersNewPredicted <- distinct(playersNewPredicted, Player, Tm, .keep_all=TRUE)
   limitMinutes <- 2*quantile(playersNewPredicted$effMin,.95) # control for possible outliers

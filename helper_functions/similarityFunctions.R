@@ -261,7 +261,7 @@
         filter(!(Player == playerName)) %>%
         group_by(Player) %>%
         mutate(numYears = n(),rank5years = mean(`Euclid. distance`)) %>%
-        distinct(.keep_all=TRUE) %>%
+        distinct(Player, numYears, rank5years,.keep_all=TRUE) %>%
         arrange(desc(numYears),rank5years)
       
       return(simPlayers_5years)

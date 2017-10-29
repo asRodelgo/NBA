@@ -268,6 +268,12 @@ teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPe
 # make sure total PTS scored = total PTS against, although this won't change anything in win/loss predictions
 teamsPredicted <- mutate(teamsPredicted, TEAM_PTSAG = TEAM_PTSAG + (sum(TEAM_PTS)-sum(TEAM_PTSAG))/nrow(teamsPredicted))
 # teamsPredicted <- mutate(teamsPredicted, basketAverage = TEAM_PTS - TEAM_PTSAG)
+# IMPORTANT: Double check stats and adjust accordingly. I found things like:
+# James Harden's turnovers > 1 per minute
+# Some players have field goal percentages or FT perc > 1
+####################### RE-RUN ###############
+# Need to re-run .computePredictdPlayersStats()
+##############################################
 
 # 5. compute Offensive and Defensive powers for individual players -------------------
 # The prediction works just as if each player was a team or if a team was composed of 18 copies of the same player
