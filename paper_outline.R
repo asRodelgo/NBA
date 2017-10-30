@@ -83,6 +83,8 @@ playersHist <- .rename_PlayerDuplicates(playersHist) # differentiate different p
 # The resulting file is: (The team variable (Tm) is according to last season. Some players will have multiple
 playersNewPredicted <- read.csv("data/playersNewPredicted_Oct20.csv", stringsAsFactors = FALSE) %>% # from .computePredictedPlayerStats() in write_teams_predicted_stats_new_season.R
   distinct(Player, .keep_all=TRUE) %>% select(-c(Pos,Season,Age))
+# make sure no shooting percentages are > 1
+playersNewPredicted <- mutate_at(playersNewPredicted, vars(contains("Per")), function(x) ifelse(x >=1, quantile(x,.99), x))
 # 2. Get current rosters -------------------------
 # current_rosters contains players and teams as of Otober 20 2017, that is right at the start of the new season
 current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE) %>% 
