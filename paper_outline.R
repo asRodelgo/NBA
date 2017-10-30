@@ -268,7 +268,7 @@ topX <- arrange(playersNewPredicted_Final_adjMinPer, desc(effMin)) %>%
 # more noise. 
 teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer,actualOrPred="predicted")
 # make sure total PTS scored = total PTS against, although this won't change anything in win/loss predictions
-teamsPredicted <- mutate(teamsPredicted, TEAM_PTSAG = TEAM_PTSAG + (sum(TEAM_PTS)-sum(TEAM_PTSAG))/nrow(teamsPredicted))
+# teamsPredicted <- mutate(teamsPredicted, TEAM_PTSAG = TEAM_PTSAG + (sum(TEAM_PTS)-sum(TEAM_PTSAG))/nrow(teamsPredicted))
 # teamsPredicted <- mutate(teamsPredicted, basketAverage = TEAM_PTS - TEAM_PTSAG)
 # IMPORTANT: Double check stats and adjust accordingly. I found things like:
 # James Harden's turnovers > 1 per minute
@@ -286,8 +286,11 @@ playersPredicted <- mutate(playersPredicted, Player = substr(team_season,1,regex
   as.data.frame()
 # Add Experience to this data.frame. Rookie players or those with little experience will be statistically
 # all over the place. Law of Big Numbers
-playersPredicted <- merge(playersPredicted, playersNewPredicted_Final_adjMin[,c("Player","Exp","Age","Tm")], by = "Player")
-
+playersPredicted2 <- merge(playersPredicted, playersNewPredicted_Final_adjMin[,c("Player","Exp","Age","Tm","effMin")], by = "Player") %>%
+  mutate(adjPlusMinus = plusMinus*effMin*100) %>%
+  group_by(Tm) %>%
+  mutate(teamPlusMinus = sum(adjPlusMinus,na.rm=TRUE)) 
+# NOTE: Take a look at Jawun Evans
 
 # 6. Simulate a few seasons using team estimated Offensive and Defensive powers
 win_predictions <- simulate_n_seasons(10)
