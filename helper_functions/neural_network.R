@@ -128,9 +128,14 @@ library(neuralnet) # neural network for regression
 }
 
 # Max and Min for all variables in the available data. Used to rescale later on
-.getScaleLimits <- function(Off_or_Def) {
+.getScaleLimits <- function(Off_or_Def, data = NULL) {
   
-  playersSumm <- .prepareModel(Off_or_Def)
+  if (is.null(data)) {
+    playersSumm <- .prepareModel(Off_or_Def)
+  } else {
+    playersSumm <- data
+  }
+  
   # scale the data for easier convergence of backpropagation algorithm
   maxs <- apply(playersSumm[,-1], 2, max) 
   mins <- apply(playersSumm[,-1], 2, min)
@@ -288,7 +293,10 @@ library(neuralnet) # neural network for regression
 .computeModel_neuralnet <- function(Off_or_Def){
   
   playersSumm <- .prepareModel(Off_or_Def)
-  scaleMaxMin <- .getScaleLimits(Off_or_Def)
+  ## Strip linearly relationed columns: FG, FGA, FG%,3P%,2P%,FT%,effFG%, effPTS
+  playersSumm <- select(playersSumm, -contains("Per"), -effFG, -effFGA, -effPTS, -effTRB)
+  ## End of Strip
+  scaleMaxMin <- .getScaleLimits(Off_or_Def, data = playersSumm)
   # scale the data [0,1] for easier convergence of backpropagation algorithm
   maxs <- scaleMaxMin$maxs 
   mins <- scaleMaxMin$mins
@@ -319,9 +327,9 @@ library(neuralnet) # neural network for regression
     ## repeated ten times
     repeats = 10)
   
-  nnetGrid <-  expand.grid(layer1 = c(6), 
-                           layer2 = c(4), 
-                           layer3 = c(2)
+  nnetGrid <-  expand.grid(layer1 = c(4,5,6), 
+                           layer2 = c(3,4), 
+                           layer3 = c(2,3)
   )
   
   library(neuralnet)
@@ -344,7 +352,7 @@ library(neuralnet) # neural network for regression
   #save(model, file = paste0("data/model_","nnetFit","_",Sys.Date(),".Rdata"))
   predict_data <- training
   predicted <- predict(model, newdata = predict_data)
-  save(model, file = paste0("data/modelNeuralnet4_",Off_or_Def,".Rdata"))
+  save(model, file = paste0("data/modelNeuralnet5_",Off_or_Def,".Rdata"))
   predictions <- data.frame(actual_PTS = predict_data$PTS, predicted_PTS = predicted)
   plot(predictions)
 }

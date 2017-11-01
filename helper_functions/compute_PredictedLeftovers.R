@@ -8,6 +8,9 @@
   #collegePlayers <- read.csv("data/collegePlayers.csv", stringsAsFactors = FALSE)
   #rookieStats <- read.csv("data/rookieStats.csv", stringsAsFactors = FALSE)
   #europePlayers <- read.csv("data/europePlayers.csv", stringsAsFactors = FALSE)
+  playersNew <- playersHist %>%
+    filter(Season == max(as.character(Season))) %>%
+    mutate(Season = as.factor(paste0(as.numeric(substr(Season,1,4))+1,"-",as.numeric(substr(Season,1,4))+2)))
   
   thesePlayersPredicted <- data.frame()
   for (team in unique(thesePlayers$Tm)){

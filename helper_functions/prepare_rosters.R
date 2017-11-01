@@ -141,6 +141,9 @@
 # compute effective stats for all seasons. Uses playersHist
 .team_prepareAll <- function(){
   
+  playersHist <- read.csv("data/playersHist.csv", stringsAsFactors = FALSE) # read historical players from write_playersHist.R
+  playersHist <- .rename_PlayerDuplicates(playersHist) # differentiate different players with the same name
+  
   data_team <- playersHist %>%
     group_by(Player,Season) %>%
     mutate(effMin = MP/3936, effFG = FG/(3936*effMin),

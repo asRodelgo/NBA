@@ -89,11 +89,13 @@ playersNewPredicted <- mutate_at(playersNewPredicted, vars(contains("Per")), fun
 # current_rosters contains players and teams as of Otober 20 2017, that is right at the start of the new season
 current_rosters <- read.csv("data/currentRosters.csv", stringsAsFactors = FALSE) %>% 
   distinct(Player, .keep_all=TRUE) # from .getLatestRosters(thisSeason="2017",previousSeason = FALSE)
+# manually update Age for Jawun Evans (missing from basketballreference)
+current_rosters <- mutate(current_rosters, Age = ifelse(grepl("Jawun",Player),20,Age))
 
 # 3. Get rookies -------------------------
 # Third piece of the puzzle are the new players, either from college or international
 rookieEffStats <- read.csv("data/rookieEfficientStats.csv", stringsAsFactors = FALSE) %>% # write_Rookies_efficientStats in write_rookiesDraft.R
-  select(-c(Season,Age))
+  select(-c(Season,Age)) %>% mutate(effFGPer = ifelse(effFGPer <= 0.001,FGPer,effFGPer)) # international players don't have this calculated so their per = 0
 # 4. Put it all together ---------------------
 # There are 6 different sets of players:
 # a. Returning players whose names match in current_rosters and playersNewPredicted
@@ -140,8 +142,11 @@ playerSet_b <- merge(current_rosters, playerSet_aPlusc, by = "Player", all.x = T
 # now this final set of non matched players correspond to those with a history in the NBA but didn't play in last season
 # Next step is to calculate their predicted stats and add them to the final set
 # NOTE: This takes approx 10 minutes to run
-playerSet_Leftover <- .computePredictedPlayerStats_Leftovers(playerSet_b) # from compute_PredictedLeftovers.R
-playerSet_Leftover <- mutate(playerSet_Leftover, Season = current_rosters$Season[1])
+#playerSet_Leftover <- .computePredictedPlayerStats_Leftovers(playerSet_b) # from compute_PredictedLeftovers.R
+#write.csv(playerSet_Leftover,"data/playerPredicted_Leftover.csv", row.names = FALSE)
+playerSet_Leftover <- read.csv("data/playerPredicted_Leftover.csv", stringsAsFactors = FALSE)
+playerSet_Leftover <- mutate(playerSet_Leftover, Season = current_rosters$Season[1]) %>%
+  mutate_at(vars(contains("Per")), function(x) ifelse(x >= 1, mean(x, na.rm=TRUE), x)) # to avoid players with 100% shot accuracy (because they may have taken just very few shots and converted all)
 # Now append together playerSetaPlusc and playerSet_Leftover for the final players stats predicted for new season
 playersNewPredicted_Final <- bind_rows(playerSet_aPlusc,playerSet_Leftover)
 # check this file has same rows as current_rosters
@@ -266,16 +271,17 @@ topX <- arrange(playersNewPredicted_Final_adjMinPer, desc(effMin)) %>%
 #teamPowers_newSeason <- merge(.computePower(playersNewPredicted_Final_adjMin2,"PTS","All",effMinutes,actualOrPredicted = "predicted"),.computePower(playersNewPredicted_Final_adjMin2,"PTSA","All",effMinutes,actualOrPredicted = "predicted"),by="team_season")
 # Use 6-4-2 nnets (modelNeuralnet4_PTS.Rdata), maybe? Layers with higher number of neurons pick up more signal but also
 # more noise. 
+load("data/modelNeuralnet2_PTS.Rdata")
+#load("data/modelNeuralnet4_PTS.Rdata")
+nn_Offense <- model$finalModel
+load("data/modelNeuralnet2_PTSA.Rdata")
+#load("data/modelNeuralnet4_PTSA.Rdata")
+nn_Defense <- model$finalModel
+
 teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer,actualOrPred="predicted")
 # make sure total PTS scored = total PTS against, although this won't change anything in win/loss predictions
 # teamsPredicted <- mutate(teamsPredicted, TEAM_PTSAG = TEAM_PTSAG + (sum(TEAM_PTS)-sum(TEAM_PTSAG))/nrow(teamsPredicted))
 # teamsPredicted <- mutate(teamsPredicted, basketAverage = TEAM_PTS - TEAM_PTSAG)
-# IMPORTANT: Double check stats and adjust accordingly. I found things like:
-# James Harden's turnovers > 1 per minute
-# Some players have field goal percentages or FT perc > 1
-####################### RE-RUN ###############
-# Need to re-run .computePredictdPlayersStats()
-##############################################
 
 # 5. compute Offensive and Defensive powers for individual players -------------------
 # The prediction works just as if each player was a team or if a team was composed of 18 copies of the same player
@@ -290,7 +296,6 @@ playersPredicted2 <- merge(playersPredicted, playersNewPredicted_Final_adjMin[,c
   mutate(adjPlusMinus = plusMinus*effMin*100) %>%
   group_by(Tm) %>%
   mutate(teamPlusMinus = sum(adjPlusMinus,na.rm=TRUE)) 
-# NOTE: Take a look at Jawun Evans
 
 # 6. Simulate a few seasons using team estimated Offensive and Defensive powers
 win_predictions <- simulate_n_seasons(10)
