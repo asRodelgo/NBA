@@ -302,7 +302,10 @@ playersPredicted2 <- merge(playersPredicted, playersNewPredicted_Final_adjMin[,c
   mutate(teamPlusMinus = sum(adjPlusMinus,na.rm=TRUE)) 
 
 # 6. Simulate a few seasons using team estimated Offensive and Defensive powers
-win_predictions <- simulate_n_seasons(10)
+#win_predictions <- simulate_n_seasons(10)
+# Better: Do it Analytically as the probability distributions are well defined
+win_predictions <- .teamsPredictedWins() # uses teamsPredicted data.frame as input
+
 # Things to consider that may affect the results:
 # rookies stat prediction transition from college/international
 # the way I average players when not sufficient data on them

@@ -154,7 +154,6 @@
 
 }
 
-
 .getConferenceStandings <- function(conf,day){
   
   standings <- regSeasonOutcome[[1]]

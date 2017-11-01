@@ -1,0 +1,7 @@
+---
+title: "Game of Trades: Topology"
+output: html_notebook
+---
+
+## Topological analysis of players and teams. Basis is t-SNE 2-D embeddings for predicted Players in current season and across time using historical players. 
+

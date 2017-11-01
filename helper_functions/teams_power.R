@@ -78,4 +78,50 @@
   
 }
 
-# team_power <- .teamsPredictedPower()
+# Analytical calculation of wins based on teamsPowers and Normal distribution defined by those powers
+.computeWins <- function(){
+  
+  # Load season schedule
+  season <- realSeasonSchedule %>%
+    mutate(Date = paste(Date,StartTime)) %>%
+    dplyr::select(-StartTime)
+  
+  # calculate wins
+  wins <- data.frame()
+  for (i in 1:nrow(season)){
+    thisGame <- .calculateWinProbability(season[i,2],season[i,3],home_away_factor)
+    wins[i,1] <- thisGame
+    wins[i,2] <- 1-thisGame
+  }
+  return(wins)
+}
+
+
+.teamsPredictedWins <- function() {
+    
+  set.seed(1234) 
+  # use the actual schedule
+  
+  
+  regSeasonProbs <- .computeWins()
+  seasonProbs <- bind_cols(realSeasonSchedule,regSeasonProbs)
+  names(seasonProbs) <- c("day","time","home_team","away_team","home_team_winProb","away_team_winProb")
+  datesRange <- unique(seasonProbs$day)
+  
+  homeWins <- group_by(seasonProbs, home_team) %>%
+    mutate(home_wins = sum(home_team_winProb)) %>%
+    select(team = home_team,wins = home_wins) %>%
+    distinct()
+  awayWins <- group_by(seasonProbs, away_team) %>%
+    mutate(away_wins = sum(away_team_winProb)) %>%
+    select(team = away_team,wins = away_wins) %>%
+    distinct()
+  
+  seasonWins <- rbind(homeWins,awayWins) %>%
+    group_by(team) %>%
+    summarise_if(is.numeric,sum) %>%
+    as.data.frame()
+  
+  return(seasonWins) 
+  
+}
