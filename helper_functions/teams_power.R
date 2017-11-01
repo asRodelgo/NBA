@@ -20,13 +20,17 @@
   if (removeEffMin & ncol(select(playersSumm, one_of("effMin")))>0) { 
     playersSumm <- select(playersSumm, -effMin)
   }
-  
+  ## Strip linearly relationed columns: FG, FGA, FG%,3P%,2P%,FT%,effFG%, effPTS
+  #playersSumm <- select(playersSumm, -contains("Per"), -effFG, -effFGA, -effPTS, -effTRB)
+  ## End of Strip
   # scale the variables the same way the training dataset was scaled so the nnet makes sense
-  scaleMaxMin <- .getScaleLimits(Off_or_Def)
-  maxs <- scaleMaxMin$maxs[-nrow(scaleMaxMin)] 
-  mins <- scaleMaxMin$mins[-nrow(scaleMaxMin)]
-  team_season <- playersSumm[,ncol(playersSumm)]
-  scaled <- as.data.frame(scale(playersSumm[,-ncol(playersSumm)], center = mins, scale = maxs - mins))
+  # scaleMaxMin needs a reference column (team, player, etc.). I need to make sure it's the first column
+  playersSumm <- select(playersSumm, team_season, everything())
+  scaleMaxMin <- .getScaleLimits(Off_or_Def, playersSumm)
+  maxs <- scaleMaxMin$maxs
+  mins <- scaleMaxMin$mins
+  team_season <- playersSumm[,1]
+  scaled <- as.data.frame(scale(playersSumm[,-1], center = mins, scale = maxs - mins))
   scaled <- cbind(team_season,scaled)
   
   # NNet model pre-calculated (2 models, Offense and Defense)
@@ -42,7 +46,9 @@
   pr.nn <- compute(nn,scaled)
   #test_pr <- compute(nn,testing[,-ncol(testing)])
   # Model results are scaled so need to re-scale them back to normal
-  pr.nn_ <- pr.nn$net.result*(scaleMaxMin["PTS","maxs"]-scaleMaxMin["PTS","mins"])+scaleMaxMin["PTS","mins"]
+  #pr.nn_ <- pr.nn$net.result*(scaleMaxMin["PTS","maxs"]-scaleMaxMin["PTS","mins"])+scaleMaxMin["PTS","mins"]
+  Off_or_Def_teamStats <- select(team_stats, one_of(Off_or_Def))
+  pr.nn_ <- pr.nn$net.result*(max(Off_or_Def_teamStats)-min(Off_or_Def_teamStats))+min(Off_or_Def_teamStats)
   pred_PTS <- as.numeric(pr.nn_)
   # bring back the team names
   pr_pts <- cbind(team_season,pred_PTS)

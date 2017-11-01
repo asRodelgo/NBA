@@ -46,10 +46,10 @@ conferences <- read.csv("data/nba_conferences.csv", stringsAsFactors = FALSE) # 
 # Read pre-calculated nnetwork models -------------------------
 #nn_Offense <- list.load("data/nn_Offense.rds")
 #nn_Defense <- list.load("data/nn_Defense.rds")
-load("data/modelNeuralnet2_PTS.Rdata")
+load("data/modelNeuralnet5_PTS.Rdata")
 #load("data/modelNeuralnet4_PTS.Rdata")
 nn_Offense <- model$finalModel
-load("data/modelNeuralnet2_PTSA.Rdata")
+load("data/modelNeuralnet5_PTSA.Rdata")
 #load("data/modelNeuralnet4_PTSA.Rdata")
 nn_Defense <- model$finalModel
 
@@ -271,21 +271,25 @@ topX <- arrange(playersNewPredicted_Final_adjMinPer, desc(effMin)) %>%
 #teamPowers_newSeason <- merge(.computePower(playersNewPredicted_Final_adjMin2,"PTS","All",effMinutes,actualOrPredicted = "predicted"),.computePower(playersNewPredicted_Final_adjMin2,"PTSA","All",effMinutes,actualOrPredicted = "predicted"),by="team_season")
 # Use 6-4-2 nnets (modelNeuralnet4_PTS.Rdata), maybe? Layers with higher number of neurons pick up more signal but also
 # more noise. 
-load("data/modelNeuralnet2_PTS.Rdata")
+load("data/modelNeuralnet5_PTS.Rdata")
 #load("data/modelNeuralnet4_PTS.Rdata")
 nn_Offense <- model$finalModel
-load("data/modelNeuralnet2_PTSA.Rdata")
+load("data/modelNeuralnet5_PTSA.Rdata")
 #load("data/modelNeuralnet4_PTSA.Rdata")
 nn_Defense <- model$finalModel
 
-teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer,actualOrPred="predicted")
+## Strip linearly relationed columns: FG, FGA, FG%,3P%,2P%,FT%,effFG%, effPTS
+playersNewPredicted_Final_adjMinPer2 <- select(playersNewPredicted_Final_adjMinPer, -contains("Per"), -effFG, -effFGA, -effPTS, -effTRB)
+## End of Strip
+
+teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer2,actualOrPred="predicted")
 # make sure total PTS scored = total PTS against, although this won't change anything in win/loss predictions
 # teamsPredicted <- mutate(teamsPredicted, TEAM_PTSAG = TEAM_PTSAG + (sum(TEAM_PTS)-sum(TEAM_PTSAG))/nrow(teamsPredicted))
 # teamsPredicted <- mutate(teamsPredicted, basketAverage = TEAM_PTS - TEAM_PTSAG)
 
 # 5. compute Offensive and Defensive powers for individual players -------------------
 # The prediction works just as if each player was a team or if a team was composed of 18 copies of the same player
-playersNewPredicted_OffDef <- mutate(playersNewPredicted_Final_adjMinPer, Tm = Player, effMin = 1)
+playersNewPredicted_OffDef <- mutate(playersNewPredicted_Final_adjMinPer2, Tm = Player, effMin = 1)
 playersPredicted <- .teamsPredictedPower(data = playersNewPredicted_OffDef,actualOrPred="predicted")
 playersPredicted <- mutate(playersPredicted, Player = substr(team_season,1,regexpr("_",team_season)-1),plusMinus = TEAM_PTS-TEAM_PTSAG) %>%
   select(Player,Offense = TEAM_PTS, Defense = TEAM_PTSAG, plusMinus) %>%
