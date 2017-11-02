@@ -5,3 +5,123 @@ output: html_notebook
 
 ## Topological analysis of players and teams. Basis is t-SNE 2-D embeddings for predicted Players in current season and across time using historical players. 
 
+Prepare tsne data pre-calculated for the past 20 seasons
+```{r}
+source("helper_functions/similarityFunctions.R")
+#.teamsPredictedPower() 
+tsne_points <- read.csv("data/tsne_points_All.csv",stringsAsFactors = FALSE)
+
+# load data
+data_tsne <- .tSNE_prepare_All() # for tSNE visualization from similarityFunctions.R
+data_tsne_sample <- filter(data_tsne,Season > "1995-1996")
+# tsne_points are pre-calculated from write_tSNE_All.R and saved in data/ directory
+# using this function: tsne_points <- write_tSNE_compute_All()
+if (!nrow(data_tsne_sample)==nrow(tsne_points)){ # in case labels and coordinates have different sizes
+  tsne_ready <- tsne_points
+} else {
+  tsne_ready <- cbind(data_tsne_sample,tsne_points)
+}
+
+names(tsne_ready)[ncol(tsne_ready)-1] <- "x"
+names(tsne_ready)[ncol(tsne_ready)] <- "y"
+# Default selector choices for tsne -----------
+teams_list <- sort(unique(data_tsne_sample$Tm))
+ages_list <- sort(unique(data_tsne_sample$Age))
+
+```
+
+Historical t-SNE k-means clustering
+```{r}
+# clusters
+  #set.seed(20)
+  playerCluster <- kmeans(tsne_ready[, c("x","y")], 10, nstart = 10, iter.max = 20)
+  
+  tsne_ready2 <- cbind(tsne_ready, cluster = playerCluster$cluster)
+  
+  ggplot(NULL, aes(x,y)) +  
+    geom_point(data=tsne_ready2,aes(color = as.factor(cluster))) +
+    #geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3) +
+    #geom_text(data=labelsPlayers,aes(label = Player,group = Player,color = Player), size=3) +  
+    #geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.1)) +
+    theme(legend.key=element_blank(),
+          legend.title=element_blank(),
+          legend.text = element_blank(),
+          legend.position="none",
+          plot.title = element_text(size=9),
+          panel.border = element_blank(),
+          panel.background = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.ticks = element_blank())
+  
+
+```
+
+Who's in each cluster
+```{r}
+players_by_cluster <- mutate(tsne_ready2, player_season = paste0(Player," (",Season,")")) %>%
+  select(player_season, cluster) %>%
+  group_by(cluster) %>%
+  mutate(id=1:n()) %>% 
+  spread(cluster, player_season)
+
+
+```
+
+Plot a player's historical path
+```{r}
+# plot data
+
+  colPlayer <- "John Wall"
+  colAge <- ages_list
+  colTeam <- teams_list
+  colSeason <- c("2012-2013","2013-2014","2014-2015","2015-2016","2016-2017")
+  #
+  par(mar=c(0,0,0,0))
+    
+  tsne_ready_plot <- tsne_ready %>% # by default all colored grey
+    mutate(color = "lightgrey", colorDots = "grey")
+   
+    # General Filters
+  tsne_points_filter <- tsne_ready_plot %>%
+    filter(Player %in% colPlayer & Age %in% colAge
+           & Tm %in% colTeam & Season %in% colSeason)
+  centroid <- data.frame(x=(mean(tsne_points_filter$x)),y=mean(tsne_points_filter$y))
+  
+  tsne_points_filter_out <- tsne_ready_plot %>%
+    filter(!(Player %in% colPlayer & Age %in% colAge
+           & Tm %in% colTeam & Season %in% colSeason))
+      
+    starPlayers <- c("LeBron James","Russell Westbrook","Kawhi Leonard","Stephen Curry",
+                     "Draymond Green","Kevin Durant","Anthony Davis",
+                     "James Harden","Klay Thompson","DeMarcus Cousins",
+                     "Chris Paul","Paul George",
+                     "Marc Gasol","JaVale McGee","Andre Drummond",
+                     "Kelly Oubre","Ryan Anderson","Kelly Olynyk","Channing Frye",
+                     "Brandon Jennings","Tony Allen","Tristan Thompson","Ian Mahinmi",
+                     "Dennis Schroder","Justin Harper","Luis Scola")
+    labelsPlayers <- filter(tsne_ready_plot, Player %in% starPlayers, Season == "2016-2017")
+    ggplot(NULL, aes(x,y)) +  
+    geom_point(data=tsne_points_filter,color = "red",size=4) +
+    geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3) +
+    geom_text(data=labelsPlayers,aes(label = Player,
+                                            group = Player,color = Player), size=3) +  
+    geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.1)) +
+    # labs(title = "Figure 1. tSNE 2D projection of players stats for the past 20 seasons. Highlighted players correspond to 2016-2017 season. \nVisually, Kyrie is moving away from star players towards a region of secondary stars/3-point shooters. The closest players to \nKyrie last season were C.J. McCollum and Bradley Beal, both sidekicks to Damian Lillard and John Wall respectively. This could \nexplain Kyrie’s move out of Cleveland and LeBron’s shadow in search of a protagonist role.", size=2) +
+    theme(legend.key=element_blank(),
+          legend.title=element_blank(),
+          legend.text = element_blank(),
+          legend.position="none",
+          plot.title = element_text(size=9),
+          panel.border = element_blank(),
+          panel.background = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.ticks = element_blank())
+
+
+```
