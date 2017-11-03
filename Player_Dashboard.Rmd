@@ -2,7 +2,7 @@
 title: "NBA Player Dashboard"
 output: 
   flexdashboard::flex_dashboard:
-    orientation: columns
+    orientation: rows
     vertical_layout: fill
 runtime: shiny
 ---
@@ -58,40 +58,99 @@ playersPredicted2 <- merge(playersPredicted,
 
 playerDashboard <- merge(playersPredictedStats_adjPer,select(playersPredicted2, -c(Age,Tm,effMin)), by = "Player")
 
+playerRanks <- mutate_if(playerDashboard, is.numeric, function(x) row_number(desc(x)))
+
+playerMax <- summarise_if(playerDashboard, is.numeric, max)
+playerMin <- group_by(playerDashboard, Player) %>% summarise_if(is.numeric, min)
+
 ```
 
-Column {data-width=350}
+Row {.sidebar}
 -----------------------------------------------------------------------
-
-### Player Summary
 
 ```{r}
 selectizeInput("playerName", "Select Player", choices = playerDashboard$Player, selected = playerDashboard$Player[1])
 
-tablePlayerStats <- reactive({
-  data <- filter(playerDashboard, Player == input$playerName) %>% 
-    select(contains("eff"), contains("Per"), Offense, Defense) %>%
-    gather(Stat, Value)
-  data
-})
+barplotPlayerStats <- reactive({
   
-renderDataTable(tablePlayerStats())
+  off_def <- filter(playerDashboard, Player == input$playerName) %>% 
+    select(Offense, Defense)
+  #data <- filter(playerDashboard, Player == "LeBron James") %>% 
+  data <- filter(playerDashboard, Player == input$playerName) %>% 
+    select(contains("eff"), contains("Per")) %>%
+    gather(Stat, Value)
+  ranks <- filter(playerRanks, Player == input$playerName) %>% 
+  #ranks <- filter(playerRanks, Player == "LeBron James") %>% 
+    select(contains("eff"), contains("Per")) %>%
+    gather(Stat, Value)
+  maxs <- select(playerMax, contains("eff"), contains("Per")) %>%
+    gather(Stat, Value)
+  
+  ggplot(NULL) +
+    geom_bar(data = data, aes(Stat, Value), stat = "identity", fill = "red") +
+    geom_bar(data = maxs, aes(Stat, Value), stat = "identity", fill = "grey", alpha = 0.3) +
+    coord_flip() +
+    geom_text(data = ranks, aes(Stat,1.1,label = paste0(Value,"/",nrow(playerDashboard)))) +
+    theme_light()
+  
+})
 
+renderPlot(barplotPlayerStats())
 ```
 
-Column {data-width=350}
+
+Row
+-------------------------------------------------------------------------
+
+### Offense {.value-box}
+```{r}
+
+off <- reactive({
+  data <- filter(playerDashboard, Player == input$playerName) %>%
+    select(Offense) %>% as.numeric()
+  data
+})
+
+renderValueBox({
+  
+  valueBox(
+    value = formatC(off(), digits = 1, format = "f"),
+    icon = "fa-area-chart",
+    color = "primary"
+  )
+})
+```
+
+### Defense {.value-box}
+```{r}
+
+def <- reactive({
+  data <- filter(playerDashboard, Player == input$playerName) %>%
+    select(Defense) %>% as.numeric()
+  data
+})
+
+renderValueBox({
+  
+  valueBox(
+    value = formatC(def(), digits = 1, format = "f"),
+    icon = "fa-area-chart",
+    color = "primary"
+  )
+})
+```
+
+
+Row 
 -----------------------------------------------------------------------
 
-### Chart B
+### Similar Player {data-width=350}
 
 ```{r}
 
 ```
 
-Column {data-width=350}
------------------------------------------------------------------------
-
-### Chart C
+### Player History {data-width=350}
 
 ```{r}
 
