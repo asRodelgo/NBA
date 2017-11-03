@@ -49,3 +49,32 @@ write_MVPs <- function(){
   
   write.csv(mvps, "data/mvps.csv", row.names = FALSE)
 }
+
+# compile league awards: mvp, def player, rookie of the year, etc.
+write_Awards <- function(){ # Not working!
+  
+  library(httr)
+  library(rvest)
+  
+  awards <- data.frame(Player=NULL, Season=NULL, award=NULL)
+  for (thisSeason in 1980:as.numeric(thisYear)){
+    
+    url <- paste0("https://www.basketball-reference.com/leagues/NBA_",
+                  thisSeason,".html")
+    
+    thisPlayer <- url %>%
+      read_html() %>%
+      html_nodes(xpath='//*[@id="div_all-nba"]') %>%
+      #html_children() %>%
+      #html_children() %>%
+      html_nodes('table')
+    
+    thisAwards <- data.frame(Player = thisPlayer, Season = paste0(thisSeason-1,"-",thisSeason), award = )
+    if (nrow(awards) > 0) awards <- rbind(awards,thisAwards) else awards <- thisAwards
+  }
+  
+  write.csv(mvps, "data/mvps.csv", row.names = FALSE)
+}
+
+
+

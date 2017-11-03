@@ -228,6 +228,7 @@ playersNewPredicted_Final_adjMin <- mutate(playersNewPredicted_Final,Exp = ifels
   mutate(effMin = ifelse(Pick > 0 & Exp == "R",effMin*(1-draftMinutesInNBA$`mean(minDiff)`[Pick]),
                          ifelse(Exp == "R",effMin*(1-col2nbaMinDiff),effMin)))
 
+write.csv(playersNewPredicted_Final_adjMin, "data/playersNewPredicted_Final_adjMin.csv", row.names = FALSE)
 # 3. adjust percent of play time -----------------------------------
 # Based on historical data for the last 5 seasons:
 topMinShare <- .minutes_density(playersHist,5)
@@ -257,6 +258,8 @@ playersNewPredicted_Final_adjMin2 <- mutate(playersNewPredicted_Final_adjMin2,
 playersNewPredicted_Final_adjMinPer <- group_by(playersNewPredicted_Final_adjMin2, Tm) %>%
   mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>%
   as.data.frame()
+write.csv(playersNewPredicted_Final_adjMinPer, "data/playersNewPredicted_Final_adjPer.csv", row.names = FALSE)
+
 # Check percentage of minutes distribution matches the actuals from incrementShare
 topMin <- 5
 topX <- arrange(playersNewPredicted_Final_adjMinPer, desc(effMin)) %>%

@@ -1,0 +1,99 @@
+---
+title: "NBA Player Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(DT)
+
+# variables set up
+thisYear <- substr(Sys.Date(),1,4)
+if (substr(Sys.Date(),6,7) > '08'){
+  seasonOffset <- 0
+} else {
+  seasonOffset <- 1
+}
+thisSeason <- paste0(as.numeric(substr(Sys.Date(),1,4))-seasonOffset,"-",as.numeric(substr(Sys.Date(),1,4))-seasonOffset+1) 
+
+# helper functions
+files <- list.files("helper_functions", full.names = TRUE, recursive = TRUE)
+for (f in files) source(f, local = TRUE)
+
+# read data
+team_stats <- read.csv("data/teamStats.csv") # from write_TeamStats.R
+franchises <- read.csv("data/franchisesHistory.csv",stringsAsFactors = FALSE) 
+team_stats <- merge(team_stats,franchises,by.x="Team",by.y="Franchise",all.x=TRUE)
+#
+playersHist <- read.csv("data/playersHist.csv", stringsAsFactors = FALSE) # from write_playersHist.R
+playersHist <- .rename_PlayerDuplicates(playersHist) # differentiate players with the same name
+playersPredictedStats_adjMin <- read.csv("data/playersNewPredicted_Final_adjMin.csv", stringsAsFactors = FALSE)
+playersPredictedStats_adjPer <- read.csv("data/playersNewPredicted_Final_adjPer.csv", stringsAsFactors = FALSE)
+
+# load neuralnet models
+load("data/modelNeuralnet5_PTS.Rdata")
+nn_Offense <- model$finalModel
+load("data/modelNeuralnet5_PTSA.Rdata")
+nn_Defense <- model$finalModel
+
+# compute teams and players Offense and Defense
+playersNewPredicted_Final_adjMinPer2 <- select(playersPredictedStats_adjPer, -contains("Per"), -effFG, -effFGA, -effPTS, -effTRB)
+teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer2,actualOrPred="predicted")
+playersNewPredicted_OffDef <- mutate(playersNewPredicted_Final_adjMinPer2, Tm = Player, effMin = 1)
+playersPredicted <- .teamsPredictedPower(data = playersNewPredicted_OffDef,actualOrPred="predicted") %>%
+  mutate(Player = substr(team_season,1,regexpr("_",team_season)-1),plusMinus = TEAM_PTS-TEAM_PTSAG) %>%
+  select(Player,Offense = TEAM_PTS, Defense = TEAM_PTSAG, plusMinus) %>%
+  as.data.frame()
+playersPredicted2 <- merge(playersPredicted,
+                           playersPredictedStats_adjMin[,c("Player","Exp","Age","Tm","effMin")], by = "Player") %>%
+  mutate(adjPlusMinus = plusMinus*effMin*100) %>%
+  group_by(Tm) %>%
+  mutate(teamPlusMinus = sum(adjPlusMinus,na.rm=TRUE)) %>%
+  ungroup()
+
+playerDashboard <- merge(playersPredictedStats_adjPer,select(playersPredicted2, -c(Age,Tm,effMin)), by = "Player")
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Player Summary
+
+```{r}
+selectizeInput("playerName", "Select Player", choices = playerDashboard$Player, selected = playerDashboard$Player[1])
+
+tablePlayerStats <- reactive({
+  data <- filter(playerDashboard, Player == input$playerName) %>% 
+    select(contains("eff"), contains("Per"), Offense, Defense) %>%
+    gather(Stat, Value)
+  data
+})
+  
+renderDataTable(tablePlayerStats())
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart C
+
+```{r}
+
+```
+
