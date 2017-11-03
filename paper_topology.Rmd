@@ -34,7 +34,7 @@ Historical t-SNE k-means clustering
 ```{r}
 # clusters
   #set.seed(20)
-  playerCluster <- kmeans(tsne_ready[, c("x","y")], 10, nstart = 10, iter.max = 20)
+  playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20)
   
   tsne_ready2 <- cbind(tsne_ready, cluster = playerCluster$cluster)
   
@@ -67,6 +67,12 @@ players_by_cluster <- mutate(tsne_ready2, player_season = paste0(Player," (",Sea
   mutate(id=1:n()) %>% 
   spread(cluster, player_season)
 
+```
+
+Summarize stats by cluster
+```{r}
+cluster_stats <- group_by(tsne_ready2,cluster) %>%
+  summarise_if(is.numeric,mean)
 
 ```
 
@@ -74,10 +80,10 @@ Plot a player's historical path
 ```{r}
 # plot data
 
-  colPlayer <- "John Wall"
+  colPlayer <- "Marc Gasol"
   colAge <- ages_list
   colTeam <- teams_list
-  colSeason <- c("2012-2013","2013-2014","2014-2015","2015-2016","2016-2017")
+  colSeason <- c("2006-2007","2007-2008","2008-2009","2009-2010","2010-2011","2011-2012","2012-2013","2013-2014","2014-2015","2015-2016","2016-2017")
   #
   par(mar=c(0,0,0,0))
     
@@ -88,7 +94,9 @@ Plot a player's historical path
   tsne_points_filter <- tsne_ready_plot %>%
     filter(Player %in% colPlayer & Age %in% colAge
            & Tm %in% colTeam & Season %in% colSeason)
-  centroid <- data.frame(x=(mean(tsne_points_filter$x)),y=mean(tsne_points_filter$y))
+  #centroid <- data.frame(x=(mean(tsne_points_filter$x)),y=mean(tsne_points_filter$y))
+  x_limit <- c(min(tsne_points_filter$x)-5,max(tsne_points_filter$x)+5) 
+  y_limit <- c(min(tsne_points_filter$y)-5,max(tsne_points_filter$y)+5)
   
   tsne_points_filter_out <- tsne_ready_plot %>%
     filter(!(Player %in% colPlayer & Age %in% colAge
@@ -109,6 +117,7 @@ Plot a player's historical path
     geom_text(data=labelsPlayers,aes(label = Player,
                                             group = Player,color = Player), size=3) +  
     geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.1)) +
+    coord_cartesian(xlim = x_limit,ylim = y_limit) +
     # labs(title = "Figure 1. tSNE 2D projection of players stats for the past 20 seasons. Highlighted players correspond to 2016-2017 season. \nVisually, Kyrie is moving away from star players towards a region of secondary stars/3-point shooters. The closest players to \nKyrie last season were C.J. McCollum and Bradley Beal, both sidekicks to Damian Lillard and John Wall respectively. This could \nexplain Kyrie’s move out of Cleveland and LeBron’s shadow in search of a protagonist role.", size=2) +
     theme(legend.key=element_blank(),
           legend.title=element_blank(),
@@ -125,3 +134,18 @@ Plot a player's historical path
 
 
 ```
+
+Plot MVPs on tSNE historical map
+```{r}
+mvps <- read.csv("data/mvps.csv", stringsAsFactors = FALSE)
+
+```
+
+
+Plot Rookies new season
+```{r}
+
+
+```
+
+

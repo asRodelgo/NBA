@@ -26,3 +26,26 @@ write_tSNE_compute_All <- function(num_iter, max_num_neighbors){
   write.csv(tsne_points, "data/tsne_points_All.csv",row.names = FALSE)
   
 }
+
+write_MVPs <- function(){
+  
+  library(httr)
+  library(rvest)
+  
+  mvps <- data.frame(Player=NULL, Season=NULL)
+  for (thisSeason in 1980:as.numeric(thisYear)){
+    
+    url <- paste0("https://www.basketball-reference.com/leagues/NBA_",
+                  thisSeason,".html")
+    
+    thisPlayer <- url %>%
+      read_html() %>%
+      html_nodes(xpath='//*[@id="meta"]/div[2]/p[2]/a') %>%
+      html_text()
+    
+    thisMVP <- data.frame(Player = thisPlayer, Season = paste0(thisSeason-1,"-",thisSeason))
+    if (nrow(mvps) > 0) mvps <- rbind(mvps,thisMVP) else mvps <- thisMVP
+  }
+  
+  write.csv(mvps, "data/mvps.csv", row.names = FALSE)
+}
