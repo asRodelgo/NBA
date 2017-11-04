@@ -2,6 +2,7 @@
 write_tSNE_compute_All <- function(num_iter, max_num_neighbors){
   
   # data_tsne contains the input data for tSNE filtered and cleaned up
+  # from: data_tsne <- .tSNE_prepare_All() # for tSNE visualization from similarityFunctions.R
   # calculate tsne-points Dimensionality reduction to 2-D
   
   library(doMC) # use parallel processing on this machine through "foreach"
@@ -101,3 +102,48 @@ write_tsne_ready_historical <- function() {
   
 }
 
+# precalculate t-SNE for predicted stats (new season)
+write_tSNE_newSeason <- function(num_iter, max_num_neighbors) {
+  
+  require(tsne)
+  data_tsne_sample <- read.csv("data/playersNewPredicted_Final_adjMin.csv", stringsAsFactors = FALSE) %>%
+    select_if(is.numeric) %>% select(-Pick)
+  
+  if (nrow(data_tsne_sample)>0){
+    num_iter <- 500
+    max_num_neighbors <- 20
+    set.seed(456) # reproducitility
+    tsne_points <- tsne(data_tsne_sample, 
+                        max_iter=as.numeric(num_iter), 
+                        perplexity=as.numeric(max_num_neighbors), 
+                        epoch=100)
+    #plot(tsne_points)
+  } else {
+    tsne_points <- c()
+  }
+  write.csv(tsne_points, "data/tsne_points_newSeason.csv",row.names = FALSE)
+  
+}
+
+# put together tsne_ready predicted to load at start of dashboards
+write_tSNE_ready_newSeason <- function(){
+  
+  source("helper_functions/similarityFunctions.R")
+  tsne_points <- read.csv("data/tsne_points_newSeason.csv",stringsAsFactors = FALSE)
+  
+  # load data
+  data_tsne_sample <- read.csv("data/playersNewPredicted_Final_adjMin.csv", stringsAsFactors = FALSE) %>%
+    select_if(is.character)
+  # tsne_points are pre-calculated from write_tSNE_All.R and saved in data/ directory
+  # using this function: tsne_points <- write_tSNE_compute_All()
+  if (!nrow(data_tsne_sample)==nrow(tsne_points)){ # in case labels and coordinates have different sizes
+    tsne_ready <- tsne_points
+  } else {
+    tsne_ready <- cbind(data_tsne_sample,tsne_points)
+  }
+  
+  names(tsne_ready)[ncol(tsne_ready)-1] <- "x"
+  names(tsne_ready)[ncol(tsne_ready)] <- "y"
+  
+  write.csv(tsne_ready, "data/tsne_ready_newSeason.csv", row.names = FALSE)
+}

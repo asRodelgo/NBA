@@ -65,7 +65,8 @@ playerMin <- group_by(playerDashboard, Player) %>% summarise_if(is.numeric, min)
 
 # tSNE for similiarity and historical evolution of players
 tsne_ready_hist <- read.csv("data/tsne_ready_hist.csv", stringsAsFactors = FALSE)
-
+# tSNE for predicted stats in new season
+tsne_ready <- read.csv("data/tsne_ready_newSeason.csv", stringsAsFactors = FALSE)
 
 ```
 
@@ -256,13 +257,62 @@ Row {.tabset .tabset-fade}
 
 ### Player t-SNE map 
 ```{r}
+tsne_predicted <- reactive({
+  
+playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20)
+  tsne_ready2 <- cbind(tsne_ready, cluster = playerCluster$cluster)
+  
+  tsne_points_filter <- filter(tsne_ready2, Player == input$playerName)
+    #centroid <- data.frame(x=(mean(tsne_points_filter$x)),y=mean(tsne_points_filter$y))
+    x_limit <- c(min(tsne_points_filter$x)-5,max(tsne_points_filter$x)+10) 
+    y_limit <- c(min(tsne_points_filter$y)-5,max(tsne_points_filter$y)+10)
+  
+  # cluster_players <- 
+  
+  if (nrow(tsne_points_filter) > 0) {   
+    ggplot(NULL, aes(x,y)) +  
+        geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.2) +
+        geom_point(data=tsne_points_filter,color = "red",size=4) +
+        geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
+        theme(legend.key=element_blank(),
+              legend.title=element_blank(),
+              legend.text = element_blank(),
+              legend.position="none",
+              plot.title = element_text(size=9),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              axis.text.x = element_blank(),
+              axis.text.y = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank(),
+              axis.ticks = element_blank())
+  } else {
+    ggplot(NULL, aes(x,y)) +  
+        geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.2) +
+        theme(legend.key=element_blank(),
+              legend.title=element_blank(),
+              legend.text = element_blank(),
+              legend.position="none",
+              plot.title = element_text(size=9),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              axis.text.x = element_blank(),
+              axis.text.y = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank(),
+              axis.ticks = element_blank())
+  }
 
+})
+
+renderPlot(tsne_predicted())
 ```
 
 ### t-SNE timeline
 ```{r}
 
 tsne_historical <- reactive({
+  
   playerCluster <- kmeans(tsne_ready_hist[, c("x","y")], 13, nstart = 10, iter.max = 20)
   tsne_ready_hist2 <- cbind(tsne_ready_hist, cluster = playerCluster$cluster)
   
@@ -272,23 +322,40 @@ tsne_historical <- reactive({
     y_limit <- c(min(tsne_points_filter$y)-5,max(tsne_points_filter$y)+10)
   
   # cluster_players <- 
-    
-  ggplot(NULL, aes(x,y)) +  
-      geom_point(data=tsne_ready_hist2,aes(color = as.factor(cluster)),alpha = 0.2) +
-      geom_point(data=tsne_points_filter,color = "red",size=4) +
-      geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
-      theme(legend.key=element_blank(),
-            legend.title=element_blank(),
-            legend.text = element_blank(),
-            legend.position="none",
-            plot.title = element_text(size=9),
-            panel.border = element_blank(),
-            panel.background = element_blank(),
-            axis.text.x = element_blank(),
-            axis.text.y = element_blank(),
-            axis.title.x = element_blank(),
-            axis.title.y = element_blank(),
-            axis.ticks = element_blank())
+  
+  if (nrow(tsne_points_filter) > 0) {   
+    ggplot(NULL, aes(x,y)) +  
+        geom_point(data=tsne_ready_hist2,aes(color = as.factor(cluster)),alpha = 0.2) +
+        geom_point(data=tsne_points_filter,color = "red",size=4) +
+        geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
+        theme(legend.key=element_blank(),
+              legend.title=element_blank(),
+              legend.text = element_blank(),
+              legend.position="none",
+              plot.title = element_text(size=9),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              axis.text.x = element_blank(),
+              axis.text.y = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank(),
+              axis.ticks = element_blank())
+  } else {
+    ggplot(NULL, aes(x,y)) +  
+        geom_point(data=tsne_ready_hist2,aes(color = as.factor(cluster)),alpha = 0.2) +
+        theme(legend.key=element_blank(),
+              legend.title=element_blank(),
+              legend.text = element_blank(),
+              legend.position="none",
+              plot.title = element_text(size=9),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              axis.text.x = element_blank(),
+              axis.text.y = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank(),
+              axis.ticks = element_blank())
+  }
 })
 
 renderPlot(tsne_historical())
