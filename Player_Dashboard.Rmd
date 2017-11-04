@@ -63,6 +63,10 @@ playerRanks <- mutate_if(playerDashboard, is.numeric, function(x) row_number(des
 playerMax <- summarise_if(playerDashboard, is.numeric, max)
 playerMin <- group_by(playerDashboard, Player) %>% summarise_if(is.numeric, min)
 
+# tSNE for similiarity and historical evolution of players
+tsne_ready_hist <- read.csv("data/tsne_ready_hist.csv", stringsAsFactors = FALSE)
+
+
 ```
 
 Row {.sidebar}
@@ -90,8 +94,9 @@ barplotPlayerStats <- reactive({
     geom_bar(data = data, aes(Stat, Value), stat = "identity", fill = "red") +
     geom_bar(data = maxs, aes(Stat, Value), stat = "identity", fill = "grey", alpha = 0.3) +
     coord_flip() +
+    geom_text(data = data, aes(Stat,0.9,label = formatC(Value*48,digits = 2))) +
     geom_text(data = ranks, aes(Stat,1.1,label = paste0(Value,"/",nrow(playerDashboard)))) +
-    theme_light()
+    theme_minimal()
   
 })
 
@@ -105,7 +110,7 @@ Row
 ### Offense {.value-box}
 ```{r}
 
-off <- reactive({
+vOff <- reactive({
   data <- filter(playerDashboard, Player == input$playerName) %>%
     select(Offense) %>% as.numeric()
   data
@@ -114,9 +119,9 @@ off <- reactive({
 renderValueBox({
   
   valueBox(
-    value = formatC(off(), digits = 1, format = "f"),
-    icon = "fa-area-chart",
-    color = "primary"
+    value = formatC(vOff(), digits = 1, format = "f"),
+    icon = "",
+    color = "lightgreen"
   )
 })
 ```
@@ -124,7 +129,7 @@ renderValueBox({
 ### Defense {.value-box}
 ```{r}
 
-def <- reactive({
+vDef <- reactive({
   data <- filter(playerDashboard, Player == input$playerName) %>%
     select(Defense) %>% as.numeric()
   data
@@ -133,26 +138,164 @@ def <- reactive({
 renderValueBox({
   
   valueBox(
-    value = formatC(def(), digits = 1, format = "f"),
-    icon = "fa-area-chart",
-    color = "primary"
+    value = formatC(vDef(), digits = 1, format = "f"),
+    icon = "",
+    color = "lightgreen"
   )
 })
 ```
 
+### Usage Rate {.value-box}
+```{r}
 
-Row 
+vMin <- reactive({
+  data <- filter(playerDashboard, Player == input$playerName) %>%
+    select(effMin) %>% as.numeric()
+  data
+})
+
+renderValueBox({
+  
+  valueBox(
+    value = paste0(formatC(vMin()*1000, digits = 1, format = "f"),"%"),
+    icon = "",
+    color = "lightblue"
+  )
+})
+```
+
+### Experience {.value-box}
+```{r}
+
+vExp <- reactive({
+  data <- filter(playerDashboard, Player == input$playerName) %>%
+    select(Exp) %>% as.character()
+  data
+})
+
+renderValueBox({
+  
+  valueBox(
+    value = vExp(),
+    icon = "",
+    color = "lightgrey"
+  )
+})
+```
+
+### Age {.value-box}
+```{r}
+
+vAge <- reactive({
+  data <- filter(playerDashboard, Player == input$playerName) %>%
+    select(Age) %>% as.numeric()
+  data
+})
+
+renderValueBox({
+  
+  valueBox(
+    value = vAge(),
+    icon = "",
+    color = "lightgrey"
+  )
+})
+```
+
+### Team {.value-box}
+```{r}
+
+vTm <- reactive({
+  data <- filter(playerDashboard, Player == input$playerName) %>%
+    select(Tm) %>% as.character()
+  data
+})
+
+renderValueBox({
+  
+  valueBox(
+    value = vTm(),
+    icon = "",
+    color = "lightgrey"
+  )
+})
+```
+
+Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
 
-### Similar Player {data-width=350}
-
+### Similar Players 
 ```{r}
 
 ```
 
-### Player History {data-width=350}
 
+### Similar Players Last 5 Seasons {data-width=350}
+```{r}
+
+similar_hist <- reactive({
+  similarPlayers_Hist <- data.frame()
+  player_seasons <- filter(tsne_ready_hist, Player == input$playerName) %>%
+    arrange(desc(Season)) %>% select(Season) %>% head(5)
+  for (s in player_seasons$Season) {
+    thisSeason <- .compare10_click(s,input$playerName,data=tsne_ready_hist) %>%
+      top_n(11,-dist) %>% tail(10) %>% mutate(player_season = paste0(Player," (",Season,")")) %>% select(player_season)
+    names(thisSeason) <- c(paste0("In Season: ",s))
+    if (nrow(similarPlayers_Hist) > 0) similarPlayers_Hist <- cbind(similarPlayers_Hist,thisSeason) else similarPlayers_Hist <- thisSeason
+  }
+  similarPlayers_Hist
+})
+
+renderTable(similar_hist())  
+
+
+```
+
+Row {.tabset .tabset-fade}
+---------------------------------------------------
+
+### Player t-SNE map 
 ```{r}
 
 ```
+
+### t-SNE timeline
+```{r}
+
+tsne_historical <- reactive({
+  playerCluster <- kmeans(tsne_ready_hist[, c("x","y")], 13, nstart = 10, iter.max = 20)
+  tsne_ready_hist2 <- cbind(tsne_ready_hist, cluster = playerCluster$cluster)
+  
+  tsne_points_filter <- filter(tsne_ready_hist2, Player == input$playerName)
+    #centroid <- data.frame(x=(mean(tsne_points_filter$x)),y=mean(tsne_points_filter$y))
+    x_limit <- c(min(tsne_points_filter$x)-5,max(tsne_points_filter$x)+10) 
+    y_limit <- c(min(tsne_points_filter$y)-5,max(tsne_points_filter$y)+10)
+  
+  # cluster_players <- 
+    
+  ggplot(NULL, aes(x,y)) +  
+      geom_point(data=tsne_ready_hist2,aes(color = as.factor(cluster)),alpha = 0.2) +
+      geom_point(data=tsne_points_filter,color = "red",size=4) +
+      geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
+      theme(legend.key=element_blank(),
+            legend.title=element_blank(),
+            legend.text = element_blank(),
+            legend.position="none",
+            plot.title = element_text(size=9),
+            panel.border = element_blank(),
+            panel.background = element_blank(),
+            axis.text.x = element_blank(),
+            axis.text.y = element_blank(),
+            axis.title.x = element_blank(),
+            axis.title.y = element_blank(),
+            axis.ticks = element_blank())
+})
+
+renderPlot(tsne_historical())
+
+```
+
+
+
+
 

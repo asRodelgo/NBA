@@ -76,5 +76,28 @@ write_Awards <- function(){ # Not working!
   write.csv(mvps, "data/mvps.csv", row.names = FALSE)
 }
 
-
+# put together tsne_ready to load at the start of dashboards
+write_tsne_ready_historical <- function() {
+  
+  source("helper_functions/similarityFunctions.R")
+  #.teamsPredictedPower() 
+  tsne_points <- read.csv("data/tsne_points_All.csv",stringsAsFactors = FALSE)
+  
+  # load data
+  data_tsne <- .tSNE_prepare_All() # for tSNE visualization from similarityFunctions.R
+  data_tsne_sample <- filter(data_tsne,Season > "1995-1996")
+  # tsne_points are pre-calculated from write_tSNE_All.R and saved in data/ directory
+  # using this function: tsne_points <- write_tSNE_compute_All()
+  if (!nrow(data_tsne_sample)==nrow(tsne_points)){ # in case labels and coordinates have different sizes
+    tsne_ready <- tsne_points
+  } else {
+    tsne_ready <- cbind(data_tsne_sample,tsne_points)
+  }
+  
+  names(tsne_ready)[ncol(tsne_ready)-1] <- "x"
+  names(tsne_ready)[ncol(tsne_ready)] <- "y"
+  
+  write.csv(tsne_ready, "data/tsne_ready_hist.csv", row.names = FALSE)
+  
+}
 

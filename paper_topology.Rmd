@@ -39,7 +39,7 @@ Historical t-SNE k-means clustering
   tsne_ready2 <- cbind(tsne_ready, cluster = playerCluster$cluster)
   
   ggplot(NULL, aes(x,y)) +  
-    geom_point(data=tsne_ready2,aes(color = as.factor(cluster))) +
+    geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.2) +
     #geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3) +
     #geom_text(data=labelsPlayers,aes(label = Player,group = Player,color = Player), size=3) +  
     #geom_point(data=tsne_points_filter_out,color=alpha("lightgrey",0.1)) +

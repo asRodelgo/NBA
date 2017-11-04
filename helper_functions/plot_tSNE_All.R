@@ -286,18 +286,18 @@
   #return(str(brushPoints))
 }
 
-.compare10_click <- function(colSeason,colPlayer){
+.compare10_click <- function(colSeason,colPlayer,data=tsne_ready){
   
   if (colPlayer=="All" || is.null(colPlayer)) colPlayer <- players_list
   if (colSeason=="All" || is.null(colSeason)) colSeason <- seasons_list
   
-  if (length(tsne_ready)>0){ # if data do stuff
+  if (length(data)>0){ # if data do stuff
     
     # coordenates x,y of clicked point
-    distCouPerX <- filter(tsne_ready,Player %in% colPlayer, Season %in% colSeason)$x
-    distCouPerY <- filter(tsne_ready,Player %in% colPlayer, Season %in% colSeason)$y
+    distCouPerX <- filter(data,Player %in% colPlayer, Season %in% colSeason)$x
+    distCouPerY <- filter(data,Player %in% colPlayer, Season %in% colSeason)$y
     
-    tsne_points_filter <- tsne_ready %>%
+    tsne_points_filter <- data %>%
       dplyr::select(Season,Player,x,y) %>%
       mutate(dist = sqrt((x-distCouPerX)^2+(y-distCouPerY)^2)) %>%
       arrange(dist) %>%
