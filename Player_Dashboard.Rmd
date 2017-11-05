@@ -84,15 +84,22 @@ barplotPlayerStats <- reactive({
   data <- filter(playerDashboard, Player == input$playerName) %>% 
     select(contains("eff"), contains("Per")) %>%
     gather(Stat, Value)
+  
   ranks <- filter(playerRanks, Player == input$playerName) %>% 
   #ranks <- filter(playerRanks, Player == "LeBron James") %>% 
     select(contains("eff"), contains("Per")) %>%
-    gather(Stat, Value)
+    gather(Stat, Value) %>%
+    mutate(color = ifelse(grepl("TOV|PF",Stat),ifelse(Value > nrow(playerDashboard)/2,"green","red"),
+                          ifelse(Value < nrow(playerDashboard)/2,"green","red")))
+  
+  data <- merge(data,ranks[,c("Stat","color")],by="Stat")
+  
   maxs <- select(playerMax, contains("eff"), contains("Per")) %>%
     gather(Stat, Value)
   
+  
   ggplot(NULL) +
-    geom_bar(data = data, aes(Stat, Value), stat = "identity", fill = "red") +
+    geom_bar(data = data, aes(Stat, Value,fill=color), stat = "identity") +
     geom_bar(data = maxs, aes(Stat, Value), stat = "identity", fill = "grey", alpha = 0.3) +
     coord_flip() +
     geom_text(data = data, aes(Stat,0.9,label = formatC(Value*48,digits = 2))) +
@@ -117,12 +124,19 @@ vOff <- reactive({
   data
 })
 
+rOff <- reactive({
+  data <- filter(playerRanks, Player == input$playerName) %>%
+    select(Offense) %>% as.numeric()
+  data
+})
+
 renderValueBox({
   
   valueBox(
     value = formatC(vOff(), digits = 1, format = "f"),
+    caption = paste0("Offense (#",rOff(),")"),
     icon = "",
-    color = "lightgreen"
+    color = ifelse(rOff() < nrow(playerRanks)/2,"green","red")
   )
 })
 ```
@@ -136,12 +150,20 @@ vDef <- reactive({
   data
 })
 
+rDef <- reactive({
+  data <- filter(playerRanks, Player == input$playerName) %>%
+    mutate(Defense = nrow(playerRanks)-Defense) %>%
+    select(Defense) %>% as.numeric()
+  data
+})
+
 renderValueBox({
   
   valueBox(
     value = formatC(vDef(), digits = 1, format = "f"),
+    caption = paste0("Defense (#",rDef(),")"),
     icon = "",
-    color = "lightgreen"
+    color = ifelse(rDef() < nrow(playerRanks)/2,"green","red")
   )
 })
 ```
@@ -155,12 +177,19 @@ vMin <- reactive({
   data
 })
 
+rMin <- reactive({
+  data <- filter(playerRanks, Player == input$playerName) %>%
+    select(effMin) %>% as.numeric()
+  data
+})
+
 renderValueBox({
   
   valueBox(
     value = paste0(formatC(vMin()*1000, digits = 1, format = "f"),"%"),
+    caption = paste0("Usage (#",rMin(),")"),
     icon = "",
-    color = "lightblue"
+    color = ifelse(rMin() < nrow(playerRanks)/2,"green","red")
   )
 })
 ```
@@ -227,6 +256,23 @@ Row {.tabset .tabset-fade}
 
 ### Similar Players 
 ```{r}
+
+similar <- reactive({
+  
+  similarPlayers <- .compare10_click(thisSeason,input$playerName,data=tsne_ready) %>%
+  #similarPlayers <- .compare10_click(thisSeason,"Kyrie Irving",data=tsne_ready) %>%
+    top_n(11,-dist) %>% tail(10) %>% 
+    merge(playerDashboard[,c("Player","Offense","Defense","effMin","Age","Tm")], by="Player") %>%
+    mutate(Offense = round(Offense,1), Defense = round(Defense,1),dist = round(dist,2), effMin = paste0(formatC(effMin*1000,digits=1,format="f"),"%")) %>%
+    arrange(dist) %>%
+    select(Player,Team = Tm, Age, Offense, Defense, `Usage Rate` = effMin,`Euclidean dist` = dist)
+    
+  
+  similarPlayers
+})
+
+renderTable(similar())  
+
 
 ```
 
