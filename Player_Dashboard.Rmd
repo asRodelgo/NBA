@@ -76,39 +76,6 @@ Row {.sidebar}
 ```{r}
 selectizeInput("playerName", "Select Player", choices = playerDashboard$Player, selected = playerDashboard$Player[1])
 
-barplotPlayerStats <- reactive({
-  
-  off_def <- filter(playerDashboard, Player == input$playerName) %>% 
-    select(Offense, Defense)
-  #data <- filter(playerDashboard, Player == "LeBron James") %>% 
-  data <- filter(playerDashboard, Player == input$playerName) %>% 
-    select(contains("eff"), contains("Per")) %>%
-    gather(Stat, Value)
-  
-  ranks <- filter(playerRanks, Player == input$playerName) %>% 
-  #ranks <- filter(playerRanks, Player == "LeBron James") %>% 
-    select(contains("eff"), contains("Per")) %>%
-    gather(Stat, Value) %>%
-    mutate(color = ifelse(grepl("TOV|PF",Stat),ifelse(Value > nrow(playerDashboard)/2,"green","red"),
-                          ifelse(Value < nrow(playerDashboard)/2,"green","red")))
-  
-  data <- merge(data,ranks[,c("Stat","color")],by="Stat")
-  
-  maxs <- select(playerMax, contains("eff"), contains("Per")) %>%
-    gather(Stat, Value)
-  
-  
-  ggplot(NULL) +
-    geom_bar(data = data, aes(Stat, Value,fill=color), stat = "identity") +
-    geom_bar(data = maxs, aes(Stat, Value), stat = "identity", fill = "grey", alpha = 0.3) +
-    coord_flip() +
-    geom_text(data = data, aes(Stat,0.9,label = formatC(Value*48,digits = 2))) +
-    geom_text(data = ranks, aes(Stat,1.1,label = paste0(Value,"/",nrow(playerDashboard)))) +
-    theme_minimal()
-  
-})
-
-renderPlot(barplotPlayerStats())
 ```
 
 
@@ -136,7 +103,7 @@ renderValueBox({
     value = formatC(vOff(), digits = 1, format = "f"),
     caption = paste0("Offense (#",rOff(),")"),
     icon = "",
-    color = ifelse(rOff() < nrow(playerRanks)/2,"green","red")
+    color = ifelse(rOff() < nrow(playerRanks)/3,"green",ifelse(rOff() < nrow(playerRanks)*2/3,"lightblue","red"))
   )
 })
 ```
@@ -163,7 +130,7 @@ renderValueBox({
     value = formatC(vDef(), digits = 1, format = "f"),
     caption = paste0("Defense (#",rDef(),")"),
     icon = "",
-    color = ifelse(rDef() < nrow(playerRanks)/2,"green","red")
+    color = ifelse(rDef() < nrow(playerRanks)/3,"green",ifelse(rDef() < nrow(playerRanks)*2/3,"lightblue","red"))
   )
 })
 ```
@@ -189,7 +156,7 @@ renderValueBox({
     value = paste0(formatC(vMin()*1000, digits = 1, format = "f"),"%"),
     caption = paste0("Usage (#",rMin(),")"),
     icon = "",
-    color = ifelse(rMin() < nrow(playerRanks)/2,"green","red")
+    color = ifelse(rMin() < nrow(playerRanks)/3,"green",ifelse(rMin() < nrow(playerRanks)*2/3,"lightblue","red"))
   )
 })
 ```
@@ -254,6 +221,74 @@ renderValueBox({
 Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
 
+### Player Stats
+```{r}
+barplotPlayerStats <- reactive({
+  
+  off_def <- filter(playerDashboard, Player == input$playerName) %>% 
+    select(Offense, Defense)
+  #data <- filter(playerDashboard, Player == "LeBron James") %>% 
+  data <- filter(playerDashboard, Player == input$playerName) %>% 
+    select(contains("eff"), contains("Per")) %>%
+    gather(Stat, Value) 
+    #mutate(Value = ifelse(grepl("Per",Stat), paste0(round(Value*100,1),"%"),
+    #                     ifelse(grepl("Min",Stat), paste0(round(Value*1000,1),"%"),round(Value,2))))
+  
+  ranks <- filter(playerRanks, Player == input$playerName) %>% 
+  #ranks <- filter(playerRanks, Player == "LeBron James") %>% 
+    select(contains("eff"), contains("Per")) %>%
+    gather(Stat, Value) %>%
+    mutate(color = ifelse(grepl("TOV|PF",Stat),
+                          ifelse(Value > nrow(playerDashboard)/3,"green",
+                                 ifelse(Value > nrow(playerDashboard)*2/3,"lightblue","red")),
+                          ifelse(Value < nrow(playerDashboard)/3,"green",
+                                 ifelse(Value < nrow(playerDashboard)*2/3,"lightblue","red")))) %>%
+    mutate(Rank = Value) %>%
+    select(-Value)
+  
+  data <- merge(data,ranks[,c("Stat","Rank","color")],by="Stat") %>% 
+    mutate(order = c(8,7,11,10,15,20,17,5,4,2,14,13,23,18,22,1,19,21,16,6,9,3,12)) %>%
+    mutate(Stat = as.factor(Stat)) %>%
+    arrange(order)
+
+  maxs <- select(playerMax, contains("eff"), contains("Per")) %>%
+    gather(Stat, Value) %>%
+    mutate(Stat = as.factor(Stat)) %>%
+    merge(data[,c("Stat","order")],by="Stat") %>%
+    arrange(order)
+
+  data$Stat = factor(data$Stat, levels = data$Stat[order(data$order, decreasing = FALSE)], ordered=TRUE, 
+                     labels = c("Points","effFG%","FG%","FG_A","FG_M","FG_2P%","FG_2PM","FG_2PA","FG_3P%","FG_3PM","FG_3PA","FT%","FT_M","FT_A","AST","TRB","DRB","ORB","STL","BLK","TOV","PF","Usage"))
+  
+  maxs$Stat = factor(maxs$Stat, levels = maxs$Stat[order(data$order, decreasing = FALSE)], ordered=TRUE, 
+                     labels = c("Points","effFG%","FG%","FG_A","FG_M","FG_2P%","FG_2PM","FG_2PA","FG_3P%","FG_3PM","FG_3PA","FT%","FT_M","FT_A","AST","TRB","DRB","ORB","STL","BLK","TOV","PF","Usage"))
+  
+  ggplot(NULL) +
+    geom_bar(data = data, aes(Stat, Value), stat = "identity", fill=factor(data$color)) +
+    geom_bar(data = maxs, aes(Stat, Value), stat = "identity", fill = "grey", alpha = 0.3) +
+    #coord_flip() +
+    geom_text(data = data, aes(Stat,0.95,label = ifelse(grepl("%",Stat), paste0(round(Value*100,1),"%"),
+                          ifelse(grepl("Usage",Stat), paste0(round(Value*1000,1),"%"),round(Value,2))))) +
+    geom_text(data = data, aes(Stat,.85,label = paste0("(",Rank,")"))) +
+    theme(legend.key=element_blank(),
+              legend.title=element_blank(),
+              legend.text = element_blank(),
+              legend.position="none",
+              plot.title = element_text(size=9),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              axis.text.x = element_text(size = 8),
+              #axis.text.y = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank(),
+              axis.ticks = element_blank())
+  
+})
+
+renderPlot(barplotPlayerStats())
+
+```
+
 ### Similar Players 
 ```{r}
 
@@ -313,12 +348,18 @@ playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20
     x_limit <- c(min(tsne_points_filter$x)-5,max(tsne_points_filter$x)+10) 
     y_limit <- c(min(tsne_points_filter$y)-5,max(tsne_points_filter$y)+10)
   
-  # cluster_players <- 
+  cluster_representative <- group_by(tsne_ready2, cluster) %>% 
+    mutate(x_mean = mean(x), y_mean=mean(y)) %>%
+    mutate(dist = sqrt((x-x_mean)^2+(y-y_mean)^2)) %>%
+    filter(dist==min(dist)) %>%
+    select(cluster, Player,Season, x,y,dist) %>%
+    ungroup()
   
   if (nrow(tsne_points_filter) > 0) {   
     ggplot(NULL, aes(x,y)) +  
-        geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.2) +
+        geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.5) +
         geom_point(data=tsne_points_filter,color = "red",size=4) +
+      geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
         geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
         theme(legend.key=element_blank(),
               legend.title=element_blank(),
@@ -334,7 +375,8 @@ playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20
               axis.ticks = element_blank())
   } else {
     ggplot(NULL, aes(x,y)) +  
-        geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.2) +
+        geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.5) +
+      geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
         theme(legend.key=element_blank(),
               legend.title=element_blank(),
               legend.text = element_blank(),
@@ -367,12 +409,18 @@ tsne_historical <- reactive({
     x_limit <- c(min(tsne_points_filter$x)-5,max(tsne_points_filter$x)+10) 
     y_limit <- c(min(tsne_points_filter$y)-5,max(tsne_points_filter$y)+10)
   
-  # cluster_players <- 
+  cluster_representative <- group_by(tsne_ready_hist2, cluster) %>% 
+    mutate(x_mean = mean(x), y_mean=mean(y)) %>%
+    mutate(dist = sqrt((x-x_mean)^2+(y-y_mean)^2)) %>%
+    filter(dist==min(dist)) %>%
+    select(cluster, Player,Season, x,y,dist) %>%
+    ungroup()
   
   if (nrow(tsne_points_filter) > 0) {   
     ggplot(NULL, aes(x,y)) +  
         geom_point(data=tsne_ready_hist2,aes(color = as.factor(cluster)),alpha = 0.2) +
         geom_point(data=tsne_points_filter,color = "red",size=4) +
+        geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
         geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
         theme(legend.key=element_blank(),
               legend.title=element_blank(),
@@ -388,8 +436,9 @@ tsne_historical <- reactive({
               axis.ticks = element_blank())
   } else {
     ggplot(NULL, aes(x,y)) +  
-        geom_point(data=tsne_ready_hist2,aes(color = as.factor(cluster)),alpha = 0.2) +
-        theme(legend.key=element_blank(),
+      geom_point(data=tsne_ready_hist2,aes(color = as.factor(cluster)),alpha = 0.2) +
+      geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
+      theme(legend.key=element_blank(),
               legend.title=element_blank(),
               legend.text = element_blank(),
               legend.position="none",
