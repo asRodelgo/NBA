@@ -125,3 +125,28 @@
   return(seasonWins) 
   
 }
+
+# Compute teams average stats
+.computeTeamStats <- function(data = playersNew, thisTeam = "All", actualOrPredicted="predicted", defaultMinutes = NULL,removeEffMin = TRUE) {
+  
+  if (actualOrPredicted=="actual"){ # whether actual data (before prediction) or predicted data
+    playersSumm <- .prepareModelPrediction(data, thisTeam)  
+  } else {
+    playersSumm <- .prepareModelOncePredicted(data, thisTeam)  
+  }
+  
+  # effMin is 1 of the variables that get averaged weighted by effMin, in case it adds noise to the
+  # neural network 
+  if (!is.null(defaultMinutes)) { 
+    playersSumm$effMin <- defaultMinutes
+  }
+  if (removeEffMin & ncol(select(playersSumm, one_of("effMin")))>0) { 
+    playersSumm <- select(playersSumm, -effMin)
+  }
+  
+  playersSumm <- mutate(playersSumm, Tm = substr(team_season,1,3), Season = substr(team_season,5,nchar(team_season))) %>%
+    select(Tm, Season, everything(), -team_season)
+  
+  return(playersSumm)
+  
+}

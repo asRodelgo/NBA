@@ -90,6 +90,11 @@ teamDashboard <- merge(teamsPredicted, win_predictions, by.x = "TeamCode", by.y 
   select(Tm = TeamCode, TeamOffense = TEAM_PTS, TeamDefense = TEAM_PTSAG, Season, wins)
 teamRanks <- mutate_if(teamDashboard, is.numeric, function(x) row_number(desc(x)))
 
+teamStats <- .computeTeamStats(data = playersPredictedStats_adjPer)
+teamStatRanks <- mutate_if(teamStats, is.numeric, function(x) row_number(desc(x)))
+teamRanks <- merge(teamStatRanks, select(teamRanks,-Season),by="Tm")
+teamMax <- summarise_if(teamStats, is.numeric, max)
+
 ```
 
 Players
@@ -548,5 +553,192 @@ renderValueBox({
     color = ifelse(rtDef() < nrow(teamRanks)/3,"green",ifelse(rtDef() < nrow(teamRanks)*2/3,"lightblue","red"))
   )
 })
+```
+
+### Wins {.value-box}
+```{r}
+
+vtWins <- reactive({
+  data <- filter(teamDashboard, Tm == input$teamCode) %>%
+    select(wins) %>% as.numeric()
+  data
+})
+
+rtWins <- reactive({
+  data <- filter(teamRanks, Tm == input$teamCode) %>%
+    #mutate(wins = nrow(teamRanks)-wins+1) %>%
+    select(wins) %>% as.numeric()
+  data
+})
+
+renderValueBox({
+  
+  valueBox(
+    value = formatC(vtWins(), digits = 1, format = "f"),
+    caption = paste0("Wins (#",rtWins(),")"),
+    icon = "",
+    color = ifelse(rtWins() < nrow(teamRanks)/3,"green",ifelse(rtWins() < nrow(teamRanks)*2/3,"lightblue","red"))
+  )
+})
+```
+
+### Age {.value-box}
+```{r}
+
+vtAge <- reactive({
+  data <- filter(teamStats, Tm == input$teamCode) %>%
+    select(Age) %>% as.numeric()
+  data
+})
+
+rtAge <- reactive({
+  data <- filter(teamRanks, Tm == input$teamCode) %>%
+    #mutate(wins = nrow(teamRanks)-wins+1) %>%
+    select(Age) %>% as.numeric()
+  data
+})
+
+renderValueBox({
+  
+  valueBox(
+    value = formatC(vtAge(), digits = 1, format = "f"),
+    caption = paste0("Age (#",rtAge(),")"),
+    icon = "",
+    color = "lightgrey"
+  )
+})
+```
+
+
+Row
+-----------------------------------------------------------------------
+
+### Team Stats
+```{r}
+barplotTeamStats <- reactive({
+  
+  off_def <- filter(teamDashboard, Tm == input$teamCode) %>% 
+    select(TeamOffense, TeamDefense)
+  #data <- filter(teamStats, Tm == "CLE") %>% 
+  data <- filter(teamStats, Tm == input$teamCode) %>% 
+    select(contains("eff"), contains("Per")) %>%
+    gather(Stat, Value) 
+   
+  ranks <- filter(teamRanks, Tm == input$teamCode) %>% 
+  #ranks <- filter(teamRanks, Tm == "CLE") %>% 
+    select(contains("eff"), contains("Per")) %>%
+    gather(Stat, Value) %>%
+    mutate(color = ifelse(grepl("TOV|PF",Stat),
+                          ifelse(Value > nrow(teamDashboard)/3,"green",
+                                 ifelse(Value > nrow(teamDashboard)*2/3,"lightblue","red")),
+                          ifelse(Value < nrow(teamDashboard)/3,"green",
+                                 ifelse(Value < nrow(teamDashboard)*2/3,"lightblue","red")))) %>%
+    mutate(Rank = Value) %>%
+    select(-Value)
+  
+  data <- merge(data,ranks[,c("Stat","Rank","color")],by="Stat") %>% 
+    mutate(order = c(8,7,11,10,15,20,17,5,4,2,14,13,18,22,1,19,21,16,6,9,3,12)) %>%
+    mutate(Stat = as.factor(Stat)) %>%
+    arrange(order)
+
+  maxs <- select(teamMax, contains("eff"), contains("Per")) %>%
+    gather(Stat, Value) %>%
+    mutate(Stat = as.factor(Stat)) %>%
+    merge(data[,c("Stat","order")],by="Stat") %>%
+    arrange(order)
+
+  data$Stat = factor(data$Stat, levels = data$Stat[order(data$order, decreasing = FALSE)], ordered=TRUE, 
+                     labels = c("Points","effFG%","FG%","FG_A","FG_M","FG_2P%","FG_2PM","FG_2PA","FG_3P%","FG_3PM","FG_3PA","FT%","FT_M","FT_A","AST","TRB","DRB","ORB","STL","BLK","TOV","PF"))
+  
+  maxs$Stat = factor(maxs$Stat, levels = maxs$Stat[order(data$order, decreasing = FALSE)], ordered=TRUE, 
+                     labels = c("Points","effFG%","FG%","FG_A","FG_M","FG_2P%","FG_2PM","FG_2PA","FG_3P%","FG_3PM","FG_3PA","FT%","FT_M","FT_A","AST","TRB","DRB","ORB","STL","BLK","TOV","PF"))
+  
+  ggplot(NULL) +
+    geom_bar(data = data, aes(Stat, Value), stat = "identity", fill=factor(data$color)) +
+    geom_bar(data = maxs, aes(Stat, Value), stat = "identity", fill = "grey", alpha = 0.3) +
+    #coord_flip() +
+    geom_text(data = data, aes(Stat,0.95,label = ifelse(grepl("%",Stat), paste0(round(Value*100,1),"%"),
+                          ifelse(grepl("Usage",Stat), paste0(round(Value*1000,1),"%"),round(Value,2))))) +
+    geom_text(data = data, aes(Stat,.85,label = paste0("(",Rank,")"))) +
+    theme(legend.key=element_blank(),
+              legend.title=element_blank(),
+              legend.text = element_blank(),
+              legend.position="none",
+              plot.title = element_text(size=9),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              axis.text.x = element_text(size = 8),
+              #axis.text.y = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank(),
+              axis.ticks = element_blank())
+  
+})
+
+renderPlot(barplotTeamStats())
+
+```
+
+Row
+---------------------------------------------------
+
+### Team t-SNE map 
+```{r}
+tsne_teamPredicted <- reactive({
+  
+playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20)
+  tsne_ready2 <- cbind(tsne_ready, cluster = playerCluster$cluster)
+  
+  tsne_points_filter <- filter(tsne_ready2, Tm == input$teamCode)
+    #centroid <- data.frame(x=(mean(tsne_points_filter$x)),y=mean(tsne_points_filter$y))
+    #x_limit <- c(min(tsne_points_filter$x)-5,max(tsne_points_filter$x)+10) 
+    #y_limit <- c(min(tsne_points_filter$y)-5,max(tsne_points_filter$y)+10)
+  
+  cluster_representative <- group_by(tsne_ready2, cluster) %>% 
+    mutate(x_mean = mean(x), y_mean=mean(y)) %>%
+    mutate(dist = sqrt((x-x_mean)^2+(y-y_mean)^2)) %>%
+    filter(dist==min(dist)) %>%
+    select(cluster, Player,Season, x,y,dist) %>%
+    ungroup()
+  
+  if (nrow(tsne_points_filter) > 0) {   
+    ggplot(NULL, aes(x,y)) +  
+        geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.5) +
+        geom_point(data=tsne_points_filter,color = "red",size=4) +
+      geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
+        geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
+        theme(legend.key=element_blank(),
+              legend.title=element_blank(),
+              legend.text = element_blank(),
+              legend.position="none",
+              plot.title = element_text(size=9),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              axis.text.x = element_blank(),
+              axis.text.y = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank(),
+              axis.ticks = element_blank())
+  } else {
+    ggplot(NULL, aes(x,y)) +  
+        geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.5) +
+      geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
+        theme(legend.key=element_blank(),
+              legend.title=element_blank(),
+              legend.text = element_blank(),
+              legend.position="none",
+              plot.title = element_text(size=9),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              axis.text.x = element_blank(),
+              axis.text.y = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank(),
+              axis.ticks = element_blank())
+  }
+
+})
+
+renderPlot(tsne_teamPredicted())
 ```
 
