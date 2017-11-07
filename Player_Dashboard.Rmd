@@ -98,6 +98,13 @@ teamMax <- summarise_if(teamStats, is.numeric, max)
 # t-SNE for teams
 tsne_ready_teams <- read.csv("data/tsne_ready_teams.csv", stringsAsFactors = FALSE)
 
+##########################
+# Regular Season schedule
+conferences <- read.csv("data/nba_conferences.csv", stringsAsFactors = FALSE) # Same as franchises 
+realSeasonSchedule <- read.csv("data/realSeasonSchedule.csv",stringsAsFactors = FALSE) # from write_seasonSchedule.R
+datesRange <- unique(realSeasonSchedule$Date)
+regSeasonOutcome <- .standings(real=TRUE)
+
 ```
 
 Players
@@ -596,7 +603,7 @@ vtAge <- reactive({
 
 rtAge <- reactive({
   data <- filter(teamRanks, Tm == input$teamCode) %>%
-    #mutate(wins = nrow(teamRanks)-wins+1) %>%
+    mutate(Age = nrow(teamRanks)-Age+1) %>%
     select(Age) %>% as.numeric()
   data
 })
@@ -712,7 +719,7 @@ renderTable(similarTeams())
 
 ```
 
-### Roster 
+### Roster
 ```{r}
 
 roster <- reactive({
@@ -789,4 +796,58 @@ playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20
 
 renderPlot(tsne_teamPredicted())
 ```
+
+Season
+=====================================
+
+Row {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+selectizeInput('regSeasonDay', 'Select a day:', choices=datesRange, selected = datesRange[1])
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Games Schedule
+```{r}
+games_table <- reactive({
+  #predGames <- .getGames("W",datesRange[1])
+  predGames <- .getGames("W",input$regSeasonDay)
+  predGames
+})
+  
+# reg season games
+renderTable(games_table())
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Standings West
+```{r}
+standingsW_table <- reactive({
+  stands <- .getConferenceStandings("W",input$regSeasonDay)
+  stands
+})
+  
+renderTable(standingsW_table())
+
+```
+
+### Standings East
+```{r}
+standingsE_table <- reactive({
+  stands <- .getConferenceStandings("E",input$regSeasonDay)
+  stands
+})
+  
+renderTable(standingsE_table())
+
+```
+
+
 

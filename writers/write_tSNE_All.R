@@ -110,14 +110,14 @@ write_tSNE_newSeason <- function(num_iter, max_num_neighbors) {
     select_if(is.numeric) %>% select(-Pick)
   
   if (nrow(data_tsne_sample)>0){
-    num_iter <- 500
+    num_iter <- 600
     max_num_neighbors <- 20
     set.seed(456) # reproducitility
     tsne_points <- tsne(data_tsne_sample, 
                         max_iter=as.numeric(num_iter), 
                         perplexity=as.numeric(max_num_neighbors), 
                         epoch=100)
-    #plot(tsne_points)
+    plot(tsne_points)
   } else {
     tsne_points <- c()
   }

@@ -1,5 +1,4 @@
 # reg season games
-
 output$PredGames <- DT::renderDataTable({
   predGames <- .getGames("W",input$regSeasonDay)
   return(predGames)
