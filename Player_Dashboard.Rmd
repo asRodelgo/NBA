@@ -43,7 +43,6 @@ nn_Defense <- model$finalModel
 
 # compute teams and players Offense and Defense
 playersNewPredicted_Final_adjMinPer2 <- select(playersPredictedStats_adjPer, -contains("Per"), -effFG, -effFGA, -effPTS, -effTRB)
-teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer2,actualOrPred="predicted")
 playersNewPredicted_OffDef <- mutate(playersNewPredicted_Final_adjMinPer2, Tm = Player, effMin = 1)
 playersPredicted <- .teamsPredictedPower(data = playersNewPredicted_OffDef,actualOrPred="predicted") %>%
   mutate(Player = substr(team_season,1,regexpr("_",team_season)-1),plusMinus = TEAM_PTS-TEAM_PTSAG) %>%
@@ -68,7 +67,33 @@ tsne_ready_hist <- read.csv("data/tsne_ready_hist.csv", stringsAsFactors = FALSE
 # tSNE for predicted stats in new season
 tsne_ready <- read.csv("data/tsne_ready_newSeason.csv", stringsAsFactors = FALSE)
 
+############################
+# Team loads
+# Actual Season schedule
+realSeasonSchedule <- read.csv("data/realSeasonSchedule.csv",stringsAsFactors = FALSE) # from write_seasonSchedule.R
+datesRange <- unique(realSeasonSchedule$Date)
+### Global hyperparameters for Normal distributions
+# get game scores from past 7 seasons (since 2010)
+gameScores <- read.csv("data/gameScores.csv", stringsAsFactors = FALSE) # write_scoreDifferentials.R 
+#sigmaHome <- sd(as.numeric(gameScores$pts_home), na.rm = TRUE)
+#sigmaAway <- sd(as.numeric(gameScores$pts_away), na.rm = TRUE)
+sigma <- sd(c(as.numeric(gameScores$pts_home),as.numeric(gameScores$pts_away)), na.rm = TRUE)
+avgHome <- mean(as.numeric(gameScores$pts_home), na.rm = TRUE)
+avgAway <- mean(as.numeric(gameScores$pts_away), na.rm = TRUE)
+global_mean <- mean(c(as.numeric(gameScores$pts_home),as.numeric(gameScores$pts_away)), na.rm = TRUE)
+home_away_factor <- avgHome - avgAway # how many extra points does a team score on average when playing home
+# Teams Predicted powers and wins
+teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer2,actualOrPred="predicted")
+win_predictions <- .teamsPredictedWins() 
+
+teamDashboard <- merge(teamsPredicted, win_predictions, by.x = "TeamCode", by.y = "team") %>%
+  select(Tm = TeamCode, TeamOffense = TEAM_PTS, TeamDefense = TEAM_PTSAG, Season, wins)
+teamRanks <- mutate_if(teamDashboard, is.numeric, function(x) row_number(desc(x)))
+
 ```
+
+Players
+=====================================
 
 Row {.sidebar}
 -----------------------------------------------------------------------
@@ -119,7 +144,7 @@ vDef <- reactive({
 
 rDef <- reactive({
   data <- filter(playerRanks, Player == input$playerName) %>%
-    mutate(Defense = nrow(playerRanks)-Defense) %>%
+    mutate(Defense = nrow(playerRanks)-Defense+1) %>%
     select(Defense) %>% as.numeric()
   data
 })
@@ -457,7 +482,71 @@ renderPlot(tsne_historical())
 
 ```
 
+Teams
+=====================================
+
+Row {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+selectizeInput("teamCode", "Select Team", choices = teamDashboard$Tm, selected = teamDashboard$Tm[1])
+
+```
 
 
+Row
+-------------------------------------------------------------------------
 
+### Offense {.value-box}
+```{r}
+
+vtOff <- reactive({
+  data <- filter(teamDashboard, Tm == input$teamCode) %>%
+    select(TeamOffense) %>% as.numeric()
+  data
+})
+
+rtOff <- reactive({
+  data <- filter(teamRanks, Tm == input$teamCode) %>%
+    select(TeamOffense) %>% as.numeric()
+  data
+})
+
+renderValueBox({
+  
+  valueBox(
+    value = formatC(vtOff(), digits = 1, format = "f"),
+    caption = paste0("Offense (#",rtOff(),")"),
+    icon = "",
+    color = ifelse(rtOff() < nrow(teamRanks)/3,"green",ifelse(rtOff() < nrow(teamRanks)*2/3,"lightblue","red"))
+  )
+})
+```
+
+### Defense {.value-box}
+```{r}
+
+vtDef <- reactive({
+  data <- filter(teamDashboard, Tm == input$teamCode) %>%
+    select(TeamDefense) %>% as.numeric()
+  data
+})
+
+rtDef <- reactive({
+  data <- filter(teamRanks, Tm == input$teamCode) %>%
+    mutate(TeamDefense = nrow(teamRanks)-TeamDefense+1) %>%
+    select(TeamDefense) %>% as.numeric()
+  data
+})
+
+renderValueBox({
+  
+  valueBox(
+    value = formatC(vtDef(), digits = 1, format = "f"),
+    caption = paste0("Defense (#",rtDef(),")"),
+    icon = "",
+    color = ifelse(rtDef() < nrow(teamRanks)/3,"green",ifelse(rtDef() < nrow(teamRanks)*2/3,"lightblue","red"))
+  )
+})
+```
 
