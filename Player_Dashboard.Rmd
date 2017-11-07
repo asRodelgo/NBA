@@ -610,7 +610,7 @@ renderValueBox({
 ```
 
 
-Row
+Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
 
 ### Team Stats
@@ -679,15 +679,30 @@ renderPlot(barplotTeamStats())
 
 ```
 
-Row
----------------------------------------------------
+### Roster 
+```{r}
+
+roster <- reactive({
+  
+  roster <- filter(playerDashboard, Tm == input$teamCode) %>%
+    arrange(desc(effMin)) %>%
+    mutate(Usage = paste0(round(effMin*1000,1),"%")) %>%
+    select(Player,Pos,Age,Exp,Offense,Defense,Usage)
+    
+  roster
+})
+
+renderTable(roster())  
+
+```
 
 ### Team t-SNE map 
 ```{r}
 tsne_teamPredicted <- reactive({
   
 playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20)
-  tsne_ready2 <- cbind(tsne_ready, cluster = playerCluster$cluster)
+  tsne_ready2 <- cbind(tsne_ready, cluster = playerCluster$cluster) %>%
+    merge(playerDashboard[,c("Player","effMin","Offense","Defense")], by="Player")
   
   tsne_points_filter <- filter(tsne_ready2, Tm == input$teamCode)
     #centroid <- data.frame(x=(mean(tsne_points_filter$x)),y=mean(tsne_points_filter$y))
@@ -704,7 +719,7 @@ playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20
   if (nrow(tsne_points_filter) > 0) {   
     ggplot(NULL, aes(x,y)) +  
         geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.5) +
-        geom_point(data=tsne_points_filter,color = "red",size=4) +
+        geom_point(data=tsne_points_filter,color = "red",aes(size=effMin*10)) +
       geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
         geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
         theme(legend.key=element_blank(),
