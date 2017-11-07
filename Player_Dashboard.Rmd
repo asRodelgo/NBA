@@ -95,6 +95,9 @@ teamStatRanks <- mutate_if(teamStats, is.numeric, function(x) row_number(desc(x)
 teamRanks <- merge(teamStatRanks, select(teamRanks,-Season),by="Tm")
 teamMax <- summarise_if(teamStats, is.numeric, max)
 
+# t-SNE for teams
+tsne_ready_teams <- read.csv("data/tsne_ready_teams.csv", stringsAsFactors = FALSE)
+
 ```
 
 Players
@@ -676,6 +679,36 @@ barplotTeamStats <- reactive({
 })
 
 renderPlot(barplotTeamStats())
+
+```
+
+### Similar Teams 
+```{r}
+
+similarTeams <- reactive({
+  
+    distCouPerX <- filter(tsne_ready_teams,Tm == input$teamCode)$x
+    #distCouPerX <- filter(tsne_ready_teams,Tm == "CLE")$x
+    #distCouPerY <- filter(tsne_ready_teams,Tm == "CLE")$y
+    distCouPerY <- filter(tsne_ready_teams,Tm == input$teamCode)$y
+    
+    similar_teams <- tsne_ready_teams %>%
+      select(Season,Tm,x,y) %>%
+      mutate(dist = sqrt((x-distCouPerX)^2+(y-distCouPerY)^2)) %>%
+      arrange(dist) %>%
+      select(-x,-y) %>%
+      top_n(30,-dist) %>% 
+      tail(29) %>% 
+      merge(teamDashboard[,c("Tm","TeamOffense","TeamDefense","wins")], by="Tm") %>%
+      mutate(Offense = round(TeamOffense,1), Defense = round(TeamDefense,1),dist = round(dist,2)) %>%
+      arrange(dist) %>%
+      select(Team = Tm, Offense, Defense, `Euclidean dist` = dist)
+    
+  similar_teams
+})
+
+renderTable(similarTeams())  
+
 
 ```
 

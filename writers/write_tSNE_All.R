@@ -147,3 +147,51 @@ write_tSNE_ready_newSeason <- function(){
   
   write.csv(tsne_ready, "data/tsne_ready_newSeason.csv", row.names = FALSE)
 }
+
+write_tSNE_teams <- function(){
+  
+  require(tsne)
+  playersPredictedStats_adjPer <- read.csv("data/playersNewPredicted_Final_adjPer.csv", stringsAsFactors = FALSE)
+  teamStats <- .computeTeamStats(data = playersPredictedStats_adjPer)
+  data_tsne_sample <- teamStats %>% 
+    select_if(is.numeric) %>%
+    mutate_all(function(x) (x-min(x))/(max(x)-min(x)))
+  
+  if (nrow(data_tsne_sample)>0){
+    num_iter <- 1500
+    max_num_neighbors <- 2
+    set.seed(456) # reproducitility
+    tsne_points <- tsne(data_tsne_sample, 
+                        max_iter=as.numeric(num_iter), 
+                        perplexity=as.numeric(max_num_neighbors), 
+                        epoch=100)
+    plot(tsne_points)
+  } else {
+    tsne_points <- c()
+  }
+  write.csv(tsne_points, "data/tsne_points_teams.csv",row.names = FALSE)
+}
+
+# put together tsne_ready predicted to load at start of dashboards
+write_tSNE_ready_teams <- function(){
+  
+  source("helper_functions/similarityFunctions.R")
+  tsne_points <- read.csv("data/tsne_points_teams.csv",stringsAsFactors = FALSE)
+  
+  # load data
+  playersPredictedStats_adjPer <- read.csv("data/playersNewPredicted_Final_adjPer.csv", stringsAsFactors = FALSE)
+  data_tsne_sample <- .computeTeamStats(data = playersPredictedStats_adjPer) %>%
+    select_if(is.character)
+  # tsne_points are pre-calculated from write_tSNE_All.R and saved in data/ directory
+  # using this function: tsne_points <- write_tSNE_compute_All()
+  if (!nrow(data_tsne_sample)==nrow(tsne_points)){ # in case labels and coordinates have different sizes
+    tsne_ready <- tsne_points
+  } else {
+    tsne_ready <- cbind(data_tsne_sample,tsne_points)
+  }
+  
+  names(tsne_ready)[ncol(tsne_ready)-1] <- "x"
+  names(tsne_ready)[ncol(tsne_ready)] <- "y"
+  
+  write.csv(tsne_ready, "data/tsne_ready_teams.csv", row.names = FALSE)
+}
