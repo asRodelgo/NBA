@@ -50,7 +50,6 @@
   return(prob_HvsA)
 }
 
-
 .computeScores <- function(real=FALSE){
   
   # Load season schedule
@@ -158,9 +157,10 @@
   
   standings <- regSeasonOutcome[[1]]
   #day <- length(standings)
-  confPredStandings <- arrange(filter(dplyr::select(standings[[day]], conference, team,W=win,L=lose,`%W Home`=win_home_perc,`%W Conf`=win_conf_perc,
+  confPredStandings <- arrange(filter(select(standings[[day]], conference, team,W=win,L=lose,`%W Home`=win_home_perc,`%W Conf`=win_conf_perc,
                                                     PTS=avg_pts,PTSA=avg_pts_ag,Strk=streak), conference == conf), desc(W/(W+L)))
-  confPredStandings <- dplyr::select(confPredStandings,-conference)
+  confPredStandings <- select(confPredStandings,-conference) %>%
+    mutate_if(is.numeric, function(x) round(x,1))
   
   return(confPredStandings)
 }
@@ -175,5 +175,39 @@
   confPredGames <- dplyr::select(confPredGames,game,A=away_points,H=home_points)
   
   return(confPredGames)
+}
+
+.getGameProbability <- function(conf,this_day){
+  
+  games <- regSeasonOutcome[[2]]
+  #day <- length(standings)
+  confPredGamesProbs <- select(filter(games,day==this_day), away_team,home_team,
+                                 away_points,home_points) %>%
+    mutate(game = paste0(away_team," @ ",home_team)) %>%
+    group_by(game) %>%
+    mutate(Prob = .calculateWinProbability(home_team,away_team)) %>%
+    select(game,A=away_points,H=home_points,Prob)
+  
+  return(confPredGamesProbs)
+}
+
+.winProbability_matrix <- function(){
+  
+  prob_matrix <- data.frame()
+  k <- 1
+  for (i in 1:length(teamDashboard$Tm)){
+    for (j in 1:length(teamDashboard$Tm)){
+      prob_matrix[k,1] <- teamDashboard$Tm[i]
+      prob_matrix[k,2] <- teamDashboard$Tm[j]
+      prob_matrix[k,3] = .calculateWinProbability(teamDashboard$Tm[i],teamDashboard$Tm[j])
+      k <- k + 1
+    }
+  }
+  
+  names(prob_matrix) <- c("Home_Team", "Away_Team", "Win_Prob")
+  
+  prob_matrix2 <- spread(prob_matrix,Away_Team,Win_Prob)
+  
+  return(prob_matrix2)
 }
 

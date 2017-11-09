@@ -2,6 +2,7 @@
 title: "NBA Player Dashboard"
 output: 
   flexdashboard::flex_dashboard:
+    theme: flatly
     orientation: rows
     vertical_layout: fill
 runtime: shiny
@@ -797,6 +798,36 @@ playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20
 renderPlot(tsne_teamPredicted())
 ```
 
+### Facet t-SNE maps 
+```{r}
+tsne_teamPredicted_facets <- reactive({
+  
+  playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20)
+  tsne_ready2 <- cbind(tsne_ready, cluster = playerCluster$cluster) %>%
+    merge(playerDashboard[,c("Player","Tm","effMin","Offense","Defense")], by=c("Player","Tm"))
+  
+    ggplot(data=tsne_ready2, aes(x,y)) +  
+      #geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.2) +
+      geom_point(data=tsne_ready2,color = "red",aes(size=effMin)) +
+      #geom_text(data=tsne_ready2,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
+      theme(legend.position = "right") +
+      facet_wrap(~Tm) +
+       theme( plot.title = element_text(size=9),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              axis.text.x = element_blank(),
+              axis.text.y = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank(),
+              axis.ticks = element_blank())
+  
+
+})
+
+renderPlot(tsne_teamPredicted_facets())
+```
+
+
 Season
 =====================================
 
@@ -808,27 +839,23 @@ selectizeInput('regSeasonDay', 'Select a day:', choices=datesRange, selected = d
 
 ```
 
-Row
+Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
 
-### Games Schedule
+### Game Probabilities
 ```{r}
-games_table <- reactive({
-  #predGames <- .getGames("W",datesRange[1])
-  predGames <- .getGames("W",input$regSeasonDay)
+games_probs <- reactive({
+  predGames <- .getGameProbability("W",input$regSeasonDay)
   predGames
 })
   
 # reg season games
-renderTable(games_table())
-
+renderTable(games_probs())
 ```
 
-Row
------------------------------------------------------------------------
-
-### Standings West
+### Standings
 ```{r}
+
 standingsW_table <- reactive({
   stands <- .getConferenceStandings("W",input$regSeasonDay)
   stands
@@ -836,16 +863,24 @@ standingsW_table <- reactive({
   
 renderTable(standingsW_table())
 
-```
-
 ### Standings East
-```{r}
 standingsE_table <- reactive({
   stands <- .getConferenceStandings("E",input$regSeasonDay)
   stands
 })
   
 renderTable(standingsE_table())
+
+```
+
+### Probability Matrix
+```{r}
+win_probs <- reactive({
+  stands <- .winProbability_matrix()
+  stands
+})
+  
+renderTable(win_probs())                        
 
 ```
 
