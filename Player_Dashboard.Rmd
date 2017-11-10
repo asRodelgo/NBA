@@ -953,3 +953,91 @@ renderPlot(fitPlot())
 
 $\Large{X \sim \mathrm{N}(\hat{\mu}_O,\hat{\sigma})}$
 
+Empirical evidence
+======================================
+
+```{r}
+avg_points <- mutate(gameScores, pts_home = as.numeric(pts_home), pts_away = as.numeric(pts_away)) %>%
+  filter(!is.na(pts_home), !is.na(pts_away))
+
+```
+
+Row
+-------------------------
+
+### Normal Hyperparameters
+$\hat{\sigma}$ = `r sigma`
+
+$\hat{\mu}_H$ = `r avgHome`
+
+$\hat{\mu}_A$ = `r avgAway`
+
+$\hat{\mu}$ = `r global_mean`
+
+${HomeAwayFactor}$ = `r home_away_factor`
+
+### Means
+```{r}
+
+ggplot(avg_points) +
+  geom_density(aes(x=pts_home)) +
+  geom_density(aes(x=pts_away))
+
+```
+
+Row
+----------------------
+
+### College to NBA minute reduction by draft pick
+```{r}
+collegePlayersHist <- read.csv("data/collegePlayersHist.csv", stringsAsFactors = FALSE)
+rookiesDraftHist <- read.csv("data/rookiesDraftHist.csv", stringsAsFactors = FALSE)
+# compute % minutes played per player:
+collegeMinutes <- merge(collegePlayersHist,rookiesDraftHist[,c("Player","Pick","Year")], by = "Player") %>%
+  mutate(perMin = MP/(G*40)) %>%
+  group_by(Player) %>%
+  mutate(perMin = mean(perMin, na.rm=TRUE)) %>% # average minutes played per game in ther college years
+  distinct(Player, .keep_all=TRUE) %>%
+  filter(!is.na(perMin))
+# now do the same for NBA players by experience year
+nbaMinutes <- select(playersHist, Player,Season,Age,Tm,G,MP) %>%
+  filter(!(Tm == "TOT")) %>%
+  group_by(Player) %>%
+  filter(Age == min(Age)) %>% # keep players when they were younger (rookie year)
+  group_by(Player,Season) %>%
+  filter(G >= 30) %>% # played at least 30 games
+  mutate(perMin = mean(MP, na.rm=TRUE)/48) %>%
+  distinct(Player, .keep_all=TRUE)
+# put them together
+college2nbaMinutes <- merge(nbaMinutes,collegeMinutes, by = "Player", all.x = TRUE) %>%
+  mutate(minDiff = perMin.y-perMin.x) %>%
+  filter(!is.na(minDiff))
+# see if there is correlation between player Rank and effMin of play from college to NBA
+#plot(college2nbaMinutes$Rk,college2nbaMinutes$minDiff, xlim = c(0,100))
+# no clear pattern so I will use the average for simplification. 
+# Although Rank is different from Draft pick. Let's see this by draft pick for the top 30 picks:
+#plot(college2nbaMinutes$Pick,college2nbaMinutes$minDiff)
+draftMinutesInNBA <- arrange(college2nbaMinutes, desc(Pick)) %>%
+  group_by(Pick) %>%
+  summarise(mean(minDiff)) %>%
+  mutate(Pick = as.numeric(Pick)) %>%
+  arrange(Pick)
+
+barplot(draftMinutesInNBA$`mean(minDiff)`)
+
+```
+
+### Distribution of play time
+```{r}
+topMinShare <- .minutes_density(playersHist,5)
+averageShare <- group_by(topMinShare,Season) %>%
+  summarise_if(is.numeric, mean) %>%
+  ungroup() %>%
+  summarise_if(is.numeric, mean)
+incrementShare <- gather(averageShare,top_n,percent)
+
+plot(seq(18,1,-1),incrementShare$percent)
+
+```
+
+
