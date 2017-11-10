@@ -884,5 +884,72 @@ renderTable(win_probs())
 
 ```
 
+Model
+======================================
 
+Row {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+selectizeInput("nnet", "Select Neural Net", choices = c("Offense","Defense"), selected = "Offense")
+
+```
+
+Row
+----------------------------------------
+
+### Neural Network
+```{r, fig.height=6,fig.width=6}
+
+selectNNet <- reactive({
+  filename <- normalizePath(file.path('./images/',
+                              paste('nnet_', input$nnet, '.png', sep='')))
+  # Return a list containing the filename
+    list(src = filename,
+         width = '100%',
+         height = '100%')
+})
+
+renderImage({
+    selectNNet()
+  }, deleteFile = FALSE)
+
+```
+
+### Model 
+```{r}
+
+thisModel <- reactive({
+  if (input$nnet == "Offense") load("data/modelNeuralnet5_PTS.Rdata") else load("data/modelNeuralnet5_PTSA.Rdata")
+  datatable(model$results,options = list(dom='t',pageLength = nrow(model$results), autoWidth = TRUE)) %>%
+  formatStyle(c(0), target = 'row', fontSize = '80%')
+})
+
+renderDataTable(thisModel())
+
+```
+
+Row
+----------------------------------
+
+### Fit  
+```{r}
+fitPlot <- reactive({
+  if (input$nnet == "Offense") {
+    resp <- nn_Offense
+    load("data/modelNeuralnet5_PTS.Rdata")
+  } else {
+     resp <- nn_Defense
+     load("data/modelNeuralnet5_PTSA.Rdata")
+  }
+  plot(model$trainingData$.outcome,resp$response)
+})
+
+renderPlot(fitPlot())
+
+```
+
+### Probability Distribution
+
+$\Large{X \sim \mathrm{N}(\hat{\mu}_O,\hat{\sigma})}$
 
