@@ -921,8 +921,20 @@ renderImage({
 
 thisModel <- reactive({
   if (input$nnet == "Offense") load("data/modelNeuralnet5_PTS.Rdata") else load("data/modelNeuralnet5_PTSA.Rdata")
-  datatable(model$results,options = list(dom='t',pageLength = nrow(model$results), autoWidth = TRUE)) %>%
-  formatStyle(c(0), target = 'row', fontSize = '80%')
+  datatable(model$results,
+            extensions = c('Scroller','FixedColumns'),
+            options = list(dom='t',
+                           pageLength = nrow(model$results), 
+                           autoWidth = TRUE,
+                           deferRender = TRUE,
+                           scrollY = 200,
+                           scrollX = TRUE,
+                           fixedColumns = list(leftColumns = 3),
+                           scroller = TRUE,
+                           initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#1f8e2e', 'color': '#fff', 'font-size': '9px'});","}")), 
+            rownames = FALSE) %>%
+    formatStyle(0, target = 'row', fontSize = '60%', lineHeight = '80%') %>%
+    formatRound(c(4:ncol(model$results)),digits = 3)
 })
 
 renderDataTable(thisModel())
@@ -959,6 +971,14 @@ Empirical evidence
 ```{r}
 avg_points <- mutate(gameScores, pts_home = as.numeric(pts_home), pts_away = as.numeric(pts_away)) %>%
   filter(!is.na(pts_home), !is.na(pts_away))
+
+```
+
+Row {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+sliderInput("pastSeasons", "Select Number of Seasons:", min = 1, max = 20, value = 5)
 
 ```
 
@@ -1050,14 +1070,20 @@ ggplot(draftMinutesInNBA, aes(Pick, `mean(minDiff)`)) +
 
 ### Distribution of play time
 ```{r}
-topMinShare <- .minutes_density(playersHist,5)
-averageShare <- group_by(topMinShare,Season) %>%
-  summarise_if(is.numeric, mean) %>%
-  ungroup() %>%
-  summarise_if(is.numeric, mean)
-incrementShare <- gather(averageShare,top_n,percent)
+plotDistribTime <- reactive({
+  
+  topMinShare <- .minutes_density(playersHist,input$pastSeasons)
+  averageShare <- group_by(topMinShare,Season) %>%
+    summarise_if(is.numeric, mean) %>%
+    ungroup() %>%
+    summarise_if(is.numeric, mean)
+  incrementShare <- gather(averageShare,top_n,percent)
+  
+  plot(seq(18,1,-1),incrementShare$percent, xlab = "top n players", ylab = paste0("Accumulated % time (last ",input$pastSeasons,")"))
 
-plot(seq(18,1,-1),incrementShare$percent)
+})
+  
+renderPlot(plotDistribTime())
 
 ```
 
