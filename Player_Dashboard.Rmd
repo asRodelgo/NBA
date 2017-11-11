@@ -966,22 +966,34 @@ Row
 -------------------------
 
 ### Normal Hyperparameters
-$\hat{\sigma}$ = `r sigma`
+$\hat{\sigma}$ = `r round(sigma,2)`
 
-$\hat{\mu}_H$ = `r avgHome`
+$\hat{\mu}_H$ = `r round(avgHome,2)`
 
-$\hat{\mu}_A$ = `r avgAway`
+$\hat{\mu}_A$ = `r round(avgAway,2)`
 
-$\hat{\mu}$ = `r global_mean`
+$\hat{\mu}$ = `r round(global_mean,2)`
 
-${HomeAwayFactor}$ = `r home_away_factor`
+${HomeAwayFactor = \hat{\mu}_H - \hat{\mu}_A}$ = `r round(home_away_factor,2)`
 
 ### Means
 ```{r}
 
 ggplot(avg_points) +
-  geom_density(aes(x=pts_home)) +
-  geom_density(aes(x=pts_away))
+  geom_density(aes(x=pts_home), fill = "lightblue", alpha = .3) +
+  geom_vline(xintercept = avgHome, show.legend = round(avgHome,2), color = "blue") +
+  geom_text(aes(x = avgHome+5,y = -0.005,label = round(avgHome,2))) +
+  geom_density(aes(x=pts_away), fill = "pink", alpha = .3) +
+  geom_vline(xintercept = avgAway, show.legend = round(avgAway,2), color = "red") +
+  geom_text(aes(x = avgAway-5, y = -0.005, label = round(avgAway,2))) +
+  theme( plot.title = element_text(size=9),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              #axis.text.x = element_blank(),
+              axis.text.y = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank(),
+              axis.ticks = element_blank())
 
 ```
 
@@ -1023,7 +1035,16 @@ draftMinutesInNBA <- arrange(college2nbaMinutes, desc(Pick)) %>%
   mutate(Pick = as.numeric(Pick)) %>%
   arrange(Pick)
 
-barplot(draftMinutesInNBA$`mean(minDiff)`)
+ggplot(draftMinutesInNBA, aes(Pick, `mean(minDiff)`)) +
+  geom_bar(stat = "identity") +
+  theme( plot.title = element_text(size=9),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              #axis.text.x = element_blank(),
+              #axis.text.y = element_blank(),
+              #axis.title.x = element_blank(),
+              #axis.title.y = element_blank(),
+              axis.ticks = element_blank())
 
 ```
 
