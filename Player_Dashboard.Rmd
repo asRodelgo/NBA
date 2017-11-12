@@ -893,6 +893,8 @@ Row {.sidebar}
 ```{r}
 selectizeInput("nnet", "Select Neural Net", choices = c("Offense","Defense"), selected = "Offense")
 
+selectizeInput("layer", "Select layer:", choices = c(1:4), selected = 0)
+
 ```
 
 Row
@@ -901,7 +903,13 @@ Row
 ### Neural Network
 ```{r, fig.height=6,fig.width=6}
 
+# Create pdf plots by running these:
+# plot(nn_Defense, arrow.length = .15, col.entry = "red", col.out = "green", fontsize = 9, dimension = 10)
+# plot(nn_Offense, arrow.length = .15, col.entry = "red", col.out = "green", fontsize = 9, dimension = 10)
+# Then open with preview and export as .PNG into images/
+
 selectNNet <- reactive({
+  
   filename <- normalizePath(file.path('./images/',
                               paste('nnet_', input$nnet, '.png', sep='')))
   # Return a list containing the filename
@@ -916,6 +924,87 @@ renderImage({
 
 ```
 
+### Weights
+```{r}
+
+table_weight <- reactive({
+  if (input$nnet == "Offense") {
+    model <- nn_Offense
+    load("data/modelNeuralnet5_PTS.Rdata")
+    Off_or_Def <- "PTS"
+  } else {
+     model <- nn_Defense
+     load("data/modelNeuralnet5_PTSA.Rdata")
+     Off_or_Def <- "PTSA"
+  }
+  
+  weights <- as.data.frame(model$weights[[1]][input$layer])
+  weights
+  
+})
+
+renderTable(table_weight())
+
+```
+
+Row
+----------------------------------
+
+### Best Fit
+```{r}
+fitPlot <- reactive({
+  if (input$nnet == "Offense") {
+    model <- nn_Offense
+    load("data/modelNeuralnet5_PTS.Rdata")
+    Off_or_Def <- "PTS"
+  } else {
+     model <- nn_Defense
+     load("data/modelNeuralnet5_PTSA.Rdata")
+     Off_or_Def <- "PTSA"
+  }
+  
+  playersSumm <- .prepareModel(Off_or_Def)
+  ## Strip linearly relationed columns: FG, FGA, FG%,3P%,2P%,FT%,effFG%, effPTS
+  playersSumm <- select(playersSumm, -contains("Per"), -effFG, -effFGA, -effPTS, -effTRB)
+  ## End of Strip
+  scaleMaxMin <- .getScaleLimits(Off_or_Def, data = playersSumm)
+  # scale the data [0,1] for easier convergence of backpropagation algorithm
+  maxs <- scaleMaxMin$maxs 
+  mins <- scaleMaxMin$mins
+  
+  team_season <- playersSumm[,1]
+  scaled <- as.data.frame(scale(playersSumm[,-1], center = mins, scale = maxs - mins))
+  scaled <- cbind(team_season,scaled)
+  
+  ###
+  set.seed(998)
+  perc <- 0.75
+  train_split <- round(perc*nrow(playersSumm))
+  
+  teams_train <- sample(playersSumm$team_season,train_split)
+  teams_test <- filter(playersSumm, !(team_season %in% teams_train))$team_season
+  training <- filter(scaled, team_season %in% teams_train)
+  testing <- filter(scaled, team_season %in% teams_test)
+  
+  # remove non-numeric variables
+  train_teamSeasonCodes <- training$team_season
+  test_teamSeasonCodes <- testing$team_season
+  training <- training[,-1]
+  testing <- testing[,-1]
+  
+  # model already trained (loaded as model above)
+  predict_data <- training
+  predicted <- predict(model, newdata = predict_data)
+  predictions <- data.frame(actual_PTS = predict_data$PTS, predicted_PTS = predicted)
+  plot(predictions)
+  
+})
+
+renderPlot(fitPlot())
+
+```
+
+
 ### Model 
 ```{r}
 
@@ -927,7 +1016,7 @@ thisModel <- reactive({
                            pageLength = nrow(model$results), 
                            autoWidth = TRUE,
                            deferRender = TRUE,
-                           scrollY = 200,
+                           scrollY = 250,
                            scrollX = TRUE,
                            fixedColumns = list(leftColumns = 3),
                            scroller = TRUE,
@@ -941,29 +1030,9 @@ renderDataTable(thisModel())
 
 ```
 
-Row
-----------------------------------
+<!-- ### Probability Distribution -->
 
-### Fit  
-```{r}
-fitPlot <- reactive({
-  if (input$nnet == "Offense") {
-    resp <- nn_Offense
-    load("data/modelNeuralnet5_PTS.Rdata")
-  } else {
-     resp <- nn_Defense
-     load("data/modelNeuralnet5_PTSA.Rdata")
-  }
-  plot(model$trainingData$.outcome,resp$response)
-})
-
-renderPlot(fitPlot())
-
-```
-
-### Probability Distribution
-
-$\Large{X \sim \mathrm{N}(\hat{\mu}_O,\hat{\sigma})}$
+<!-- $\Large{X \sim \mathrm{N}(\hat{\mu}_O,\hat{\sigma})}$ -->
 
 Empirical evidence
 ======================================
