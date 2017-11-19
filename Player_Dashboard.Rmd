@@ -505,7 +505,12 @@ Row {.sidebar}
 -----------------------------------------------------------------------
 
 ```{r}
+tags$style(type='text/css', ".selectize-input { font-size: 80%; line-height: 10px; width: 95%; min-height: 25px; max-height: 30px} .selectize-dropdown { font-size: 80%; line-height: 15px; }")
 selectizeInput("teamCode", "Select Team", choices = teamDashboard$Tm, selected = teamDashboard$Tm[1])
+sliderInput("num_clusters", "Number of clusters", min = 2, max = 100, value = 10)
+selectizeInput("team_tsne_color", "Color by", choices = c("K_means","Offense","Defense"), selected = "K_means")
+radioButtons("bubble_size", "Balloon size proportional to usage?", c("Yes" = "yes",
+                 "No" = "no"))
 
 ```
 
@@ -724,45 +729,69 @@ renderTable(similarTeams())
 ```{r}
 
 roster <- reactive({
-  
+  #roster <- filter(playerDashboard, Tm == "ATL") %>%
   roster <- filter(playerDashboard, Tm == input$teamCode) %>%
+    merge(select(playerRanks,Player,rank_Off = Offense,rank_Def = Defense), by="Player") %>%
+    mutate(rank_Def = nrow(playerDashboard) - rank_Def - 1) %>%
     arrange(desc(effMin)) %>%
     mutate(Usage = paste0(round(effMin*1000,1),"%")) %>%
-    select(Player,Pos,Age,Exp,Offense,Defense,Usage)
-    
-  roster
+    select(Player,Pos,Age,Exp,Offense,Defense,Usage,rank_Off,rank_Def)
+  
+  datatable(roster, options = list(dom="t", pageLength = 25
+                                   #, columnDefs = list(list(visible = FALSE, targets = c((ncol(roster)-2):(ncol(roster)-1))))
+                                   ), rownames = FALSE) %>%
+    formatStyle('Offense', valueColumns='rank_Off', color = JS(paste0("value < ",nrow(playerRanks)/3," ? 'green' : value < ",nrow(playerRanks)*2/3," ? 'lightblue' : 'red'")), fontWeight = 'bold') %>%
+    formatStyle('Defense', valueColumns='rank_Def', color = JS(paste0("value < ",nrow(playerRanks)/3," ? 'green' : value < ",nrow(playerRanks)*2/3," ? 'lightblue' : 'red'")), fontWeight = 'bold') %>%
+    formatRound(c('Offense','Defense'), 2) %>%
+    formatStyle(c('Exp','Usage'), textAlign = 'right') %>%
+    formatStyle(0, target = 'row', fontSize = '70%', lineHeight = '70%')
+
 })
 
-renderTable(roster())  
+renderDataTable(roster())  
 
 ```
 
-### Team t-SNE map 
+### Team t-SNE map
 ```{r}
 tsne_teamPredicted <- reactive({
   
-playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20)
-  tsne_ready2 <- cbind(tsne_ready, cluster = playerCluster$cluster) %>%
+  #playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20)
+  playerCluster <- kmeans(tsne_ready[, c("x","y")], input$num_clusters, nstart = 10, iter.max = 20)
+  tsne_ready2 <- cbind(tsne_ready, K_means = playerCluster$cluster) %>%
     merge(playerDashboard[,c("Player","effMin","Offense","Defense")], by="Player")
   
+  #tsne_points_filter <- filter(tsne_ready2, Tm == "ATL")
   tsne_points_filter <- filter(tsne_ready2, Tm == input$teamCode)
     #centroid <- data.frame(x=(mean(tsne_points_filter$x)),y=mean(tsne_points_filter$y))
     #x_limit <- c(min(tsne_points_filter$x)-5,max(tsne_points_filter$x)+10) 
     #y_limit <- c(min(tsne_points_filter$y)-5,max(tsne_points_filter$y)+10)
   
-  cluster_representative <- group_by(tsne_ready2, cluster) %>% 
+  cluster_representative <- group_by(tsne_ready2, K_means) %>% 
     mutate(x_mean = mean(x), y_mean=mean(y)) %>%
     mutate(dist = sqrt((x-x_mean)^2+(y-y_mean)^2)) %>%
     filter(dist==min(dist)) %>%
-    select(cluster, Player,Season, x,y,dist) %>%
+    select(K_means, Player,Season, x,y,dist) %>%
     ungroup()
   
-  if (nrow(tsne_points_filter) > 0) {   
-    ggplot(NULL, aes(x,y)) +  
-        geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.5) +
-        geom_point(data=tsne_points_filter,color = "red",aes(size=effMin*10)) +
-      geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
-        geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
+  # color by
+  #thisVar <- "Offense"
+  #tsne_ready2 <- mutate(tsne_ready2, cluster = ifelse(input$team_tsne_color == "Offense", Offense, ifelse(input$team_tsne_color == "Defense", Defense,cluster))) 
+  #tsne_ready2 <- mutate(tsne_ready2, cluster = ifelse(thisVar == "Offense", Offense, ifelse(thisVar == "Defense", Defense,factor(cluster)))) 
+  #tsne_ready2 <- mutate(tsne_ready2, cluster = Offense) 
+  #tsne_points_filter <- mutate(tsne_points_filter, cluster = ifelse(input$team_tsne_color == "Offense", Offense, ifelse(input$team_tsne_color == "Defense", Defense,cluster))) 
+  #tsne_points_filter <- mutate(tsne_points_filter, cluster = ifelse(thisVar == "Offense", Offense, ifelse(thisVar == "Defense", Defense,cluster))) 
+  #tsne_points_filter <- mutate(tsne_points_filter, cluster = Offense)
+  if (input$bubble_size == "yes") size_balloons <- "effMin*10" else size_balloons <- 5
+  
+  if (nrow(tsne_points_filter) > 0) {
+    if (!(input$team_tsne_color == "K_means")) {
+      ggplot(NULL, aes(x,y)) +  
+        geom_point(data=tsne_ready2,aes(color = eval(parse(text=input$team_tsne_color))),alpha = 0.6) +
+        geom_point(data=tsne_points_filter,aes(color = eval(parse(text=input$team_tsne_color)), size=eval(parse(text = size_balloons))),alpha = 1) +
+        scale_color_gradient2(midpoint = eval(parse(text = paste0("median(as.numeric(tsne_ready2$",input$team_tsne_color,"))"))), low="red", mid="white",high="green")+
+        geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1, color = 'lightgrey') +
+        geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1, color = 'blue') +
         theme(legend.key=element_blank(),
               legend.title=element_blank(),
               legend.text = element_blank(),
@@ -775,10 +804,31 @@ playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20
               axis.title.x = element_blank(),
               axis.title.y = element_blank(),
               axis.ticks = element_blank())
+    } else {
+      ggplot(NULL, aes(x,y)) +  
+        geom_point(data=tsne_ready2,aes(color = eval(parse(text=input$team_tsne_color))),alpha = 0.6) +
+        geom_point(data=tsne_points_filter,aes(color = eval(parse(text=input$team_tsne_color)), size=eval(parse(text = size_balloons))),alpha = 1) +
+        geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1, color = 'lightgrey') +
+        geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1, color = 'blue') +
+        theme(legend.key=element_blank(),
+              legend.title=element_blank(),
+              legend.text = element_blank(),
+              legend.position="none",
+              plot.title = element_text(size=9),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              axis.text.x = element_blank(),
+              axis.text.y = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank(),
+              axis.ticks = element_blank())
+    }
+    
   } else {
     ggplot(NULL, aes(x,y)) +  
-        geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.5) +
-      geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
+        geom_point(data=tsne_ready2,aes(color = cluster),alpha = 1) +
+        scale_color_gradient2(midpoint = median(tsne_ready2$cluster), low="red", mid="white",high="green")+
+        geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1, color = 'lightgrey') +
         theme(legend.key=element_blank(),
               legend.title=element_blank(),
               legend.text = element_blank(),
@@ -802,13 +852,32 @@ renderPlot(tsne_teamPredicted())
 ```{r}
 tsne_teamPredicted_facets <- reactive({
   
-  playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20)
+  playerCluster <- kmeans(tsne_ready[, c("x","y")], input$num_clusters, nstart = 10, iter.max = 20)
   tsne_ready2 <- cbind(tsne_ready, cluster = playerCluster$cluster) %>%
     merge(playerDashboard[,c("Player","Tm","effMin","Offense","Defense")], by=c("Player","Tm"))
   
+  if (input$bubble_size == "yes") size_balloons <- "effMin*10" else size_balloons <- 5
+  
+  if (!(input$team_tsne_color == "K_means")) {
     ggplot(data=tsne_ready2, aes(x,y)) +  
       #geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.2) +
-      geom_point(data=tsne_ready2,color = "red",aes(size=effMin)) +
+      geom_point(data=tsne_ready2,color = eval(parse(text=input$team_tsne_color)),aes(size=eval(parse(text = size_balloons)))) +
+      #geom_text(data=tsne_ready2,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
+      scale_color_gradient2(midpoint = eval(parse(text = paste0("median(as.numeric(tsne_ready2$",input$team_tsne_color,"))"))), low="red",mid="white",high="green") +
+      theme(legend.position = "right") +
+      facet_wrap(~Tm) +
+       theme( plot.title = element_text(size=9),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              axis.text.x = element_blank(),
+              axis.text.y = element_blank(),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank(),
+              axis.ticks = element_blank())
+  } else {
+    ggplot(data=tsne_ready2, aes(x,y)) +  
+      #geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.2) +
+      geom_point(data=tsne_ready2,color = "red",aes(size=eval(parse(text = size_balloons)))) +
       #geom_text(data=tsne_ready2,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
       theme(legend.position = "right") +
       facet_wrap(~Tm) +
@@ -820,7 +889,7 @@ tsne_teamPredicted_facets <- reactive({
               axis.title.x = element_blank(),
               axis.title.y = element_blank(),
               axis.ticks = element_blank())
-  
+  }
 
 })
 
