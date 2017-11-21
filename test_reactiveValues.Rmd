@@ -1,0 +1,129 @@
+---
+title: "Untitled"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: flatly
+    orientation: rows
+    vertical_layout: fill
+runtime: shiny
+---
+
+Regular test
+===================
+
+```{r}
+# UI function
+worldPhonesUI <- function(id) {
+  ns <- NS(id)
+  
+  fillCol(height = 600, flex = c(NA, 1), 
+    inputPanel(
+      selectInput(ns("region"), "Region:", choices = colnames(WorldPhones)),
+      actionButton(ns("doChart"), "Do chart!")
+    ),
+    plotOutput(ns("phonePlot"), height = "100%")
+  )
+}
+
+# Server function
+worldPhones <- function(input, output, session) {
+  
+  values <- reactiveValues(region = NULL)
+  
+  observe({
+    input$doChart
+    isolate(values$region <- input$region)
+  })
+  
+  output$phonePlot <- renderPlot({
+    barplot(WorldPhones[,values$region]*1000, 
+            ylab = "Number of Telephones", xlab = "Year")
+  })
+}
+
+# call the module
+worldPhonesUI("phones")
+callModule(worldPhones, "phones")
+
+```
+
+Trade test
+====================================================
+
+```{r}
+library(tidyverse)
+library(DT)
+
+playersPredictedStats_adjMin <- read.csv("data/playersNewPredicted_Final_adjMin.csv", stringsAsFactors = FALSE)
+teamStats <- unique(playersPredictedStats_adjMin$Tm)
+```
+
+```{r}
+# UI
+tradeUI <- function(id) {
+
+  ns <- NS(id)
+
+  fluidPage(
+    column(3,
+           selectInput(ns('tradeTeamA'), 'Team A', choices=teamStats,selectize=FALSE),
+           br(),
+           #DT::dataTableOutput('teamPowerA'),
+           #DT::dataTableOutput('teamPowerA_new'),
+           br(),
+           checkboxGroupInput(ns('tradePlayersA'), label = "Roster. Check players to trade",
+                              choices = filter(playersPredictedStats_adjMin, Tm == teamStats[1])$Player,
+                              selected = NULL)
+
+    ),
+    column(2, actionButton(ns("tradeButton"), label = "Make this trade!")),
+    # column(3,
+    #        selectInput('tradeTeamB', 'Team B', choices=teamStats$Tm,selectize=FALSE),
+    #        br(),
+    #        #DT::dataTableOutput('teamPowerB'),
+    #        #DT::dataTableOutput('teamPowerB_new'),
+    #        br(),
+    #        checkboxGroupInput('tradePlayersB', label = "Roster. Check players to trade",
+    #                           choices = filter(playerDashboard, Tm == teamStats$Tm[2])$Player,
+    #                           selected = NULL)
+    # ),
+    column(4, DT::dataTableOutput(ns('table_afterTrade')))
+  )
+}
+
+# Server
+tradeServer <- function(input, output, session) {
+
+  values <- reactiveValues(playersDatabase = NULL, playersExcluded = NULL)
+
+  observe({
+    
+    input$tradeButton
+    
+    isolate(values$playersExcluded <- input$tradeTeamA)
+    isolate(values$playersDatabase <- filter(playersPredictedStats_adjMin, Player %in% input$tradePlayersA))
+    #values$playersDatabase <- .redistributeMinutes(values$playersDatabase, topHeavy = 7, topMinShare = .6, min_share_top1 = .105)
+    #values$playersDatabase <- mutate(values$playersDatabase, Season = paste0(thisYear,"-",as.numeric(thisYear)+1)) %>%
+     # select(-Pick, -Exp) %>%
+    #  as.data.frame()
+
+  #  values$playersDatabase <- group_by(values$playersDatabase, Tm) %>%
+  #    mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>%
+  #    as.data.frame()
+  })
+
+  output$table_afterTrade <- renderDataTable({
+
+    data <- filter(values$playersDatabase) %>%
+      dplyr::select(Player,Tm,effMin)
+
+    datatable(data)
+  })
+
+}
+
+tradeUI("trades")
+callModule(tradeServer,"trades")
+
+```
+
