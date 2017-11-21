@@ -33,7 +33,11 @@ team_stats <- merge(team_stats,franchises,by.x="Team",by.y="Franchise",all.x=TRU
 #
 playersHist <- read.csv("data/playersHist.csv", stringsAsFactors = FALSE) # from write_playersHist.R
 playersHist <- .rename_PlayerDuplicates(playersHist) # differentiate players with the same name
-playersPredictedStats_adjMin <- read.csv("data/playersNewPredicted_Final_adjMin.csv", stringsAsFactors = FALSE)
+  
+  ### reactiveValue ###
+  playersPredictedStats_adjMin <- read.csv("data/playersNewPredicted_Final_adjMin.csv", stringsAsFactors = FALSE)
+          ### 
+
 playersPredictedStats_adjPer <- read.csv("data/playersNewPredicted_Final_adjPer.csv", stringsAsFactors = FALSE)
 
 # load neuralnet models
@@ -505,6 +509,7 @@ Row {.sidebar}
 -----------------------------------------------------------------------
 
 ```{r}
+renderUI(tags$img(src=paste0("https://i.cdn.turner.com/nba/nba/.element/img/4.0/global/logos/512x512/bg.white/svg/",input$teamCode,".svg"),width = '80px',height='80px'))
 tags$style(type='text/css', ".selectize-input { font-size: 80%; line-height: 10px; width: 95%; min-height: 25px; max-height: 30px} .selectize-dropdown { font-size: 80%; line-height: 15px; }")
 selectizeInput("teamCode", "Select Team", choices = teamDashboard$Tm, selected = teamDashboard$Tm[1])
 sliderInput("num_clusters", "Number of clusters", min = 2, max = 100, value = 10)
@@ -1225,4 +1230,73 @@ renderPlot(plotDistribTime())
 
 ```
 
+Trade test
+======================================
+
+```{r}
+# UI
+tradeUI <- function(id) {
+
+  ns <- NS(id)
+  
+  fluidPage(
+    column(3,
+           selectInput(ns('tradeTeamA'), 'Team A', choices=teamStats$Tm,selectize=FALSE), 
+           br(),
+           #DT::dataTableOutput('teamPowerA'),
+           #DT::dataTableOutput('teamPowerA_new'),
+           br(),
+           checkboxGroupInput(ns('tradePlayersA'), label = "Roster. Check players to trade", 
+                              choices = filter(playerDashboard, Tm == teamStats$Tm[1])$Player, 
+                              selected = NULL)
+           
+    ),
+    column(2, actionButton(ns("tradeButton"), label = "Make this trade!"))
+    # column(3,
+    #        selectInput('tradeTeamB', 'Team B', choices=teamStats$Tm,selectize=FALSE), 
+    #        br(),
+    #        #DT::dataTableOutput('teamPowerB'),
+    #        #DT::dataTableOutput('teamPowerB_new'),
+    #        br(),
+    #        checkboxGroupInput('tradePlayersB', label = "Roster. Check players to trade", 
+    #                           choices = filter(playerDashboard, Tm == teamStats$Tm[2])$Player, 
+    #                           selected = NULL)
+    # ),
+    # column(4, DT::dataTableOutput('table_afterTrade'))
+  )
+}
+
+# Server
+tradeServer <- function(input, output, session) {
+  
+  values <- reactiveValues(playersDatabase = playersPredictedStats_adjMin)
+  
+  observeEvent(input$tradeButton, {
+    
+    values$playersDatabase <- filter(values$playersDatabase, !(Player %in% input$tradePlayersA))
+    values$playersDatabase <- .redistributeMinutes(values$playersDatabase, topHeavy = 7, topMinShare = .6, min_share_top1 = .105)
+    values$playersDatabase <- mutate(values$playersDatabase, 
+                                            Season = paste0(thisYear,"-",as.numeric(thisYear)+1)) %>% 
+      select(-Pick, -Exp) %>%
+      as.data.frame()
+    
+    values$playersDatabase <- group_by(values$playersDatabase, Tm) %>%
+      mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>%
+      as.data.frame()
+  })
+    
+  output$table_afterTrade <- renderDataTable({
+    
+    data <- filter(values$playersDatabase, Tm == input$tradeTeamA) %>%
+      select(Player,Tm,effMin)
+    
+    datatable(data)
+  })
+
+}
+
+tradeUI("trades")
+callModule(tradeServer,"trades")
+
+```
 
