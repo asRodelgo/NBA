@@ -87,7 +87,8 @@ tradeServer <- function(input, output, session) {
     
     input$tradeButton
     
-    isolate(values$playersDatabase <- filter(playersPredictedStats_adjMin, Player %in% input$tradePlayersA))
+    values$playersDatabase <- playersPredictedStats_adjMin
+    isolate(values$playersDatabase <- filter(values$playersDatabase, Player %in% input$tradePlayersA))
     
   })
   

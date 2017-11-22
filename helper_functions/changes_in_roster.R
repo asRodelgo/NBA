@@ -142,8 +142,10 @@
 # playB <- "Edy Tavares"
 # tmA <- "IND"
 # tmB <- "CLE"
-.trade_Players <- function(data,playA,tmA,playB=NULL,tmB=NULL){
+.trade_Players <- function(data,playA,tmA=NULL,playB=NULL,tmB=NULL){
   
+  if (is.null(tmA)) tmA <- filter(data, Player == playA)$Tm
+    
   if (is.null(tmB)) { # player is traded out of NBA or retires
     
     #playerA_row <- filter(data, Player %in% playA, Tm == tmA)
