@@ -68,25 +68,12 @@ tradeUI <- function(id) {
     column(3,
            selectInput(ns('tradeTeamA'), 'Team A', choices=teamStats,selectize=FALSE),
            br(),
-           #DT::dataTableOutput('teamPowerA'),
-           #DT::dataTableOutput('teamPowerA_new'),
-           br(),
            checkboxGroupInput(ns('tradePlayersA'), label = "Roster. Check players to trade",
                               choices = filter(playersPredictedStats_adjMin, Tm == teamStats[1])$Player,
                               selected = NULL)
 
     ),
     column(2, actionButton(ns("tradeButton"), label = "Make this trade!")),
-    # column(3,
-    #        selectInput('tradeTeamB', 'Team B', choices=teamStats$Tm,selectize=FALSE),
-    #        br(),
-    #        #DT::dataTableOutput('teamPowerB'),
-    #        #DT::dataTableOutput('teamPowerB_new'),
-    #        br(),
-    #        checkboxGroupInput('tradePlayersB', label = "Roster. Check players to trade",
-    #                           choices = filter(playerDashboard, Tm == teamStats$Tm[2])$Player,
-    #                           selected = NULL)
-    # ),
     column(4, DT::dataTableOutput(ns('table_afterTrade')))
   )
 }
@@ -94,22 +81,24 @@ tradeUI <- function(id) {
 # Server
 tradeServer <- function(input, output, session) {
 
-  values <- reactiveValues(playersDatabase = NULL, playersExcluded = NULL)
+  values <- reactiveValues(playersDatabase = NULL)
 
   observe({
     
     input$tradeButton
     
-    isolate(values$playersExcluded <- input$tradeTeamA)
     isolate(values$playersDatabase <- filter(playersPredictedStats_adjMin, Player %in% input$tradePlayersA))
-    #values$playersDatabase <- .redistributeMinutes(values$playersDatabase, topHeavy = 7, topMinShare = .6, min_share_top1 = .105)
-    #values$playersDatabase <- mutate(values$playersDatabase, Season = paste0(thisYear,"-",as.numeric(thisYear)+1)) %>%
-     # select(-Pick, -Exp) %>%
-    #  as.data.frame()
-
-  #  values$playersDatabase <- group_by(values$playersDatabase, Tm) %>%
-  #    mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>%
-  #    as.data.frame()
+    
+  })
+  
+  observe({
+    
+    input$tradeTeamA
+    
+    ns <- session$ns
+    updateCheckboxGroupInput(session, ns('tradePlayersA'), 
+                              choices = filter(values$playersDatabase, Tm == input$tradeTeamA)$Player, selected = NULL)
+    
   })
 
   output$table_afterTrade <- renderDataTable({
