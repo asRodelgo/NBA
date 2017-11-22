@@ -12,6 +12,8 @@ runtime: shiny
 library(flexdashboard)
 library(tidyverse)
 library(DT)
+library(shinyBS)
+library(shinyjs)
 
 # variables set up
 thisYear <- substr(Sys.Date(),1,4)
@@ -119,7 +121,10 @@ Row {.sidebar}
 -----------------------------------------------------------------------
 
 ```{r}
+tags$style(type='text/css', ".selectize-input { font-size: 80%; line-height: 10px; width: 95%; min-height: 25px; max-height: 30px} .selectize-dropdown { font-size: 80%; line-height: 15px; }")
 selectizeInput("playerName", "Select Player", choices = playerDashboard$Player, selected = playerDashboard$Player[1])
+sliderInput("player_num_clusters", "Number of clusters", min = 2, max = 100, value = 10)
+selectizeInput("player_tsne_color", "Color by", choices = c("K_means","Offense","Defense"), selected = "K_means")
 
 ```
 
@@ -347,11 +352,16 @@ similar <- reactive({
     arrange(dist) %>%
     select(Player,Team = Tm, Age, Offense, Defense, `Usage Rate` = effMin,`Euclidean dist` = dist)
     
+  datatable(similarPlayers, extensions = 'Scroller', options = list(dom="t", scrollY = 150,scroller = TRUE,initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '10px'});","}")
+                                   #, columnDefs = list(list(visible = FALSE, targets = c((ncol(roster)-2):(ncol(roster)-1))))
+                                   )) %>%
+    formatStyle(0, target = 'row', fontSize = '70%', lineHeight = '70%') %>%
+    formatStyle(c('Usage Rate'), textAlign = 'right')
   
-  similarPlayers
+  
 })
 
-renderTable(similar())  
+renderDataTable(similar())  
 
 
 ```
@@ -370,10 +380,15 @@ similar_hist <- reactive({
     names(thisSeason) <- c(paste0("In Season: ",s))
     if (nrow(similarPlayers_Hist) > 0) similarPlayers_Hist <- cbind(similarPlayers_Hist,thisSeason) else similarPlayers_Hist <- thisSeason
   }
-  similarPlayers_Hist
+  
+  datatable(similarPlayers_Hist, extensions = 'Scroller', options = list(dom="t",scrollY = 150,scroller = TRUE,initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '10px'});","}")
+                                   #, columnDefs = list(list(visible = FALSE, targets = c((ncol(roster)-2):(ncol(roster)-1))))
+                                   )) %>%
+    formatStyle(0, target = 'row', fontSize = '70%', lineHeight = '70%')
+  
 })
 
-renderTable(similar_hist())  
+renderDataTable(similar_hist())  
 
 
 ```
@@ -385,7 +400,7 @@ Row {.tabset .tabset-fade}
 ```{r}
 tsne_predicted <- reactive({
   
-playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20)
+playerCluster <- kmeans(tsne_ready[, c("x","y")], input$player_num_clusters, nstart = 10, iter.max = 20)
   tsne_ready2 <- cbind(tsne_ready, cluster = playerCluster$cluster)
   
   tsne_points_filter <- filter(tsne_ready2, Player == input$playerName)
@@ -404,8 +419,8 @@ playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20
     ggplot(NULL, aes(x,y)) +  
         geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.5) +
         geom_point(data=tsne_points_filter,color = "red",size=4) +
-      geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
-        geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
+      geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),color="grey",size=3, nudge_y = 1) +
+        geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),color="blue",size=3, nudge_y = 1) +
         theme(legend.key=element_blank(),
               legend.title=element_blank(),
               legend.text = element_blank(),
@@ -446,7 +461,7 @@ renderPlot(tsne_predicted())
 
 tsne_historical <- reactive({
   
-  playerCluster <- kmeans(tsne_ready_hist[, c("x","y")], 13, nstart = 10, iter.max = 20)
+  playerCluster <- kmeans(tsne_ready_hist[, c("x","y")], input$player_num_clusters, nstart = 10, iter.max = 20)
   tsne_ready_hist2 <- cbind(tsne_ready_hist, cluster = playerCluster$cluster)
   
   tsne_points_filter <- filter(tsne_ready_hist2, Player == input$playerName)
@@ -464,9 +479,9 @@ tsne_historical <- reactive({
   if (nrow(tsne_points_filter) > 0) {   
     ggplot(NULL, aes(x,y)) +  
         geom_point(data=tsne_ready_hist2,aes(color = as.factor(cluster)),alpha = 0.2) +
-        geom_point(data=tsne_points_filter,color = "red",size=4) +
-        geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
-        geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
+        geom_jitter(data=tsne_points_filter,color = "red",size=4,width = 1.5, height = 1.5) +
+        geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),color = "grey",size=3, nudge_y = 1) +
+        geom_text(data=tsne_points_filter,aes(label = Season),color="blue",size=3, nudge_y = 1) +
         theme(legend.key=element_blank(),
               legend.title=element_blank(),
               legend.text = element_blank(),
@@ -509,7 +524,8 @@ Row {.sidebar}
 -----------------------------------------------------------------------
 
 ```{r}
-renderUI(tags$img(src=paste0("https://i.cdn.turner.com/nba/nba/.element/img/4.0/global/logos/512x512/bg.white/svg/",input$teamCode,".svg"),width = '80px',height='80px'))
+#renderUI(tags$img(src=paste0("https://i.cdn.turner.com/nba/nba/.element/img/4.0/global/logos/512x512/bg.white/svg/",input$teamCode,".svg"),width = '80px',height='80px'))
+renderUI(tags$img(src=paste0("images/",input$teamCode,".svg"),width = '80px',height='80px'))
 tags$style(type='text/css', ".selectize-input { font-size: 80%; line-height: 10px; width: 95%; min-height: 25px; max-height: 30px} .selectize-dropdown { font-size: 80%; line-height: 15px; }")
 selectizeInput("teamCode", "Select Team", choices = teamDashboard$Tm, selected = teamDashboard$Tm[1])
 sliderInput("num_clusters", "Number of clusters", min = 2, max = 100, value = 10)
@@ -1096,7 +1112,7 @@ thisModel <- reactive({
                            scrollX = TRUE,
                            fixedColumns = list(leftColumns = 3),
                            scroller = TRUE,
-                           initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#1f8e2e', 'color': '#fff', 'font-size': '9px'});","}")), 
+                           initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '9px'});","}")), 
             rownames = FALSE) %>%
     formatStyle(0, target = 'row', fontSize = '60%', lineHeight = '80%') %>%
     formatRound(c(4:ncol(model$results)),digits = 3)
@@ -1232,75 +1248,111 @@ renderPlot(plotDistribTime())
 
 ```
 
-Trade test
+Trade market
 ======================================
 
+Row {.sidebar}
+-----------------------------------------------------------------------
+
 ```{r}
-# UI
-tradeUI <- function(id) {
-
-  ns <- NS(id)
-
-  fluidPage(
-    column(3,
-           selectInput(ns('tradeTeamA'), 'Team A', choices=teamStats$Tm,selectize=FALSE),
-           br(),
-           #DT::dataTableOutput('teamPowerA'),
-           #DT::dataTableOutput('teamPowerA_new'),
-           br(),
-           checkboxGroupInput(ns('tradePlayersA'), label = "Roster. Check players to trade",
-                              choices = filter(playerDashboard, Tm == teamStats$Tm[1])$Player,
-                              selected = NULL)
-
-    ),
-    column(2, actionButton(ns("tradeButton"), label = "Make this trade!")),
-    # column(3,
-    #        selectInput('tradeTeamB', 'Team B', choices=teamStats$Tm,selectize=FALSE),
-    #        br(),
-    #        #DT::dataTableOutput('teamPowerB'),
-    #        #DT::dataTableOutput('teamPowerB_new'),
-    #        br(),
-    #        checkboxGroupInput('tradePlayersB', label = "Roster. Check players to trade",
-    #                           choices = filter(playerDashboard, Tm == teamStats$Tm[2])$Player,
-    #                           selected = NULL)
-    # ),
-    column(4, DT::dataTableOutput(ns('table_afterTrade')))
-  )
-}
-
-# Server
-tradeServer <- function(input, output, session) {
-
-  values <- reactiveValues(playersDatabase = playersPredictedStats_adjMin, playersExcluded = NULL)
-
-  observe({
-    
-    input$tradeButton
-    
-    isolate(values$playersExcluded <- input$tradeTeamA)
-    isolate(values$playersDatabase <- filter(values$playersDatabase, !(Player %in% input$tradePlayersA)))
-    #values$playersDatabase <- .redistributeMinutes(values$playersDatabase, topHeavy = 7, topMinShare = .6, min_share_top1 = .105)
-    #values$playersDatabase <- mutate(values$playersDatabase, Season = paste0(thisYear,"-",as.numeric(thisYear)+1)) %>%
-     # select(-Pick, -Exp) %>%
-    #  as.data.frame()
-
-  #  values$playersDatabase <- group_by(values$playersDatabase, Tm) %>%
-  #    mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>%
-  #    as.data.frame()
-  })
-
-  output$table_afterTrade <- renderDataTable({
-
-    data <- filter(values$playersDatabase, Player %in% values$playersExcluded) %>%
-      select(Player,Tm,effMin)
-
-    #datatable(data)
-  })
-
-}
-
-tradeUI("trades")
-callModule(tradeServer,"trades")
+selectizeInput("isRank", "Show stats or ranks", choices = c("Stats", "Ranks"), selected = "Stats")
 
 ```
+
+Row {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### Players
+```{r}
+allPlayers <- reactive({
+  
+  #playerRanks <- mutate_if(playerDashboard, is.numeric, function(x) row_number(desc(x)))
+  playerRanks2 <- playerRanks
+  playerDashboard2 <- playerDashboard
+  names(playerRanks2)[-1] <- paste0("rank_",names(playerRanks2)[-1])
+  names(playerDashboard2)[-1] <- paste0("stat_",names(playerDashboard2)[-1])
+  
+  data <- merge(playerDashboard2,group_by(playerRanks2,Player) %>% select_if(is.numeric) %>% select(-rank_Age), by = "Player") 
+  
+  if (input$isRank == "Ranks") {
+    data <- mutate(data, rank_Defense = nrow(playerRanks)-rank_Defense+1, rank_TOV = nrow(playerRanks)-rank_TOV+1, rank_PF = nrow(playerRanks)-rank_PF+1) %>%
+      select(Player,Pos = stat_Pos, Age = stat_Age, Team = stat_Tm, Exp = stat_Exp, rank_Offense, rank_Defense, rank_Usage = rank_effMin, starts_with("rank")) %>%
+      as.data.frame()
+  names(data) <- gsub("rank_","",names(data))
+  
+  datatable(data, extensions = c('Scroller','FixedColumns'), options = list(dom="ft",pageLength = nrow(model$results), 
+                           autoWidth = TRUE,
+                           deferRender = TRUE,
+                           scrollY = 650,
+                           scrollX = TRUE,
+                           fixedColumns = list(leftColumns = 1),
+                           scroller = TRUE,
+                           initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '10px'});","}")), rownames = FALSE) %>%
+    formatStyle(c('Exp'), textAlign = 'right') %>%
+    formatStyle(0, target = 'row', fontSize = '70%', lineHeight = '70%')
+    
+  } else {
+    data <- mutate(data, Usage = paste0(round(stat_effMin*1000,1),"%")) %>%
+      select(Player,Pos = stat_Pos, Age = stat_Age, Team = stat_Tm, Exp = stat_Exp, Offense = stat_Offense, Defense = stat_Defense, Usage, starts_with("stat"), rank_Offense, rank_Defense, rank_effMin, starts_with("rank"), -stat_effMin, -stat_Season) %>%
+      as.data.frame()
+  
+    names(data) <- gsub("stat_","",names(data))
+    
+    # Add the trade buttons  
+    data2 <- as.data.frame(cbind(View = shinyInput(actionButton, 
+                                                     nrow(data),
+                                                     'button_', 
+                                                     label = "Trade", 
+                                                onclick='Shiny.onInputChange(\"select_button\",this.id)', style = 'padding:2px; width:40px; height:20px; font-size:85%'),
+                                 data))
+    
+  datatable(data2, extensions = c('Scroller','FixedColumns'), options = list(dom="ft",pageLength = nrow(model$results), 
+                           autoWidth = TRUE,
+                           deferRender = TRUE,
+                           scrollY = 650,
+                           scrollX = TRUE,
+                           fixedColumns = list(leftColumns = 2),
+                           scroller = TRUE,
+                           initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '10px'});","}"), columnDefs = list(list(visible=FALSE, targets=c(34:61)))), rownames = FALSE,escape = FALSE) %>%
+    formatStyle(c('Defense','effTOV','effPF'), valueColumns=c('rank_Defense','rank_effTOV','rank_effPF'), color = JS(paste0("value < ",nrow(playerRanks)/3," ? 'red' : value < ",nrow(playerRanks)*2/3," ? 'lightblue' : 'green'")), fontWeight = 'bold') %>%
+    formatStyle(c(7:34), valueColumns=c(35:62), color = JS(paste0("value < ",nrow(playerRanks)/3," ? 'green' : value < ",nrow(playerRanks)*2/3," ? 'lightblue' : 'red'")), fontWeight = 'bold') %>%
+    formatRound(c(7:8,10:34), 3) %>%
+    formatStyle(c('Exp','Usage'), textAlign = 'right') %>%
+    formatStyle(0, target = 'row', fontSize = '70%', lineHeight = '70%')
+  
+  }
+  
+})
+
+renderDataTable(allPlayers()) 
+uiOutput('trade_popup')
+
+observeEvent(input$select_button, {
+  toggleModal(session, "modalTrade", "open")
+})
+
+SelectedRow <- eventReactive(input$select_button,{
+  as.numeric(strsplit(input$select_button, "_")[[1]][2])
+})
+
+Selected_Player <- eventReactive(input$select_button,{
+  playerDashboard[SelectedRow(),1] #column 1 is the group: delivery,agility, .... Column 2 is the indicator: ASA Capacity, Candor Gap, etc...
+})
+
+output$trade_popup <- renderUI({
+  bsModal("modalTrade", paste0(Selected_Player()), "", size = "large",
+          div(renderText(paste0("Age: ",filter(playerDashboard, Player == Selected_Player())$Age )))
+  )
+})
+
+```
+
+### t-SNE
+```{r}
+
+
+```
+
+
+
 
