@@ -30,12 +30,12 @@
   return(c(pointsH,pointsA,numOT))
 }
 
-.calculateWinProbability <- function(team_home,team_away,home_away_f = home_away_factor){
+.calculateWinProbability <- function(data = teamsPredicted,team_home,team_away,home_away_f = home_away_factor){
   
-  mean_predicted <- mean(c(teamsPredicted$TEAM_PTS,teamsPredicted$TEAM_PTSAG))
+  mean_predicted <- mean(c(data$TEAM_PTS,data$TEAM_PTSAG))
   # teamsPredicted contain predicted avg PTS and avg PTS Against per team for a new season
-  teamH <- filter(teamsPredicted, TeamCode == team_home)
-  teamA <- filter(teamsPredicted, TeamCode == team_away)
+  teamH <- filter(data, TeamCode == team_home)
+  teamA <- filter(data, TeamCode == team_away)
   
   # Define both Normal distributions. Empirical home-away difference is approx (2*home_away_factor) 6 points (+3, -3)
   #muH <- teamH$TEAM_PTS + home_away_f/2 + teamA$TEAM_PTSAG - global_mean

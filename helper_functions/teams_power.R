@@ -79,7 +79,7 @@
 }
 
 # Analytical calculation of wins based on teamsPowers and Normal distribution defined by those powers
-.computeWins <- function(){
+.computeWins <- function(data){
   
   # Load season schedule
   season <- realSeasonSchedule %>%
@@ -89,7 +89,7 @@
   # calculate wins
   wins <- data.frame()
   for (i in 1:nrow(season)){
-    thisGame <- .calculateWinProbability(season[i,2],season[i,3],home_away_factor)
+    thisGame <- .calculateWinProbability(data,season[i,2],season[i,3],home_away_factor)
     wins[i,1] <- thisGame
     wins[i,2] <- 1-thisGame
   }
@@ -97,13 +97,13 @@
 }
 
 
-.teamsPredictedWins <- function() {
+.teamsPredictedWins <- function(data) {
     
   set.seed(1234) 
   # use the actual schedule
   
   
-  regSeasonProbs <- .computeWins()
+  regSeasonProbs <- .computeWins(data)
   seasonProbs <- bind_cols(realSeasonSchedule,regSeasonProbs)
   names(seasonProbs) <- c("day","time","home_team","away_team","home_team_winProb","away_team_winProb")
   datesRange <- unique(seasonProbs$day)
