@@ -1265,7 +1265,7 @@ Row {.tabset .tabset-fade}
 ### Players
 ```{r}
 
-values <- reactiveValues(playersDatabase = NULL, playersRanks = NULL)
+values <- reactiveValues(playersDatabase = NULL, playersRanks = NULL,showTradeText = FALSE)
 
 values$playersDatabase <- playerDashboard
 values$playersRanks <- playerRanks
@@ -1289,7 +1289,7 @@ allPlayers <- reactive({
   datatable(data, extensions = c('Scroller','FixedColumns'), options = list(dom="ft",pageLength = nrow(model$results), 
                            autoWidth = TRUE,
                            deferRender = TRUE,
-                           scrollY = 650,
+                           scrollY = 450,
                            scrollX = TRUE,
                            fixedColumns = list(leftColumns = 1),
                            scroller = TRUE,
@@ -1335,6 +1335,7 @@ uiOutput('trade_popup')
 
 observeEvent(input$select_button, {
   toggleModal(session, "modalTrade", "open")
+  values$showTradeText <- FALSE
 })
 
 SelectedRow <- eventReactive(input$select_button,{
@@ -1349,15 +1350,33 @@ output$trade_popup <- renderUI({
   bsModal("modalTrade", paste0(Selected_Player()), "", size = "large",
           div(
             selectizeInput("tradeWhere", "Trade this player to:", choices = c("Retire",teamDashboard$Tm), selected = NULL),
-            actionButton("tradeButton", "Make this trade!")
+            actionButton("tradeButton", "Make this trade!"),
+            textOutput("textTradeOutcome")
             )
   )
 })
 
 observeEvent(input$tradeButton, {
 
-  isolate(values$playersDatabase <- filter(values$playersDatabase, Tm == "BOS"))
-            #.trade_Players(values$playersDatabase,Selected_Player(),tmA=NULL, playB=NULL, tmB=NULL))
+  values$showTradeText <- TRUE
+  
+  isolate({
+    # if traded to a team, select it, else, target team is NULL
+    if (input$tradeWhere %in% teamDashboard$Tm) targetTeam <- input$tradeWhere else targetTeam <- NULL
+    
+    values$playersDatabase <- .trade_Players(values$playersDatabase,Selected_Player(),tmA=NULL, playB=NULL, tmB=targetTeam) %>%
+      arrange(Player)
+    
+    output$textTradeOutcome <- renderText({
+      if (values$showTradeText) {
+        return(paste0(Selected_Player()," successfully traded to ",input$tradeWhere,". Please close this window to continue on the application"))
+      } else {
+        return()
+      }
+      
+    })
+  })
+
 })
 
 ```
