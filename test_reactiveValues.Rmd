@@ -117,3 +117,27 @@ callModule(tradeServer,"trades")
 
 ```
 
+Test 2 objects in same tab
+====================================================
+### test 2 objects in same tab
+```{r}
+this <- reactive({
+  
+  plot(mtcars$mpg,mtcars$disp)
+})
+that <- reactive({
+  
+  datatable(mtcars)
+})
+
+fluidPage(
+  fluidRow(
+    column(12,div(renderPlot(this()),style = "height:150px;"))
+  ),
+  fluidRow(
+    column(12,renderDataTable(that()))
+  )
+)
+
+```
+
