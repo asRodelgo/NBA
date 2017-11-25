@@ -47,6 +47,12 @@ nn_Defense <- model$finalModel
 
 # compute teams and players Offense and Defense
 source("code_chunks/source_computeOffenseDefense.R",local=TRUE)
+playersPredicted2 <- merge(playersPredicted,
+                           playersPredictedStats_adjMin[,c("Player","Exp","Age","Tm","effMin")], by = "Player") %>%
+  mutate(adjPlusMinus = plusMinus*effMin*100) %>%
+  group_by(Tm) %>%
+  mutate(teamPlusMinus = sum(adjPlusMinus,na.rm=TRUE)) %>%
+  ungroup()
 
 playerDashboard <- merge(playersPredictedStats_adjPer,select(playersPredicted2, -c(Age,Tm,effMin)), by = "Player")
 playerRanks <- mutate_if(playerDashboard, is.numeric, function(x) row_number(desc(x)))
@@ -62,6 +68,7 @@ tsne_ready <- read.csv("data/tsne_ready_newSeason.csv", stringsAsFactors = FALSE
 avg_Exp <- mean(as.numeric(gsub("R","0",playersPredictedStats_adjMin$Exp)), na.rm=TRUE)
 averagePlayer <- .calculate_AvgPlayer(playersPredictedStats_adjMin) %>% mutate(Exp = as.character(floor(avg_Exp))) %>%
   select(Player, Pos, Season, Age, Tm, Exp, everything()) %>%
+  mutate(Age = round(Age,0)) %>%
   as.data.frame()
 # Add average player to the list of all players and assign to Team = X
 #playersPredictedStats_adjMin <- rbind(playersPredictedStats_adjMin,averagePlayer)
@@ -1397,6 +1404,12 @@ observeEvent(input$tradeButton, {
     playersPredictedStats_adjPer <- group_by(playersPredictedStats_adjMin2, Tm) %>% mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>% as.data.frame()
     ### Here's where average player is lost
     source("code_chunks/source_computeOffenseDefense.R",local=TRUE)
+    playersPredicted2 <- merge(playersPredicted,values$playersAdjMin[,c("Player","Exp","Age","Tm","effMin")], by ="Player") %>%
+      mutate(adjPlusMinus = plusMinus*effMin*100) %>%
+      group_by(Tm) %>%
+      mutate(teamPlusMinus = sum(adjPlusMinus,na.rm=TRUE)) %>%
+      ungroup()
+
     values$playersDatabase <- merge(playersPredictedStats_adjPer,select(playersPredicted2, -c(Age,Tm,effMin)), by = "Player")
     ### Here's where average player is lost
     print(filter(values$playersDatabase, Player == "Average Player"))
