@@ -36,10 +36,7 @@ team_stats <- merge(team_stats,franchises,by.x="Team",by.y="Franchise",all.x=TRU
 playersHist <- read.csv("data/playersHist.csv", stringsAsFactors = FALSE) # from write_playersHist.R
 playersHist <- .rename_PlayerDuplicates(playersHist) # differentiate players with the same name
   
-  ### reactiveValue ###
-  playersPredictedStats_adjMin <- read.csv("data/playersNewPredicted_Final_adjMin.csv", stringsAsFactors = FALSE)
-          ### 
-
+playersPredictedStats_adjMin <- read.csv("data/playersNewPredicted_Final_adjMin.csv", stringsAsFactors = FALSE)
 playersPredictedStats_adjPer <- read.csv("data/playersNewPredicted_Final_adjPer.csv", stringsAsFactors = FALSE)
 
 # load neuralnet models
@@ -61,7 +58,13 @@ playerMin <- group_by(playerDashboard, Player) %>% summarise_if(is.numeric, min)
 tsne_ready_hist <- read.csv("data/tsne_ready_hist.csv", stringsAsFactors = FALSE)
 # tSNE for predicted stats in new season
 tsne_ready <- read.csv("data/tsne_ready_newSeason.csv", stringsAsFactors = FALSE)
-
+# Average player
+avg_Exp <- mean(as.numeric(gsub("R","0",playersPredictedStats_adjMin$Exp)), na.rm=TRUE)
+averagePlayer <- .calculate_AvgPlayer(playersPredictedStats_adjMin) %>% mutate(Exp = as.character(floor(avg_Exp))) %>%
+  select(Player, Pos, Season, Age, Tm, Exp, everything()) %>%
+  as.data.frame()
+# Add average player to the list of all players and assign to Team = X
+#playersPredictedStats_adjMin <- rbind(playersPredictedStats_adjMin,averagePlayer)
 ############################
 # Team loads
 # Actual Season schedule
@@ -88,7 +91,7 @@ regSeasonOutcome <- .standings(real=TRUE)
 
 ###########################
 # Reactive Values for Trade Market
-values <- reactiveValues(playersAdjMin = NULL, playersDatabase = NULL, playersRanks = NULL, teamsDatabase = NULL, teamsRanks = NULL, teamsStats = NULL, teamsMax = NULL, showTradeText = FALSE)
+values <- reactiveValues(playersAdjMin = NULL, playersDatabase = NULL, playersRanks = NULL, teamsDatabase = NULL, teamsRanks = NULL, teamsStats = NULL, teamsMax = NULL, playersTSNE = NULL, teamsTSNE = NULL, showTradeText = FALSE)
 values$playersAdjMin <- playersPredictedStats_adjMin
 values$playersDatabase <- playerDashboard
 values$playersRanks <- playerRanks
@@ -96,6 +99,8 @@ values$teamsDatabase <- teamDashboard
 values$teamsRanks <- teamRanks
 values$teamsStats <- teamStats
 values$teamsMax <- teamMax
+values$playersTSNE <- tsne_ready
+values$teamsTSNE <- tsne_ready_teams
 ###########################
 
 ```
@@ -107,11 +112,21 @@ Row {.sidebar}
 -----------------------------------------------------------------------
 
 ```{r}
+imageOutput('playerLogo',width = '80px',height='80px')
 tags$style(type='text/css', ".selectize-input { font-size: 80%; line-height: 10px; width: 95%; min-height: 25px; max-height: 30px} .selectize-dropdown { font-size: 80%; line-height: 15px; }")
 selectizeInput("playerName", "Select Player", choices = playerDashboard$Player, selected = playerDashboard$Player[1])
 sliderInput("player_num_clusters", "Number of clusters", min = 2, max = 100, value = 10)
 selectizeInput("player_tsne_color", "Color by", choices = c("K_means","Offense","Defense"), selected = "K_means")
 
+output$playerLogo <- renderImage({
+  filename <- normalizePath(file.path('./images',
+                              paste(tolower(gsub(" ","-",input$playerName)), '.svg', sep='')))
+ 
+    # Return a list containing the filename and alt text
+    list(src = filename,
+         alt = paste("Player: ", input$playerName))
+
+  }, deleteFile = FALSE)
 ```
 
 
@@ -330,8 +345,8 @@ renderPlot(barplotPlayerStats())
 
 similar <- reactive({
 
-  similarPlayers <- .compare10_click(thisSeason,input$playerName,data=tsne_ready) %>%
-  #similarPlayers <- .compare10_click(thisSeason,"Kyrie Irving",data=tsne_ready) %>%
+  similarPlayers <- .compare10_click(thisSeason,input$playerName,data=values$playersTSNE) %>%
+  #similarPlayers <- .compare10_click(thisSeason,"Kyrie Irving",data=values$playersTSNE) %>%
     top_n(11,-dist) %>% tail(10) %>%
     merge(values$playersDatabase[,c("Player","Offense","Defense","effMin","Age","Tm")], by="Player") %>%
     mutate(Offense = round(Offense,1), Defense = round(Defense,1),dist = round(dist,2), effMin = paste0(formatC(effMin*1000,digits=1,format="f"),"%")) %>%
@@ -386,8 +401,8 @@ Row {.tabset .tabset-fade}
 ```{r}
 tsne_predicted <- reactive({
 
-playerCluster <- kmeans(tsne_ready[, c("x","y")], input$player_num_clusters, nstart = 10, iter.max = 20)
-  tsne_ready2 <- cbind(tsne_ready, cluster = playerCluster$cluster)
+playerCluster <- kmeans(values$playersTSNE[, c("x","y")], input$player_num_clusters, nstart = 10, iter.max = 20)
+  tsne_ready2 <- cbind(values$playersTSNE, cluster = playerCluster$cluster)
 
   tsne_points_filter <- filter(tsne_ready2, Player == input$playerName)
     #centroid <- data.frame(x=(mean(tsne_points_filter$x)),y=mean(tsne_points_filter$y))
@@ -511,13 +526,26 @@ Row {.sidebar}
 
 ```{r}
 #renderUI(tags$img(src=paste0("https://i.cdn.turner.com/nba/nba/.element/img/4.0/global/logos/512x512/bg.white/svg/",input$teamCode,".svg"),width = '80px',height='80px'))
-renderUI(tags$img(src=paste0("../images/",input$teamCode,".svg"),width = '80px',height='80px'))
-tags$style(type='text/css', ".selectize-input { font-size: 80%; line-height: 10px; width: 95%; min-height: 25px; max-height: 30px} .selectize-dropdown { font-size: 80%; line-height: 15px; }")
+# renderUI(tags$img(src=paste0("Users/asanchez3/Desktop/Data Analysis/NBA/images/",input$teamCode,".svg"),width = '80px',height='80px'))
+imageOutput('teamLogo',width = '80px',height='80px')
+tags$style(type='text/css', "display:inline-block; .selectize-input { font-size: 80%; line-height: 10px; width: 65%; min-height: 25px; max-height: 30px} .selectize-dropdown { font-size: 80%; line-height: 15px; }")
 selectizeInput("teamCode", "Select Team", choices = teamDashboard$Tm, selected = teamDashboard$Tm[1])
 sliderInput("num_clusters", "Number of clusters", min = 2, max = 100, value = 10)
 selectizeInput("team_tsne_color", "Color by", choices = c("K_means","Offense","Defense"), selected = "K_means")
 radioButtons("bubble_size", "Balloon size proportional to usage?", c("Yes" = "yes",
                  "No" = "no"))
+
+output$teamLogo <- renderImage({
+  filename <- normalizePath(file.path('./images',
+                              paste(input$teamCode, '.svg', sep='')))
+ 
+    # Return a list containing the filename and alt text
+    list(src = filename,
+         width = 80,
+         height = 80,
+         alt = paste("Team: ", input$teamCode))
+
+  }, deleteFile = FALSE)
 
 ```
 
@@ -707,12 +735,12 @@ renderPlot(barplotTeamStats())
 
 similarTeams <- reactive({
 
-    distCouPerX <- filter(tsne_ready_teams,Tm == input$teamCode)$x
-    #distCouPerX <- filter(tsne_ready_teams,Tm == "CLE")$x
-    #distCouPerY <- filter(tsne_ready_teams,Tm == "CLE")$y
-    distCouPerY <- filter(tsne_ready_teams,Tm == input$teamCode)$y
+    distCouPerX <- filter(values$teamsTSNE,Tm == input$teamCode)$x
+    #distCouPerX <- filter(values$teamsTSNE,Tm == "CLE")$x
+    #distCouPerY <- filter(values$teamsTSNE,Tm == "CLE")$y
+    distCouPerY <- filter(values$teamsTSNE,Tm == input$teamCode)$y
 
-    similar_teams <- tsne_ready_teams %>%
+    similar_teams <- values$teamsTSNE %>%
       select(Season,Tm,x,y) %>%
       mutate(dist = sqrt((x-distCouPerX)^2+(y-distCouPerY)^2)) %>%
       arrange(dist) %>%
@@ -764,8 +792,8 @@ renderDataTable(roster())
 tsne_teamPredicted <- reactive({
 
   #playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20)
-  playerCluster <- kmeans(tsne_ready[, c("x","y")], input$num_clusters, nstart = 10, iter.max = 20)
-  tsne_ready2 <- cbind(tsne_ready, K_means = playerCluster$cluster) %>%
+  playerCluster <- kmeans(values$playersTSNE[, c("x","y")], input$num_clusters, nstart = 10, iter.max = 20)
+  tsne_ready2 <- cbind(values$playersTSNE, K_means = playerCluster$cluster) %>%
     merge(values$playersDatabase[,c("Player","effMin","Offense","Defense")], by="Player") %>%
     mutate(Defense = -Defense)
 
@@ -860,8 +888,8 @@ renderPlot(tsne_teamPredicted())
 ```{r}
 tsne_teamPredicted_facets <- reactive({
 
-  playerCluster <- kmeans(tsne_ready[, c("x","y")], input$num_clusters, nstart = 10, iter.max = 20)
-  tsne_ready2 <- cbind(tsne_ready, cluster = playerCluster$cluster) %>%
+  playerCluster <- kmeans(values$playersTSNE[, c("x","y")], input$num_clusters, nstart = 10, iter.max = 20)
+  tsne_ready2 <- cbind(values$playersTSNE, cluster = playerCluster$cluster) %>%
     merge(values$playersDatabase[,c("Player","Tm","effMin","Offense","Defense")], by=c("Player","Tm")) %>%
     mutate(Defense = -Defense)
 
@@ -1335,9 +1363,10 @@ Selected_Player <- eventReactive(input$select_button,{
 output$trade_popup <- renderUI({
   bsModal("modalTrade", paste0(Selected_Player()), "", size = "large",
           div(
-            selectizeInput("tradeWhere", "Trade this player to:", choices = c("Retire",teamDashboard$Tm), selected = NULL),
+            selectizeInput("tradeWhere", "Trade this player to:", choices = c("Retire","Adjust minutes","Replace with average player",teamDashboard$Tm), selected = NULL),
             actionButton("tradeButton", "Make this trade!"),
-            textOutput("textTradeOutcome")
+            textOutput("textTradeOutcome"),
+            uiOutput('adjustMinutes')
             )
   )
 })
@@ -1351,13 +1380,26 @@ observeEvent(input$tradeButton, {
     if (input$tradeWhere %in% teamDashboard$Tm) targetTeam <- input$tradeWhere else targetTeam <- NULL
     
     # make the trade
-    values$playersAdjMin <- .trade_Players(values$playersAdjMin,Selected_Player(),tmA=NULL, playB=NULL, tmB=targetTeam) %>% arrange(Player)
+    if (input$tradeWhere == "Adjust minutes") { # if only change in minutes of play
+      values$playersAdjMin <- mutate(values$playersAdjMin, effMin = ifelse(Player == Selected_Player(), input$sliderMinutes/3936, effMin))
+    } else { 
+      
+      if (input$tradeWhere=="Replace with average player") { # if actual trade
+        averagePlayer$Tm <- filter(values$playersAdjMin, Player == Selected_Player())$Tm
+        values$playersAdjMin <- bind_rows(values$playersAdjMin, averagePlayer)
+      }
+      values$playersAdjMin <- .trade_Players(values$playersAdjMin,Selected_Player(),tmA=NULL, playB=NULL, tmB=targetTeam) %>% arrange(Player)
+    }
+    
     # update players and teams resulting from trade
     playersPredictedStats_adjMin2 <- .redistributeMinutes(values$playersAdjMin, topHeavy = 7, topMinShare = .6, min_share_top1 = .105)
     playersPredictedStats_adjMin2 <- mutate(playersPredictedStats_adjMin2,Season = paste0(thisYear,"-",as.numeric(thisYear)+1)) %>% select(-Pick, -Exp) %>% as.data.frame()
     playersPredictedStats_adjPer <- group_by(playersPredictedStats_adjMin2, Tm) %>% mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>% as.data.frame()
+    ### Here's where average player is lost
     source("code_chunks/source_computeOffenseDefense.R",local=TRUE)
     values$playersDatabase <- merge(playersPredictedStats_adjPer,select(playersPredicted2, -c(Age,Tm,effMin)), by = "Player")
+    ### Here's where average player is lost
+    print(filter(values$playersDatabase, Player == "Average Player"))
     values$playersRanks <- mutate_if(values$playersDatabase, is.numeric, function(x) row_number(desc(x)))
     playerMax <- summarise_if(values$playersDatabase, is.numeric, max)
     playerMin <- group_by(values$playersDatabase, Player) %>% summarise_if(is.numeric, min)
@@ -1365,7 +1407,7 @@ observeEvent(input$tradeButton, {
     source("code_chunks/source_predictedPowersWins.R",local=TRUE)
     teamsPredicted <- .teamsPredictedPower(data =playersNewPredicted_Final_adjMinPer2, actualOrPred="predicted")
     win_predictions <- .teamsPredictedWins(data = teamsPredicted) 
-    
+
     values$teamsDatabase <- merge(teamsPredicted, win_predictions, by.x = "TeamCode", by.y = "team") %>%
       select(Tm = TeamCode, TeamOffense = TEAM_PTS, TeamDefense = TEAM_PTSAG, Season, wins)
     values$teamsRanks <- mutate_if(values$teamsDatabase, is.numeric, function(x) row_number(desc(x)))
@@ -1374,7 +1416,10 @@ observeEvent(input$tradeButton, {
     teamStatRanks <- mutate_if(values$teamsStats, is.numeric, function(x) row_number(desc(x)))
     values$teamsRanks <- merge(teamStatRanks, select(values$teamsRanks,-Season),by="Tm")
     values$teamsMax <- summarise_if(values$teamsStats, is.numeric, max)
-
+    
+    # update t_SNEs
+    values$playersTSNE <- .compute_tSNE_ready_players(data = values$playersAdjMin)
+    values$teamsTSNE <- .compute_tSNE_ready_teams(data = playersPredictedStats_adjPer)
     
     # A text informing of trade outcome
     output$textTradeOutcome <- renderText({
@@ -1390,6 +1435,19 @@ observeEvent(input$tradeButton, {
     
   })
 
+})
+
+# observe adjust minutes of play
+observeEvent(input$tradeWhere, {
+  
+  output$adjustMinutes <- renderUI({
+    if (input$tradeWhere == "Adjust minutes") {
+      #renderPrint(paste0("Est. minutes per game: ",round(filter(values$playersDatabase, Player == Selected_Player())$effMin*3936,1)))
+      sliderInput('sliderMinutes',paste0('Current minutes: ',round(filter(values$playersAdjMin, Player == Selected_Player())$effMin*3936,1),'. Adjust minutes: '), min = 0, max = 48, value = round(filter(values$playersAdjMin, Player == Selected_Player())$effMin*3936,1))
+    } else return()
+    
+  })
+  
 })
 
 ```
