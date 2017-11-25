@@ -360,7 +360,7 @@ similar <- reactive({
     arrange(dist) %>%
     select(Player,Team = Tm, Age, Offense, Defense, `Usage Rate` = effMin,`Euclidean dist` = dist)
 
-  datatable(similarPlayers, extensions = 'Scroller', options = list(dom="t", scrollY = 150,scroller = TRUE,initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '10px'});","}")
+  datatable(similarPlayers, extensions = 'Scroller', options = list(dom="t", scrollY = 150,scroller = TRUE,initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '10px', 'font-weight': 'bold'});","}")
                                    #, columnDefs = list(list(visible = FALSE, targets = c((ncol(roster)-2):(ncol(roster)-1))))
                                    )) %>%
     formatStyle(0, target = 'row', fontSize = '70%', lineHeight = '70%') %>%
@@ -389,7 +389,7 @@ similar_hist <- reactive({
     if (nrow(similarPlayers_Hist) > 0) similarPlayers_Hist <- cbind(similarPlayers_Hist,thisSeason) else similarPlayers_Hist <- thisSeason
   }
 
-  datatable(similarPlayers_Hist, extensions = 'Scroller', options = list(dom="t",scrollY = 150,scroller = TRUE,initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '10px'});","}")
+  datatable(similarPlayers_Hist, extensions = 'Scroller', options = list(dom="t",scrollY = 150,scroller = TRUE,initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '10px', 'font-weight': 'bold'});","}")
                                    #, columnDefs = list(list(visible = FALSE, targets = c((ncol(roster)-2):(ncol(roster)-1))))
                                    )) %>%
     formatStyle(0, target = 'row', fontSize = '70%', lineHeight = '70%')
@@ -744,30 +744,57 @@ renderPlot(barplotTeamStats())
 
 similarTeams <- reactive({
 
-    distCouPerX <- filter(values$teamsTSNE,Tm == input$teamCode)$x
-    #distCouPerX <- filter(values$teamsTSNE,Tm == "CLE")$x
-    #distCouPerY <- filter(values$teamsTSNE,Tm == "CLE")$y
-    distCouPerY <- filter(values$teamsTSNE,Tm == input$teamCode)$y
-
-    similar_teams <- values$teamsTSNE %>%
-      select(Season,Tm,x,y) %>%
-      mutate(dist = sqrt((x-distCouPerX)^2+(y-distCouPerY)^2)) %>%
-      arrange(dist) %>%
-      select(-x,-y) %>%
-      top_n(30,-dist) %>%
-      tail(29) %>%
-      merge(values$teamsDatabase[,c("Tm","TeamOffense","TeamDefense","wins")], by="Tm") %>%
-      mutate(Offense = round(TeamOffense,1), Defense = round(TeamDefense,1),dist = round(dist,2)) %>%
-      arrange(dist) %>%
-      select(Team = Tm, Offense, Defense, `Euclidean dist` = dist)
+    # Euclidean distance of teams' centroids
+    # distCouPerX <- filter(values$teamsTSNE,Tm == input$teamCode)$x
+    # #distCouPerX <- filter(values$teamsTSNE,Tm == "CLE")$x
+    # #distCouPerY <- filter(values$teamsTSNE,Tm == "CLE")$y
+    # distCouPerY <- filter(values$teamsTSNE,Tm == input$teamCode)$y
+    # 
+    # similar_teams <- values$teamsTSNE %>%
+    #   select(Season,Tm,x,y) %>%
+    #   mutate(dist = sqrt((x-distCouPerX)^2+(y-distCouPerY)^2)) %>%
+    #   arrange(dist) %>%
+    #   select(-x,-y) %>%
+    #   top_n(30,-dist) %>%
+    #   tail(29) %>%
+    #   merge(values$teamsDatabase[,c("Tm","TeamOffense","TeamDefense","wins")], by="Tm") %>%
+    #   mutate(Offense = round(TeamOffense,1), Defense = round(TeamDefense,1),dist = round(dist,2)) %>%
+    #   arrange(dist) %>%
+    #   select(Team = Tm, Offense, Defense, `Euclidean dist` = dist)
   
-  datatable(similar_teams, options = list(dom="t", pageLength = 30)) %>%
+  if (input$bubble_size == "yes") useEffMin <- TRUE else useEffMin <- FALSE
+  
+  # similar_teams <- data.frame()
+  # i <- 1
+  # for (t in values$teamsDatabase$Tm) {
+  #   similar_teams$Tm[i] <- t
+  #   similar_teams$BC_dist[i] <- BC_distance(values$playersTSNE,values$playersDatabase,input$teamCode,t,input$num_clusters,useEffMin)
+  # }
+  
+  similar_teams <- select(values$teamsTSNE, Tm,x,y) %>%
+    group_by(Tm) %>%
+    mutate(dist = BC_distance(values$playersTSNE,values$playersDatabase,input$teamCode,Tm,input$num_clusters,useEffMin)) %>% arrange(dist) %>% select(-x,-y) %>% top_n(30,-dist) %>% filter(!(Tm == input$teamCode)) %>%
+    merge(values$teamsDatabase[,c("Tm","TeamOffense","TeamDefense","wins")], by="Tm") %>%
+    mutate(Offense = round(TeamOffense,1), Defense = round(TeamDefense,1),wins = round(wins,1),dist = round(dist,5)) %>%
+    arrange(dist) %>%
+    select(Team = Tm, Offense, Defense, wins, `Bhattacharyya dist` = dist)
+  
+  datatable(similar_teams,extensions = c('Scroller'),
+            options = list(dom='t',
+                           pageLength = 30,
+                           autoWidth = TRUE,
+                           #deferRender = TRUE,
+                           scrollY = 450,
+                           #scrollX = TRUE,
+                           #fixedColumns = list(leftColumns = 1),
+                           scroller = TRUE,
+                           initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '10px', 'font-weight': 'bold'});","}")),
+            rownames = FALSE) %>%
     formatRound(c('Offense','Defense'), 2) %>%
     formatStyle(0, target = 'row', fontSize = '70%', lineHeight = '70%')
 })
 
 renderDataTable(similarTeams())
-
 
 ```
 
@@ -783,9 +810,7 @@ roster <- reactive({
     mutate(Usage = paste0(round(effMin*1000,1),"%")) %>%
     select(Player,Pos,Age,Exp,Offense,Defense,Usage,rank_Off,rank_Def)
 
-  datatable(roster, options = list(dom="t", pageLength = 25
-                                   #, columnDefs = list(list(visible = FALSE, targets = c((ncol(roster)-2):(ncol(roster)-1))))
-                                   ), rownames = FALSE) %>%
+  datatable(roster, options = list(dom="t", pageLength = 25,initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '10px', 'font-weight': 'bold'});","}")), rownames = FALSE) %>%
     formatStyle('Offense', valueColumns='rank_Off', color = JS(paste0("value < ",nrow(values$playersRanks)/3," ? 'green' : value < ",nrow(values$playersRanks)*2/3," ? 'lightblue' : 'red'")), fontWeight = 'bold') %>%
     formatStyle('Defense', valueColumns='rank_Def', color = JS(paste0("value < ",nrow(values$playersRanks)/3," ? 'green' : value < ",nrow(values$playersRanks)*2/3," ? 'lightblue' : 'red'")), fontWeight = 'bold') %>%
     formatRound(c('Offense','Defense'), 2) %>%
@@ -854,8 +879,8 @@ tsne_teamPredicted <- reactive({
               axis.ticks = element_blank())
     } else {
       ggplot(NULL, aes(x,y)) +
-        geom_point(data=tsne_ready2,aes(color = eval(parse(text=input$team_tsne_color))),alpha = 0.6) +
-        geom_point(data=tsne_points_filter,aes(color = eval(parse(text=input$team_tsne_color)), size=eval(parse(text = size_balloons))),alpha = 1) +
+        geom_point(data=tsne_ready2,aes(color = as.factor(K_means)),alpha = 0.6) +
+        geom_point(data=tsne_points_filter,aes(color = as.factor(K_means), size=eval(parse(text = size_balloons))),alpha = 1) +
         geom_text(data = cluster_representative, aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1, color = 'lightgrey') +
         geom_text(data=tsne_points_filter,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1, color = 'blue') +
         theme(legend.key=element_blank(),
@@ -927,9 +952,10 @@ tsne_teamPredicted_facets <- reactive({
   } else {
     ggplot(data=tsne_ready2, aes(x,y)) +
       #geom_point(data=tsne_ready2,aes(color = as.factor(cluster)),alpha = 0.2) +
-      geom_point(data=tsne_ready2,color = "red",aes(size=eval(parse(text = size_balloons)))) +
+      geom_point(data=tsne_ready2,aes(color = as.factor(cluster),size=eval(parse(text = size_balloons)))) +
       #geom_text(data=tsne_ready2,aes(label = paste0(Player," (",Season,")")),size=3, nudge_y = 1) +
       theme(legend.position = "right") +
+      labs(fill='Usage') +
       facet_wrap(~Tm) +
        theme( plot.title = element_text(size=9),
               panel.border = element_blank(),
@@ -1139,7 +1165,7 @@ thisModel <- reactive({
                            scrollX = TRUE,
                            fixedColumns = list(leftColumns = 3),
                            scroller = TRUE,
-                           initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '9px'});","}")),
+                           initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '10px', 'font-weight': 'bold'});","}")),
             rownames = FALSE) %>%
     formatStyle(0, target = 'row', fontSize = '60%', lineHeight = '80%') %>%
     formatRound(c(4:ncol(model$results)),digits = 3)
@@ -1320,7 +1346,7 @@ allPlayers <- reactive({
                            scrollX = TRUE,
                            fixedColumns = list(leftColumns = 1),
                            scroller = TRUE,
-                           initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '10px'});","}")), rownames = FALSE) %>%
+                           initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '10px', 'font-weight': 'bold'});","}")), rownames = FALSE) %>%
     formatStyle(c('Exp'), textAlign = 'right') %>%
     formatStyle(0, target = 'row', fontSize = '70%', lineHeight = '70%')
     
@@ -1346,7 +1372,7 @@ allPlayers <- reactive({
                            scrollX = TRUE,
                            fixedColumns = list(leftColumns = 2),
                            scroller = TRUE,
-                           initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '10px'});","}"), columnDefs = list(list(visible=FALSE, targets=c(34:61)))), rownames = FALSE,escape = FALSE) %>%
+                           initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '10px', 'font-weight': 'bold'});","}"), columnDefs = list(list(visible=FALSE, targets=c(34:61)))), rownames = FALSE,escape = FALSE) %>%
     formatStyle(c('Defense','effTOV','effPF'), valueColumns=c('rank_Defense','rank_effTOV','rank_effPF'), color = JS(paste0("value < ",nrow(values$playersRanks)/3," ? 'red' : value < ",nrow(values$playersRanks)*2/3," ? 'lightblue' : 'green'")), fontWeight = 'bold') %>%
     formatStyle(c(7:34), valueColumns=c(35:62), color = JS(paste0("value < ",nrow(values$playersRanks)/3," ? 'green' : value < ",nrow(values$playersRanks)*2/3," ? 'lightblue' : 'red'")), fontWeight = 'bold') %>%
     formatRound(c(7:8,10:34), 3) %>%

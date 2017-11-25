@@ -1,12 +1,12 @@
 # calculate distance between 2 sample distributions
 # Distance between 2 teams using Bhattacharyya distance: https://en.wikipedia.org/wiki/Bhattacharyya_distance
 
-data_tsne <- tsne_ready
-data_Players <- playerDashboard
-teamA <- "CLE"
-teamB <- "GSW"
-num_clusters <- 5
-useEffMin <- TRUE
+# data_tsne <- tsne_ready
+# data_Players <- playerDashboard
+# teamA <- "CLE"
+# teamB <- "GSW"
+# num_clusters <- 5
+# useEffMin <- TRUE
 
 BC_distance <- function(data_tsne = values$playersTSNE,data_Players = values$playersDatabase,
                         teamA,teamB,num_clusters = input$num_clusters,useEffMin = TRUE) {
@@ -27,7 +27,7 @@ BC_distance <- function(data_tsne = values$playersTSNE,data_Players = values$pla
     BC <- filter(tsne_ready2, Tm == teamA) %>%
       bind_rows(partB) %>%
       group_by(cluster, Tm) %>%
-      mutate(bc_Tm = sum(effMin*10+1, na.rm=TRUE)) %>%
+      mutate(bc_Tm = sum(effMin*1000, na.rm=TRUE)) %>% # variation from the original: multiply by 10 and add 1 as my "sample sizes" are really small numbers representing weights
       ungroup() %>%
       distinct(cluster,Tm,bc_Tm) %>%
       group_by(cluster) %>%
@@ -39,7 +39,7 @@ BC_distance <- function(data_tsne = values$playersTSNE,data_Players = values$pla
   } else {
     BC <- filter(tsne_ready2, Tm %in% c(teamA,teamB)) %>%
       group_by(cluster, Tm) %>%
-      mutate(bc_Tm = sum(effMin*10+1, na.rm=TRUE)) %>%
+      mutate(bc_Tm = sum(effMin*1000, na.rm=TRUE)) %>%
       ungroup() %>%
       distinct(cluster,Tm,bc_Tm) %>%
       group_by(cluster) %>%
