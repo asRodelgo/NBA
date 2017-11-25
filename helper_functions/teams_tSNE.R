@@ -1,9 +1,9 @@
 # t-SNE teams
 
-.compute_teams_tSNE_points <- function(data, num_iter, max_num_neighbors){
+.compute_teams_tSNE_points <- function(data, num_iter, max_num_neighbors,removeEffMin = TRUE){
   
   require(tsne)
-  teamStats <- .computeTeamStats(data)
+  teamStats <- .computeTeamStats(data,removeEffMin)
   data_tsne_sample <- teamStats %>% 
     select_if(is.numeric) %>%
     mutate_all(function(x) (x-min(x))/(max(x)-min(x)))
@@ -24,12 +24,12 @@
 }
 
 # put together tsne_ready predicted to load at start of dashboards
-.compute_tSNE_ready_teams <- function(data){
+.compute_tSNE_ready_teams <- function(data,removeEffMin = TRUE){
   
-  tsne_points <- .compute_teams_tSNE_points(data,num_iter = 500,max_num_neighbors = 2)
+  tsne_points <- .compute_teams_tSNE_points(data,num_iter = 500,max_num_neighbors = 2,removeEffMin)
   
   # load data
-  data_tsne_sample <- .computeTeamStats(data) %>%
+  data_tsne_sample <- .computeTeamStats(data,removeEffMin) %>%
     select_if(is.character)
   # tsne_points are pre-calculated from write_tSNE_All.R and saved in data/ directory
   # using this function: tsne_points <- write_tSNE_compute_All()

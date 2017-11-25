@@ -408,7 +408,8 @@ Row {.tabset .tabset-fade}
 ```{r}
 tsne_predicted <- reactive({
 
-playerCluster <- kmeans(values$playersTSNE[, c("x","y")], input$player_num_clusters, nstart = 10, iter.max = 20)
+  set.seed(123)
+  playerCluster <- kmeans(values$playersTSNE[, c("x","y")], input$player_num_clusters, nstart = 10, iter.max = 20)
   tsne_ready2 <- cbind(values$playersTSNE, cluster = playerCluster$cluster)
 
   tsne_points_filter <- filter(tsne_ready2, Player == input$playerName)
@@ -469,6 +470,7 @@ renderPlot(tsne_predicted())
 
 tsne_historical <- reactive({
 
+  set.seed(123)
   playerCluster <- kmeans(tsne_ready_hist[, c("x","y")], input$player_num_clusters, nstart = 10, iter.max = 20)
   tsne_ready_hist2 <- cbind(tsne_ready_hist, cluster = playerCluster$cluster)
 
@@ -758,11 +760,13 @@ similarTeams <- reactive({
       mutate(Offense = round(TeamOffense,1), Defense = round(TeamDefense,1),dist = round(dist,2)) %>%
       arrange(dist) %>%
       select(Team = Tm, Offense, Defense, `Euclidean dist` = dist)
-
-  similar_teams
+  
+  datatable(similar_teams, options = list(dom="t", pageLength = 30)) %>%
+    formatRound(c('Offense','Defense'), 2) %>%
+    formatStyle(0, target = 'row', fontSize = '70%', lineHeight = '70%')
 })
 
-renderTable(similarTeams())
+renderDataTable(similarTeams())
 
 
 ```
@@ -798,6 +802,7 @@ renderDataTable(roster())
 ```{r}
 tsne_teamPredicted <- reactive({
 
+  set.seed(123)
   #playerCluster <- kmeans(tsne_ready[, c("x","y")], 13, nstart = 10, iter.max = 20)
   playerCluster <- kmeans(values$playersTSNE[, c("x","y")], input$num_clusters, nstart = 10, iter.max = 20)
   tsne_ready2 <- cbind(values$playersTSNE, K_means = playerCluster$cluster) %>%
@@ -895,6 +900,7 @@ renderPlot(tsne_teamPredicted())
 ```{r}
 tsne_teamPredicted_facets <- reactive({
 
+  set.seed(123)
   playerCluster <- kmeans(values$playersTSNE[, c("x","y")], input$num_clusters, nstart = 10, iter.max = 20)
   tsne_ready2 <- cbind(values$playersTSNE, cluster = playerCluster$cluster) %>%
     merge(values$playersDatabase[,c("Player","Tm","effMin","Offense","Defense")], by=c("Player","Tm")) %>%
@@ -1373,7 +1379,8 @@ output$trade_popup <- renderUI({
             selectizeInput("tradeWhere", "Trade this player to:", choices = c("Retire","Adjust minutes","Replace with average player",teamDashboard$Tm), selected = NULL),
             actionButton("tradeButton", "Make this trade!"),
             textOutput("textTradeOutcome"),
-            uiOutput('adjustMinutes')
+            uiOutput('adjustMinutes'),
+            uiOutput('tradedPlayers')
             )
   )
 })
@@ -1383,19 +1390,23 @@ observeEvent(input$tradeButton, {
   values$showTradeText <- TRUE
   
   isolate({
-    # if traded to a team, assign to targetTeam variable, else, target team is NULL
-    if (input$tradeWhere %in% teamDashboard$Tm) targetTeam <- input$tradeWhere else targetTeam <- NULL
-    
+    # if traded to a team, assign to targetTeam variable, else, target team is NULL. Same with players
+    if (input$tradeWhere %in% teamDashboard$Tm) {
+      targetTeam <- input$tradeWhere 
+      targetPlayers <- input$tradedPlayers
+    } else {
+      targetTeam <- NULL
+      targetPlayers <- NULL
+    }
     # make the trade
     if (input$tradeWhere == "Adjust minutes") { # if only change in minutes of play
       values$playersAdjMin <- mutate(values$playersAdjMin, effMin = ifelse(Player == Selected_Player(), input$sliderMinutes/3936, effMin))
     } else { 
-      
       if (input$tradeWhere=="Replace with average player") { # if actual trade
         averagePlayer$Tm <- filter(values$playersAdjMin, Player == Selected_Player())$Tm
         values$playersAdjMin <- bind_rows(values$playersAdjMin, averagePlayer)
       }
-      values$playersAdjMin <- .trade_Players(values$playersAdjMin,Selected_Player(),tmA=NULL, playB=NULL, tmB=targetTeam) %>% arrange(Player)
+      values$playersAdjMin <- .trade_Players(values$playersAdjMin,Selected_Player(),tmA=NULL, playB=targetPlayers, tmB=targetTeam) %>% arrange(Player)
     }
     
     # update players and teams resulting from trade
@@ -1404,11 +1415,7 @@ observeEvent(input$tradeButton, {
     playersPredictedStats_adjPer <- group_by(playersPredictedStats_adjMin2, Tm) %>% mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>% as.data.frame()
     ### Here's where average player is lost
     source("code_chunks/source_computeOffenseDefense.R",local=TRUE)
-    playersPredicted2 <- merge(playersPredicted,values$playersAdjMin[,c("Player","Exp","Age","Tm","effMin")], by ="Player") %>%
-      mutate(adjPlusMinus = plusMinus*effMin*100) %>%
-      group_by(Tm) %>%
-      mutate(teamPlusMinus = sum(adjPlusMinus,na.rm=TRUE)) %>%
-      ungroup()
+    playersPredicted2 <- merge(playersPredicted,values$playersAdjMin[,c("Player","Exp","Age","Tm","effMin")], by ="Player") %>% mutate(adjPlusMinus = plusMinus*effMin*100) %>% group_by(Tm) %>% mutate(teamPlusMinus = sum(adjPlusMinus,na.rm=TRUE)) %>% ungroup()
 
     values$playersDatabase <- merge(playersPredictedStats_adjPer,select(playersPredicted2, -c(Age,Tm,effMin)), by = "Player")
     ### Here's where average player is lost
@@ -1457,6 +1464,8 @@ observeEvent(input$tradeWhere, {
     if (input$tradeWhere == "Adjust minutes") {
       #renderPrint(paste0("Est. minutes per game: ",round(filter(values$playersDatabase, Player == Selected_Player())$effMin*3936,1)))
       sliderInput('sliderMinutes',paste0('Current minutes: ',round(filter(values$playersAdjMin, Player == Selected_Player())$effMin*3936,1),'. Adjust minutes: '), min = 0, max = 48, value = round(filter(values$playersAdjMin, Player == Selected_Player())$effMin*3936,1))
+    } else if (input$tradeWhere %in% teamDashboard$Tm) { # select players to trade for from target team
+      checkboxGroupInput('tradedPlayers','Players to trade for:',choices = filter(values$playersAdjMin, Tm == input$tradeWhere)$Player,selected = NULL)
     } else return()
     
   })
