@@ -58,7 +58,7 @@ playerDashboard <- merge(playersPredictedStats_adjPer,select(playersPredicted2, 
 playerRanks <- mutate_if(playerDashboard, is.numeric, function(x) row_number(desc(x)))
 
 playerMax <- summarise_if(playerDashboard, is.numeric, max)
-playerMin <- group_by(playerDashboard, Player) %>% summarise_if(is.numeric, min)
+playerMin <- summarise_if(playerDashboard, is.numeric, min)
 
 # tSNE for similiarity and historical evolution of players
 tsne_ready_hist <- read.csv("data/tsne_ready_hist.csv", stringsAsFactors = FALSE)
@@ -1626,6 +1626,89 @@ observeEvent(input$tradeWhere, {
 
 ### Create a player
 ```{r}
+fluidPage(
+  fluidRow(
+    column(2,textInput("create_name","Player name",width = '80%')),
+    column(2,selectizeInput("create_position","Player position",choices = unique(playerDashboard$Pos),selected = NULL,width = '50%')),
+    column(2,selectizeInput("create_team","Team",choices = unique(playerDashboard$Tm),selected = NULL,width = '50%')),
+    column(2,selectizeInput("create_exp","Experience",choices = unique(playerDashboard$Exp),selected = "R",width = '50%')),
+    column(2, sliderInput("create_age","Age",min = playerMin$Age, max = playerMax$Age,value = averagePlayer$Age)),
+    column(2, sliderInput("create_min","Usage",min = playerMin$effMin, max = playerMax$effMin,value = averagePlayer$effMin))
+  ),
+  fluidRow(
+    column(3, sliderInput("create_2PA","2 Point Attempt",min = playerMin$eff2PA, max = playerMax$eff2PA,value = averagePlayer$eff2PA)),
+    column(3, sliderInput("create_2PM","2 Point Made",min = playerMin$eff2PM, max = playerMax$eff2PM,value = averagePlayer$eff2PM)),
+    column(3, sliderInput("create_3PA","3 Point Attempt",min = playerMin$eff3PA, max = playerMax$eff3PA,value = averagePlayer$eff3PA)),
+    column(3, sliderInput("create_3PM","3 Point Made",min = playerMin$eff3PM, max = playerMax$eff3PM,value = averagePlayer$eff3PM))
+  ),
+  fluidRow(
+    column(3, sliderInput("create_FTA","FT Point Attempt",min = playerMin$effFTA, max = playerMax$effFTA,value = averagePlayer$effFTA)),
+    column(3, sliderInput("create_FTM","FT Point Made",min = playerMin$effFTM, max = playerMax$effFTM,value = averagePlayer$effFTM)),
+    column(3, sliderInput("create_ORB","Offensive Rebounds",min = playerMin$effORB, max = playerMax$effORB,value = averagePlayer$effORB)),
+    column(3, sliderInput("create_DRB","Defensive Rebounds",min = playerMin$effDRB, max = playerMax$effDRB,value = averagePlayer$effDRB))
+  ),
+  fluidRow(
+    column(3, sliderInput("create_AST","Assists",min = playerMin$effAST, max = playerMax$effAST,value = averagePlayer$effAST)),
+    column(3, sliderInput("create_BLK","Blocks",min = playerMin$effBLK, max = playerMax$effBLK,value = averagePlayer$effBLK)),
+    column(3, sliderInput("create_TOV","Turnovers",min = playerMin$effTOV, max = playerMax$effTOV,value = averagePlayer$effTOV)),
+    column(3, sliderInput("create_PF","Personal Fouls",min = playerMin$effPF, max = playerMax$effPF,value = averagePlayer$effPF))
+  ),
+  fluidRow(
+    column(3, actionButton("createPlayerButton","Create Player")),
+    column(9, dataTableOutput('newPlayer_stats'))
+  )
+)
+
+observeEvent(input$createPlayerButton,{
+  
+  isolate({
+    
+    newPlayer <- data.frame(Player = input$create_name, Pos = input$create_position, Season = thisSeason, Age = input$create_age, Tm = input$create$Tm, Exp = input$create_exp, FGPer= (input$create_2PM+input$create_3PM)/(input$create_2PA+input$create_3PA), FG3Per=input$create_3PM/input$create_3PA, FG2Per=input$create_2PM/input$create_2PA, effFGPer=(2*input$create_2PM+3*input$create_3PM)/(2*input$create_2PA+3*input$create_3PA),FTPer=input$create_FTM/input$create_FTA,effMin=input$create_min,effFG=input$create_2PM+input$create_3PM,effFGA=input$create_2PA+input$create_3PA,eff3PM=input$create_3PM,eff3PA=input$create_3PA,eff2PM=input$create_2PM,eff2PA=input$create_2PA,effFTM=input$create_FTM,effFTA=input$create_FTA,effORB=input$create_ORB,effDRB=input$create_DRB,effTRB=input$create_ORB+input$create_DRB,effAST=input$create_AST,effSTL=input$create_STL,effBLK=input$create_BLK,effTOV=input$create_TOV,effPF=input$create_PF,effPTS=2*input$create_2PM+3*input$create_3PM+input$create_FTM,Pick=0)
+      
+    values$playersAdjMin <- bind_rows(values$playersAdjMin, newPlayer)
+  
+    # update players and teams resulting from trade
+    playersPredictedStats_adjMin2 <- .redistributeMinutes(values$playersAdjMin, topHeavy = 7, topMinShare = .6, min_share_top1 = .105)
+    playersPredictedStats_adjMin2 <- mutate(playersPredictedStats_adjMin2,Season = paste0(thisYear,"-",as.numeric(thisYear)+1)) %>% select(-Pick, -Exp) %>% as.data.frame()
+    playersPredictedStats_adjPer <- group_by(playersPredictedStats_adjMin2, Tm) %>% mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>% as.data.frame()
+    ### Here's where average player is lost
+    source("code_chunks/source_computeOffenseDefense.R",local=TRUE)
+    playersPredicted2 <- merge(playersPredicted,values$playersAdjMin[,c("Player","Exp","Age","Tm","effMin")], by ="Player") %>% mutate(adjPlusMinus = plusMinus*effMin*100) %>% group_by(Tm) %>% mutate(teamPlusMinus = sum(adjPlusMinus,na.rm=TRUE)) %>% ungroup()
+
+    values$playersDatabase <- merge(playersPredictedStats_adjPer,select(playersPredicted2, -c(Age,Tm,effMin)), by = "Player")
+    ### Here's where average player is lost
+    print(filter(values$playersDatabase, Player == "Average Player"))
+    values$playersRanks <- mutate_if(values$playersDatabase, is.numeric, function(x) row_number(desc(x)))
+    playerMax <- summarise_if(values$playersDatabase, is.numeric, max)
+    playerMin <- group_by(values$playersDatabase, Player) %>% summarise_if(is.numeric, min)
+
+    source("code_chunks/source_predictedPowersWins.R",local=TRUE)
+    teamsPredicted <- .teamsPredictedPower(data =playersNewPredicted_Final_adjMinPer2, actualOrPred="predicted")
+    win_predictions <- .teamsPredictedWins(data = teamsPredicted) 
+
+    values$teamsDatabase <- merge(teamsPredicted, win_predictions, by.x = "TeamCode", by.y = "team") %>%
+      select(Tm = TeamCode, TeamOffense = TEAM_PTS, TeamDefense = TEAM_PTSAG, Season, wins)
+    values$teamsRanks <- mutate_if(values$teamsDatabase, is.numeric, function(x) row_number(desc(x)))
+    
+    values$teamsStats <- .computeTeamStats(data = playersPredictedStats_adjPer)
+    teamStatRanks <- mutate_if(values$teamsStats, is.numeric, function(x) row_number(desc(x)))
+    values$teamsRanks <- merge(teamStatRanks, select(values$teamsRanks,-Season),by="Tm")
+    values$teamsMax <- summarise_if(values$teamsStats, is.numeric, max)
+    
+    # update t_SNEs
+    values$playersTSNE <- .compute_tSNE_ready_players(data = values$playersAdjMin)
+    values$teamsTSNE <- .compute_tSNE_ready_teams(data = playersPredictedStats_adjPer)
+    
+    # update player dashboard selector
+    updateSelectizeInput(session, "playerName", "Select Player", choices = select(values$playersDatabase,Player)$Player, selected = select(values$playersDatabase,Player)$Player[1])
+    
+  })
+  
+  output$newPlayer_stats <- renderDataTable({
+    datatable(newPlayer)
+  })
+
+})
 
 ```
 
