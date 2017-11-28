@@ -99,7 +99,7 @@
 
 .teamsPredictedWins <- function(data) {
     
-  set.seed(1234) 
+  set.seed(456) 
   # use the actual schedule
   
   

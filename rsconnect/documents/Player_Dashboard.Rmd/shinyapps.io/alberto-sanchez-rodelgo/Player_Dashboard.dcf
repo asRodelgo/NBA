@@ -1,0 +1,13 @@
+name: Player_Dashboard
+title: Player_Dashboard
+username:
+account: alberto-sanchez-rodelgo
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 240348
+bundleId: 1097879
+url: https://alberto-sanchez-rodelgo.shinyapps.io/Player_Dashboard/
+when: 1511747381.56229
+asMultiple: TRUE
+asStatic: FALSE
+ignoredFiles: data/abstract_table1.csv|abstract_SloanMIT_2018.Rmd|NBA_datascoper.Rmd|NBA_Simulator_ReadMe.Rmd|paper_topology.Rmd|test_reactiveValues.Rmd

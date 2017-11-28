@@ -3,7 +3,7 @@
 .compute_teams_tSNE_points <- function(data, num_iter, max_num_neighbors,removeEffMin = TRUE){
   
   require(tsne)
-  teamStats <- .computeTeamStats(data,removeEffMin)
+  teamStats <- .computeTeamStats(data=data,removeEffMin = removeEffMin)
   data_tsne_sample <- teamStats %>% 
     select_if(is.numeric) %>%
     mutate_all(function(x) (x-min(x))/(max(x)-min(x)))

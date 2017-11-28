@@ -212,83 +212,83 @@ library(neuralnet) # neural network for regression
   return(nn) # returns nnet model based on training data (perc of the total teams)
 }
 
-.computeModel_MxNet <- function(Off_or_Def){
-  
-  # Neural Network MXNET ---
-  
-  # mxnet package installation --
-  #for mxnet package install in R using this command for only CPU**
-  #cran <- getOption("repos")
-  #cran["dmlc"] <- "https://s3-us-west-2.amazonaws.com/apache-mxnet/R/CRAN/"
-  #options(repos = cran)
-  #install.packages("mxnet",dependencies = T)
-  ### ---
-  
-  playersSumm <- .prepareModel(Off_or_Def)
-  scaleMaxMin <- .getScaleLimits(Off_or_Def)
-  # scale the data [0,1] for easier convergence of backpropagation algorithm
-  maxs <- scaleMaxMin$maxs 
-  mins <- scaleMaxMin$mins
-  
-  team_season <- playersSumm[,1]
-  scaled <- as.data.frame(scale(playersSumm[,-1], center = mins, scale = maxs - mins))
-  scaled <- cbind(team_season,scaled)
-  
-  ###
-  set.seed(998)
-  perc <- 0.75
-  train_split <- round(perc*nrow(playersSumm))
-  
-  teams_train <- sample(playersSumm$team_season,train_split)
-  teams_test <- filter(playersSumm, !(team_season %in% teams_train))$team_season
-  training <- filter(scaled, team_season %in% teams_train)
-  testing <- filter(scaled, team_season %in% teams_test)
-  
-  # remove non-numeric variables
-  train_teamSeasonCodes <- training$team_season
-  test_teamSeasonCodes <- testing$team_season
-  training <- training[,-1]
-  testing <- testing[,-1]
-  
-  fitControl <- trainControl(## 10-fold CV
-    method = "repeatedcv",
-    number = 10,
-    ## repeated ten times
-    repeats = 10)
-  
-  nnetGrid <-  expand.grid(layer1 = c(4,6,8), 
-                           layer2 = c(2,3,4,5), 
-                           layer3 = c(1,2,3),
-                           learning.rate = c(0.07), 
-                           momentum = 0.9, 
-                           dropout = c(0.1), 
-                           activation = c('relu','sigmoid','tanh')
-  )
-  
-  library(mxnet)
-  library(caret)
-  #library(tidyverse)
-  
-  set.seed(825)
-  # uses rmse for regression and softmax for classification by default (corresponds to parameter out_activation)
-  nnetFit <- train(PTS ~ ., data = training, 
-                   method = "mxnet", 
-                   trControl = fitControl, 
-                   tuneGrid = nnetGrid)
-  
-  ##########################################################################################
-  # Model checking ----------------------------------------
-  ##########################################################################################
-  
-  # check predictions
-  model <- nnetFit
-  #save(model, file = paste0("data/model_","nnetFit","_",Sys.Date(),".Rdata"))
-  predict_data <- training
-  predicted <- predict(model, newdata = predict_data)
-  save(model, file = paste0("data/modelMxNet_",Off_or_Def,".Rdata"))
-  predictions <- data.frame(actual_PTS = predict_data$PTS, predicted_PTS = predicted)
-  plot(predictions)
-}
+# .computeModel_MxNet <- function(Off_or_Def){
+#   
+#   # Neural Network MXNET ---
+#   
+#   # mxnet package installation --
+#   #for mxnet package install in R using this command for only CPU**
+#   #cran <- getOption("repos")
+#   #cran["dmlc"] <- "https://s3-us-west-2.amazonaws.com/apache-mxnet/R/CRAN/"
+#   #options(repos = cran)
+#   #install.packages("mxnet",dependencies = T)
+#   ### ---
+#   
+#   playersSumm <- .prepareModel(Off_or_Def)
+#   scaleMaxMin <- .getScaleLimits(Off_or_Def)
+#   # scale the data [0,1] for easier convergence of backpropagation algorithm
+#   maxs <- scaleMaxMin$maxs 
+#   mins <- scaleMaxMin$mins
+#   
+#   team_season <- playersSumm[,1]
+#   scaled <- as.data.frame(scale(playersSumm[,-1], center = mins, scale = maxs - mins))
+#   scaled <- cbind(team_season,scaled)
+#   
+#   ###
+#   set.seed(998)
+#   perc <- 0.75
+#   train_split <- round(perc*nrow(playersSumm))
+#   
+#   teams_train <- sample(playersSumm$team_season,train_split)
+#   teams_test <- filter(playersSumm, !(team_season %in% teams_train))$team_season
+#   training <- filter(scaled, team_season %in% teams_train)
+#   testing <- filter(scaled, team_season %in% teams_test)
+#   
+#   # remove non-numeric variables
+#   train_teamSeasonCodes <- training$team_season
+#   test_teamSeasonCodes <- testing$team_season
+#   training <- training[,-1]
+#   testing <- testing[,-1]
+#   
+#   fitControl <- trainControl(## 10-fold CV
+#     method = "repeatedcv",
+#     number = 10,
+#     ## repeated ten times
+#     repeats = 10)
+#   
+#   nnetGrid <-  expand.grid(layer1 = c(4,6,8), 
+#                            layer2 = c(2,3,4,5), 
+#                            layer3 = c(1,2,3),
+#                            learning.rate = c(0.07), 
+#                            momentum = 0.9, 
+#                            dropout = c(0.1), 
+#                            activation = c('relu','sigmoid','tanh')
+#   )
+#   
+#   library(mxnet)
+#   library(caret)
+#   #library(tidyverse)
+#   
+#   set.seed(825)
+#   # uses rmse for regression and softmax for classification by default (corresponds to parameter out_activation)
+#   nnetFit <- train(PTS ~ ., data = training, 
+#                    method = "mxnet", 
+#                    trControl = fitControl, 
+#                    tuneGrid = nnetGrid)
+#   
+#   ##########################################################################################
+#   # Model checking ----------------------------------------
+#   ##########################################################################################
+#   
+#   # check predictions
+#   model <- nnetFit
+#   #save(model, file = paste0("data/model_","nnetFit","_",Sys.Date(),".Rdata"))
+#   predict_data <- training
+#   predicted <- predict(model, newdata = predict_data)
+#   save(model, file = paste0("data/modelMxNet_",Off_or_Def,".Rdata"))
+#   predictions <- data.frame(actual_PTS = predict_data$PTS, predicted_PTS = predicted)
+#   plot(predictions)
+# }
 
 .computeModel_neuralnet <- function(Off_or_Def){
   

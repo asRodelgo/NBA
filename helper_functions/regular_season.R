@@ -181,11 +181,11 @@
   
   games <- regSeasonOutcome[[2]]
   #day <- length(standings)
-  confPredGamesProbs <- select(filter(games,day==this_day), away_team,home_team,
-                                 away_points,home_points) %>%
+  confPredGamesProbs <- filter(games,day==this_day) %>% 
+    select(away_team,home_team,away_points,home_points) %>%
     mutate(game = paste0(away_team," @ ",home_team)) %>%
     group_by(game) %>%
-    mutate(Prob = .calculateWinProbability(home_team,away_team)) %>%
+    mutate(Prob = .calculateWinProbability(teamsPredicted,home_team,away_team)) %>%
     select(game,A=away_points,H=home_points,Prob)
   
   return(confPredGamesProbs)
@@ -199,7 +199,7 @@
     for (j in 1:length(teamDashboard$Tm)){
       prob_matrix[k,1] <- teamDashboard$Tm[i]
       prob_matrix[k,2] <- teamDashboard$Tm[j]
-      prob_matrix[k,3] = .calculateWinProbability(teamDashboard$Tm[i],teamDashboard$Tm[j])
+      prob_matrix[k,3] = .calculateWinProbability(teamsPredicted,teamDashboard$Tm[i],teamDashboard$Tm[j])
       k <- k + 1
     }
   }
