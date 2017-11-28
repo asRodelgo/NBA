@@ -97,7 +97,7 @@ averagePlayer <- .calculate_AvgPlayer(playersPredictedStats_adjMin) %>% mutate(E
 realSeasonSchedule <- read.csv("data/realSeasonSchedule.csv",stringsAsFactors = FALSE) # from write_seasonSchedule.R
 datesRange <- unique(realSeasonSchedule$Date)
 ### Global hyperparameters for Normal distributions
-# get game scores from past 7 seasons (since 2010)
+# get game scores from past 7 seasons (since 2009-2010)
 gameScores <- read.csv("data/gameScores.csv", stringsAsFactors = FALSE) # write_scoreDifferentials.R 
 #sigmaHome <- sd(as.numeric(gameScores$pts_home), na.rm = TRUE)
 #sigmaAway <- sd(as.numeric(gameScores$pts_away), na.rm = TRUE)
@@ -1332,7 +1332,7 @@ fitPlot <- reactive({
   testing <- testing[,-1]
 
   # model already trained (loaded as model above)
-  predict_data <- training
+  predict_data <- testing
   predicted <- predict(model, newdata = predict_data)
   predictions <- data.frame(actual_PTS = predict_data$PTS, predicted_PTS = predicted)
   plot(predictions)
