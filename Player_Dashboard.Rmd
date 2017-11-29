@@ -1487,13 +1487,35 @@ plotDistribTime <- reactive({
     summarise_if(is.numeric, mean)
   incrementShare <- gather(averageShare,top_n,percent)
 
-  plot(seq(18,1,-1),incrementShare$percent, xlab = "top n players", ylab = paste0("Accumulated % time (last ",input$pastSeasons,")"))
+  datatable(incrementShare, extensions = 'Scroller', options = list(dom="t",scrollY = 250,
+                           scroller = TRUE), rownames = FALSE) %>%
+    formatStyle(0, target = 'row', fontSize = '60%', lineHeight = '70%') %>%
+    formatRound(c('percent'), digits = 2)
 
 })
 
-renderPlot(plotDistribTime())
+renderDataTable(plotDistribTime())
 
 ```
+
+<!-- ### Distribution of play time -->
+<!-- ```{r} -->
+<!-- plotDistribTime <- reactive({ -->
+
+<!--   topMinShare <- .minutes_density(playersHist,input$pastSeasons) -->
+<!--   averageShare <- group_by(topMinShare,Season) %>% -->
+<!--     summarise_if(is.numeric, mean) %>% -->
+<!--     ungroup() %>% -->
+<!--     summarise_if(is.numeric, mean) -->
+<!--   incrementShare <- gather(averageShare,top_n,percent) -->
+
+<!--   plot(seq(18,1,-1),incrementShare$percent, xlab = "top n players", ylab = paste0("Accumulated % time (last ",input$pastSeasons,")")) -->
+
+<!-- }) -->
+
+<!-- renderPlot(plotDistribTime()) -->
+
+<!-- ``` -->
 
 Trade market
 ======================================
