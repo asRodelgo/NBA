@@ -24,7 +24,7 @@
 # put together tsne_ready predicted to load at start of dashboards
 .compute_tSNE_ready_players <- function(data){
   
-  tsne_points <- .compute_players_tSNE_points(data,num_iter = 600,max_num_neighbors = 20)
+  tsne_points <- .compute_players_tSNE_points(data=data,num_iter = 600,max_num_neighbors = 20)
   
   # load data
   data_tsne_sample <- data %>%

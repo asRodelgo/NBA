@@ -29,7 +29,7 @@
   tsne_points <- .compute_teams_tSNE_points(data,num_iter = 500,max_num_neighbors = 2,removeEffMin)
   
   # load data
-  data_tsne_sample <- .computeTeamStats(data,removeEffMin) %>%
+  data_tsne_sample <- .computeTeamStats(data=data,removeEffMin=removeEffMin) %>%
     select_if(is.character)
   # tsne_points are pre-calculated from write_tSNE_All.R and saved in data/ directory
   # using this function: tsne_points <- write_tSNE_compute_All()
