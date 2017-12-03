@@ -1103,6 +1103,39 @@ fluidPage(
 
 ```
 
+### Team Ranks
+```{r}
+
+allTeams <- reactive({
+  
+  teamRanks2 <- values$teamsRanks
+  teamDashboard2 <- values$teamsDatabase
+  #teamRanks2 <- teamRanks
+  #teamDashboard2 <- teamDashboard
+  
+  names(teamRanks2)[-1] <- paste0("rank_",names(teamRanks2)[-1])
+  names(teamDashboard2)[-1] <- paste0("stat_",names(teamDashboard2)[-1])
+  
+  data <- merge(teamDashboard2,
+                select(teamRanks2,Tm,rank_TeamOffense,rank_TeamDefense,rank_wins), by = "Tm") 
+  
+  data <- select(data, Tm, Offense = stat_TeamOffense, Defense = stat_TeamDefense, wins = stat_wins, starts_with("rank"),-stat_Season) %>%
+    as.data.frame()
+  
+datatable(data, extensions = c('Scroller'), options = list(dom="t",pageLength = nrow(data), 
+                         scrollY = 450,
+                         scroller = TRUE,
+                         initComplete = JS("function(settings, json) {","$(this.api().table().header()).css({'background-color': '#fff', 'color': '#575859', 'font-size': '10px', 'font-weight': 'bold'});","}"), columnDefs = list(list(visible=FALSE, targets=c(4:6)))), rownames = FALSE) %>%
+  formatStyle(c('Defense'), valueColumns=c('rank_TeamDefense'), color = JS(paste0("value < ",nrow(data)/3," ? 'red' : value < ",nrow(data)*2/3," ? 'lightblue' : 'green'")), fontWeight = 'bold') %>%
+  formatStyle(c(2:4), valueColumns=c(5:7), color = JS(paste0("value < ",nrow(data)/3," ? 'green' : value < ",nrow(data)*2/3," ? 'lightblue' : 'red'")), fontWeight = 'bold') %>%
+  formatRound(c(2:4), 1) %>%
+  formatStyle(0, target = 'row', fontSize = '70%', lineHeight = '70%')
+  
+})
+
+renderDataTable(allTeams()) 
+```
+
 Season
 =====================================
 
