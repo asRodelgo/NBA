@@ -1,5 +1,6 @@
 # Teams Predicted powers and wins
-teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer2,actualOrPred="predicted")
+teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer2,actualOrPred="predicted",maxs_vector = maxs_vector_input,
+                                       mins_vector = mins_vector_input)
 win_predictions <- .teamsPredictedWins(data = teamsPredicted) 
 
 teamDashboard <- merge(teamsPredicted, win_predictions, by.x = "TeamCode", by.y = "team") %>%

@@ -2,7 +2,8 @@
 # Once rosters are updated (Phase 1), predict avg points and avg points against
 # per team for the new season or for a season in the past (back to 1979-1980)
 # compute avg PTS as offensive power and PTSA as defensive power
-.computePower <- function(data = playersNew, Off_or_Def, thisTeam = "All", defaultMinutes = NULL, removeEffMin = TRUE, actualOrPredicted = "actual"){
+.computePower <- function(data = playersNew, Off_or_Def, thisTeam = "All", defaultMinutes = NULL, removeEffMin = TRUE, 
+                          actualOrPredicted = "actual", maxs_vector = NULL, mins_vector = NULL){
   
   # specifically, this function will prepare playersNew dataset by default
   # It is understood, playersNew is the updated rosters at the beginning of a new season
@@ -26,9 +27,22 @@
   # scale the variables the same way the training dataset was scaled so the nnet makes sense
   # scaleMaxMin needs a reference column (team, player, etc.). I need to make sure it's the first column
   playersSumm <- select(playersSumm, team_season, everything())
-  scaleMaxMin <- .getScaleLimits(Off_or_Def, playersSumm)
-  maxs <- scaleMaxMin$maxs
-  mins <- scaleMaxMin$mins
+  # The scale has to be preserved all the way during trades, otherwise, every single change 
+  # in the composition of rosters will trigger a new scale and Offense and Defense powers
+  # will be messed up
+  if ((!is.null(maxs_vector)) & (!is.null(mins_vector))) {
+    if (Off_or_Def == "PTS"){
+      maxs <- maxs_vector[-nrow(maxs_vector),1]
+      mins <- mins_vector[-nrow(maxs_vector),1]
+    } else {
+      maxs <- maxs_vector[-nrow(maxs_vector),2]
+      mins <- mins_vector[-nrow(maxs_vector),2]
+    }
+  } else {
+    scaleMaxMin <- .getScaleLimits(Off_or_Def, playersSumm)
+    maxs <- scaleMaxMin$maxs
+    mins <- scaleMaxMin$mins
+  }
   team_season <- playersSumm[,1]
   scaled <- as.data.frame(scale(playersSumm[,-1], center = mins, scale = maxs - mins))
   scaled <- cbind(team_season,scaled)
@@ -58,10 +72,13 @@
 }
 
 # Put together teams and predicted powers as input to a new regular season
-.teamsPredictedPower <- function(data = playersNew, defaultMin = NULL, actualOrPred="actual") {
+.teamsPredictedPower <- function(data = playersNew, defaultMin = NULL, actualOrPred="actual",
+                                 maxs_vector = NULL, mins_vector = NULL) {
   
-  Def <- .computePower(data = data,Off_or_Def = "PTSA",thisTeam = "All",defaultMinutes = defaultMin,actualOrPredicted = actualOrPred)
-  Off <- .computePower(data = data,Off_or_Def = "PTS", thisTeam = "All",defaultMinutes = defaultMin,actualOrPredicted = actualOrPred)
+  Def <- .computePower(data = data,Off_or_Def = "PTSA",thisTeam = "All",defaultMinutes = defaultMin,
+                       actualOrPredicted = actualOrPred, maxs_vector = maxs_vector, mins_vector = mins_vector)
+  Off <- .computePower(data = data,Off_or_Def = "PTS", thisTeam = "All",defaultMinutes = defaultMin,
+                       actualOrPredicted = actualOrPred, maxs_vector = maxs_vector, mins_vector = mins_vector)
   team_power <- merge(Off,Def,by="team_season")
   
   team_power <- team_power %>%

@@ -63,6 +63,22 @@ load("data/modelNeuralnet5_PTS.Rdata")
 nn_Offense <- model$finalModel
 load("data/modelNeuralnet5_PTSA.Rdata")
 nn_Defense <- model$finalModel
+# load limits for scaled data. Each trade will trigger a predict() from the selected NNet model
+# But scale limits must be kept as originally trained in the model for consistency
+team_stats_Off <- .prepareModel("PTS")
+team_stats_Def <- .prepareModel("PTSA")
+scaleMaxMin_Off <- .getScaleLimits("PTS", team_stats_Off)
+scaleMaxMin_Def <- .getScaleLimits("PTSA", team_stats_Def)
+scaleMaxMin_Off <- scaleMaxMin_Off[!(row.names(scaleMaxMin_Off) %in%       
+      c("FGPer","FG3Per","FG2Per","effFGPer","FTPer","effFG","effFGA","effTRB","effPTS")),]
+scaleMaxMin_Def <- scaleMaxMin_Def[!(row.names(scaleMaxMin_Def) %in%       
+      c("FGPer","FG3Per","FG2Per","effFGPer","FTPer","effFG","effFGA","effTRB","effPTS")),]
+maxs_Off <- scaleMaxMin_Off$maxs
+mins_Off <- scaleMaxMin_Off$mins
+maxs_Def <- scaleMaxMin_Def$maxs
+mins_Def <- scaleMaxMin_Def$mins
+maxs_vector_input <- cbind(maxs_Off,maxs_Def)
+mins_vector_input <- cbind(mins_Off,mins_Def)
 
 # compute teams and players Offense and Defense
 source("code_chunks/source_computeOffenseDefense.R",local=TRUE)
@@ -1826,7 +1842,8 @@ observeEvent(input$tradeButton, {
     # compute teams and players Offense and Defense
     playersNewPredicted_Final_adjMinPer2 <- select(playersPredictedStats_adjPer, -contains("Per"), -effFG, -effFGA, -effPTS, -effTRB)
     playersNewPredicted_OffDef <- mutate(playersNewPredicted_Final_adjMinPer2, Tm = Player, effMin = 1)
-    playersPredicted <- .teamsPredictedPower(data = playersNewPredicted_OffDef,actualOrPred="predicted") %>%
+    playersPredicted <- .teamsPredictedPower(data = playersNewPredicted_OffDef,actualOrPred="predicted",maxs_vector = maxs_vector_input,
+                                       mins_vector = mins_vector_input) %>%
       mutate(Player = substr(team_season,1,regexpr("_",team_season)-1),plusMinus = TEAM_PTS-TEAM_PTSAG) %>%
       select(Player,Offense = TEAM_PTS, Defense = TEAM_PTSAG, plusMinus) %>%
       as.data.frame()
@@ -1840,7 +1857,8 @@ observeEvent(input$tradeButton, {
     playerMin <- group_by(values$playersDatabase, Player) %>% summarise_if(is.numeric, min)
 
     #source("code_chunks/source_predictedPowersWins.R",local=TRUE)
-    teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer2, actualOrPred="predicted")
+    teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer2, actualOrPred="predicted",maxs_vector = maxs_vector_input,
+                                       mins_vector = mins_vector_input)
     win_predictions <- .teamsPredictedWins(data = teamsPredicted) 
 
     values$teamsDatabase <- merge(teamsPredicted, win_predictions, by.x = "TeamCode", by.y = "team") %>%
@@ -1947,7 +1965,8 @@ observeEvent(input$createPlayerButton,{
     # compute teams and players Offense and Defense
 playersNewPredicted_Final_adjMinPer2 <- select(playersPredictedStats_adjPer, -contains("Per"), -effFG, -effFGA, -effPTS, -effTRB)
 playersNewPredicted_OffDef <- mutate(playersNewPredicted_Final_adjMinPer2, Tm = Player, effMin = 1)
-playersPredicted <- .teamsPredictedPower(data = playersNewPredicted_OffDef,actualOrPred="predicted") %>%
+playersPredicted <- .teamsPredictedPower(data = playersNewPredicted_OffDef,actualOrPred="predicted",maxs_vector = maxs_vector_input,
+                                       mins_vector = mins_vector_input) %>%
   mutate(Player = substr(team_season,1,regexpr("_",team_season)-1),plusMinus = TEAM_PTS-TEAM_PTSAG) %>%
   select(Player,Offense = TEAM_PTS, Defense = TEAM_PTSAG, plusMinus) %>%
   as.data.frame()
@@ -1961,7 +1980,8 @@ playersPredicted <- .teamsPredictedPower(data = playersNewPredicted_OffDef,actua
     playerMin <- group_by(values$playersDatabase, Player) %>% summarise_if(is.numeric, min)
 
     #source("code_chunks/source_predictedPowersWins.R",local=TRUE)
-    teamsPredicted <- .teamsPredictedPower(data =playersNewPredicted_Final_adjMinPer2, actualOrPred="predicted")
+    teamsPredicted <- .teamsPredictedPower(data =playersNewPredicted_Final_adjMinPer2, actualOrPred="predicted",maxs_vector = maxs_vector_input,
+                                       mins_vector = mins_vector_input)
     win_predictions <- .teamsPredictedWins(data = teamsPredicted)
 
     values$teamsDatabase <- merge(teamsPredicted, win_predictions, by.x = "TeamCode", by.y = "team") %>%
