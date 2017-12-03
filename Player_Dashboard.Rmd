@@ -66,8 +66,7 @@ nn_Defense <- model$finalModel
 
 # compute teams and players Offense and Defense
 source("code_chunks/source_computeOffenseDefense.R",local=TRUE)
-playersPredicted2 <- merge(playersPredicted,
-                           playersPredictedStats_adjMin[,c("Player","Exp","Age","Tm","effMin")], by = "Player") %>%
+playersPredicted2 <- merge(playersPredicted,playersPredictedStats_adjMin[,c("Player","Exp","Age","Tm","effMin")], by = "Player") %>%
   mutate(adjPlusMinus = plusMinus*effMin*100) %>%
   group_by(Tm) %>%
   mutate(teamPlusMinus = sum(adjPlusMinus,na.rm=TRUE)) %>%
@@ -1815,26 +1814,33 @@ observeEvent(input$tradeButton, {
         averagePlayer$Tm <- filter(values$playersAdjMin, Player == Selected_Player())$Tm
         values$playersAdjMin <- bind_rows(values$playersAdjMin, averagePlayer)
       }
-      values$playersAdjMin <- .trade_Players(values$playersAdjMin,Selected_Player(),tmA=NULL, playB=targetPlayers, tmB=targetTeam) %>% arrange(Player)
+      values$playersAdjMin <- .trade_Players(data=values$playersAdjMin,playA=Selected_Player(),tmA=NULL, playB=targetPlayers, tmB=targetTeam) %>% arrange(Player)
     }
     
     # update players and teams resulting from trade
-    playersPredictedStats_adjMin2 <- .redistributeMinutes(values$playersAdjMin, topHeavy = 7, topMinShare = .6, min_share_top1 = .105)
+    playersPredictedStats_adjMin2 <- .redistributeMinutes(data = values$playersAdjMin, topHeavy = 7, topMinShare = .6, min_share_top1 = .105)
     playersPredictedStats_adjMin2 <- mutate(playersPredictedStats_adjMin2,Season = paste0(thisYear,"-",as.numeric(thisYear)+1)) %>% select(-Pick, -Exp) %>% as.data.frame()
     playersPredictedStats_adjPer <- group_by(playersPredictedStats_adjMin2, Tm) %>% mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>% as.data.frame()
-    ### Here's where average player is lost
-    source("code_chunks/source_computeOffenseDefense.R",local=TRUE)
+
+    #source("code_chunks/source_computeOffenseDefense.R",local=TRUE)
+    # compute teams and players Offense and Defense
+    playersNewPredicted_Final_adjMinPer2 <- select(playersPredictedStats_adjPer, -contains("Per"), -effFG, -effFGA, -effPTS, -effTRB)
+    playersNewPredicted_OffDef <- mutate(playersNewPredicted_Final_adjMinPer2, Tm = Player, effMin = 1)
+    playersPredicted <- .teamsPredictedPower(data = playersNewPredicted_OffDef,actualOrPred="predicted") %>%
+      mutate(Player = substr(team_season,1,regexpr("_",team_season)-1),plusMinus = TEAM_PTS-TEAM_PTSAG) %>%
+      select(Player,Offense = TEAM_PTS, Defense = TEAM_PTSAG, plusMinus) %>%
+      as.data.frame()
+
     playersPredicted2 <- merge(playersPredicted,values$playersAdjMin[,c("Player","Exp","Age","Tm","effMin")], by ="Player") %>% mutate(adjPlusMinus = plusMinus*effMin*100) %>% group_by(Tm) %>% mutate(teamPlusMinus = sum(adjPlusMinus,na.rm=TRUE)) %>% ungroup()
 
     values$playersDatabase <- merge(playersPredictedStats_adjPer,select(playersPredicted2, -c(Age,Tm,effMin)), by = "Player")
-    ### Here's where average player is lost
-    print(filter(values$playersDatabase, Player == "Average Player"))
+    
     values$playersRanks <- mutate_if(values$playersDatabase, is.numeric, function(x) row_number(desc(x)))
     playerMax <- summarise_if(values$playersDatabase, is.numeric, max)
     playerMin <- group_by(values$playersDatabase, Player) %>% summarise_if(is.numeric, min)
 
-    source("code_chunks/source_predictedPowersWins.R",local=TRUE)
-    teamsPredicted <- .teamsPredictedPower(data =playersNewPredicted_Final_adjMinPer2, actualOrPred="predicted")
+    #source("code_chunks/source_predictedPowersWins.R",local=TRUE)
+    teamsPredicted <- .teamsPredictedPower(data = playersNewPredicted_Final_adjMinPer2, actualOrPred="predicted")
     win_predictions <- .teamsPredictedWins(data = teamsPredicted) 
 
     values$teamsDatabase <- merge(teamsPredicted, win_predictions, by.x = "TeamCode", by.y = "team") %>%
@@ -1933,11 +1939,19 @@ observeEvent(input$createPlayerButton,{
     values$playersAdjMin <- bind_rows(values$playersAdjMin, newPlayer)
 
     # update players and teams resulting from trade
-    playersPredictedStats_adjMin2 <- .redistributeMinutes(values$playersAdjMin, topHeavy = 7, topMinShare = .6, min_share_top1 = .105)
+    playersPredictedStats_adjMin2 <- .redistributeMinutes(data = values$playersAdjMin, topHeavy = 7, topMinShare = .6, min_share_top1 = .105)
     playersPredictedStats_adjMin2 <- mutate(playersPredictedStats_adjMin2,Season = paste0(thisYear,"-",as.numeric(thisYear)+1)) %>% select(-Pick, -Exp) %>% as.data.frame()
     playersPredictedStats_adjPer <- group_by(playersPredictedStats_adjMin2, Tm) %>% mutate(effMin = effMin/sum(effMin,na.rm=TRUE)) %>% as.data.frame()
-    ### Here's where average player is lost
-    source("code_chunks/source_computeOffenseDefense.R",local=TRUE)
+    
+    #source("code_chunks/source_computeOffenseDefense.R",local=TRUE)
+    # compute teams and players Offense and Defense
+playersNewPredicted_Final_adjMinPer2 <- select(playersPredictedStats_adjPer, -contains("Per"), -effFG, -effFGA, -effPTS, -effTRB)
+playersNewPredicted_OffDef <- mutate(playersNewPredicted_Final_adjMinPer2, Tm = Player, effMin = 1)
+playersPredicted <- .teamsPredictedPower(data = playersNewPredicted_OffDef,actualOrPred="predicted") %>%
+  mutate(Player = substr(team_season,1,regexpr("_",team_season)-1),plusMinus = TEAM_PTS-TEAM_PTSAG) %>%
+  select(Player,Offense = TEAM_PTS, Defense = TEAM_PTSAG, plusMinus) %>%
+  as.data.frame()
+
     playersPredicted2 <- merge(playersPredicted,values$playersAdjMin[,c("Player","Exp","Age","Tm","effMin")], by ="Player") %>% mutate(adjPlusMinus = plusMinus*effMin*100) %>% group_by(Tm) %>% mutate(teamPlusMinus = sum(adjPlusMinus,na.rm=TRUE)) %>% ungroup()
 
     values$playersDatabase <- merge(playersPredictedStats_adjPer,select(playersPredicted2, -c(Age,Tm,effMin)), by = "Player")
@@ -1946,7 +1960,7 @@ observeEvent(input$createPlayerButton,{
     playerMax <- summarise_if(values$playersDatabase, is.numeric, max)
     playerMin <- group_by(values$playersDatabase, Player) %>% summarise_if(is.numeric, min)
 
-    source("code_chunks/source_predictedPowersWins.R",local=TRUE)
+    #source("code_chunks/source_predictedPowersWins.R",local=TRUE)
     teamsPredicted <- .teamsPredictedPower(data =playersNewPredicted_Final_adjMinPer2, actualOrPred="predicted")
     win_predictions <- .teamsPredictedWins(data = teamsPredicted)
 

@@ -56,7 +56,7 @@
   playersAdj <- data.frame()  
   for (team in unique(data$Tm)) {
     # introduce jitter as some players have the same effMin (they were averaged out at the prediction phase)
-    jitter <- runif(nrow(filter(data, Tm == team)))/100000
+    jitter <- runif(nrow(filter(data, Tm == team)))/1000000
     atl <- filter(data, Tm == team) %>% arrange(desc(effMin)) %>%
       as.data.frame() %>%
       mutate(effMin = effMin + jitter) 
@@ -131,7 +131,7 @@
     if (nrow(playersAdj)>0) playersAdj <- bind_rows(playersAdj,atl) else playersAdj <- atl
   }
   # add jitter to the final effMin to avoid duplicated effMin
-  jitter <- runif(nrow(playersAdj))/100000
+  jitter <- runif(nrow(playersAdj))/1000000
   playersAdj <- mutate(playersAdj, effMin = effMin + jitter)
   
   return(playersAdj)

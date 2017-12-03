@@ -7,9 +7,9 @@
   # specifically, this function will prepare playersNew dataset by default
   # It is understood, playersNew is the updated rosters at the beginning of a new season
   if (actualOrPredicted=="actual"){ # whether actual data (before prediction) or predicted data
-    playersSumm <- .prepareModelPrediction(data, thisTeam)  
+    playersSumm <- .prepareModelPrediction(data = data, thisTeam)  
   } else {
-    playersSumm <- .prepareModelOncePredicted(data, thisTeam)  
+    playersSumm <- .prepareModelOncePredicted(data_team = data, thisTeam = thisTeam)  
   }
   
   # effMin is 1 of the variables that get averaged weighted by effMin, in case it adds noise to the
@@ -60,8 +60,8 @@
 # Put together teams and predicted powers as input to a new regular season
 .teamsPredictedPower <- function(data = playersNew, defaultMin = NULL, actualOrPred="actual") {
   
-  Def <- .computePower(data,"PTSA","All",defaultMinutes = defaultMin,actualOrPredicted = actualOrPred)
-  Off <- .computePower(data,"PTS", "All",defaultMinutes = defaultMin,actualOrPredicted = actualOrPred)
+  Def <- .computePower(data = data,Off_or_Def = "PTSA",thisTeam = "All",defaultMinutes = defaultMin,actualOrPredicted = actualOrPred)
+  Off <- .computePower(data = data,Off_or_Def = "PTS", thisTeam = "All",defaultMinutes = defaultMin,actualOrPredicted = actualOrPred)
   team_power <- merge(Off,Def,by="team_season")
   
   team_power <- team_power %>%
@@ -130,9 +130,9 @@
 .computeTeamStats <- function(data = playersNew, thisTeam = "All", actualOrPredicted="predicted", defaultMinutes = NULL,removeEffMin = TRUE) {
   
   if (actualOrPredicted=="actual"){ # whether actual data (before prediction) or predicted data
-    playersSumm <- .prepareModelPrediction(data, thisTeam)  
+    playersSumm <- .prepareModelPrediction(data=data, thisTeam=thisTeam)  
   } else {
-    playersSumm <- .prepareModelOncePredicted(data, thisTeam)  
+    playersSumm <- .prepareModelOncePredicted(data_team=data, thisTeam=thisTeam)  
   }
   
   # effMin is 1 of the variables that get averaged weighted by effMin, in case it adds noise to the
