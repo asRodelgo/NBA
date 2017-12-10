@@ -166,10 +166,12 @@ selectizeInput("player_tsne_color", "Color by", choices = c("K_means","Offense",
 
 output$playerLogo <- renderImage({
   filename <- normalizePath(file.path('./images',
-                              paste(tolower(gsub(" ","-",input$playerName)), '.svg', sep='')))
+                              paste(tolower(gsub(" ","-",input$playerName)), '.png', sep='')))
  
     # Return a list containing the filename and alt text
     list(src = filename,
+         width = 80,
+         height = 80,
          alt = paste("Player: ", input$playerName))
 
   }, deleteFile = FALSE)
